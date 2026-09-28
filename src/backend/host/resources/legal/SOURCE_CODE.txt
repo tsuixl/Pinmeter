@@ -1,0 +1,25 @@
+Pinmeter source code
+Project repository: https://github.com/tsuixl/Pinmeter
+Project license: GNU AGPL version 3 only (AGPL-3.0-only)
+
+The application's Settings page identifies the source revision used for a build.
+Portable test packages also include build-source.json and source-manifest.json.
+A revision marked dirty includes local modifications: the commit alone is not
+the complete source of that binary.
+
+Public releases must provide the matching source and build scripts alongside
+the binary download. An exact, publicly accessible revision with all changes
+may provide this; a separately uploaded source archive is not always required.
+For third-party components, use the version-specific locations in
+THIRD-PARTY-NOTICES.txt, ../sensors/licenses/SOURCES.txt and
+../network-control/THIRD-PARTY-NOTICES.txt, subject to each license's terms.
+Keep required source available and include required build inputs and submodules.
+A repository address or a link to its current main branch is not sufficient
+evidence that the complete source for a particular binary has been provided.
+Local test packages do not confirm that the repository or matching sources
+are already publicly available.
+
+Build prerequisites and commands are in the repository README.md. The npm and
+Cargo lockfiles pin dependencies; tools/ contains the build scripts, including
+the Windows helper downloads, checksums and assembly steps. Consult the
+component source notices for separately distributed drivers and libraries.

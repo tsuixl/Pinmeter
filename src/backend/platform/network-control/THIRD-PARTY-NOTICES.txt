@@ -1,0 +1,23 @@
+Pinmeter optional Windows application network control
+
+WinDivert 2.2.2, Copyright (C) 2019, all rights reserved.
+Project: https://github.com/basil00/WinDivert
+Official binary distribution: WinDivert-2.2.2-A.zip
+SHA256: 63cb41763bb4b20f600b6de04e991a9c2be73279e317d4d82f237b150c5f3f15
+Source: https://github.com/basil00/WinDivert/tree/v2.2.2
+Source archive: https://github.com/basil00/WinDivert/archive/refs/tags/v2.2.2.zip
+Included as WinDivert-2.2.2-source.zip alongside the DLL and driver.
+Source SHA256: 65ec79c9e6afa99f648a3f4d1f6db794640b40d0b65bd438770ea503ee14ecb7
+
+WinDivert is separately licensed under LGPL version 3 or GPL version 2.
+This distribution selects LGPL version 3. Full LGPL/GPL texts are included in
+LICENSE and the unmodified official archive. The DLL and signed driver are
+loaded dynamically, remain separate files, and can be replaced with compatible
+versions. Reverse engineering for debugging modifications to this library is
+permitted. A modified kernel driver requires Windows-compatible signing.
+Pinmeter's P/Invoke declarations follow the public WinDivert 2.2.2 header.
+
+Design references (no application source copied):
+Throttle v0.1.1 https://github.com/FrancescoCoding/Throttle/tree/v0.1.1 (MIT)
+BandwidthDesk https://github.com/Mxlted/BandwidthDesk (MIT)
+Rules, IPC, UI and pacing/attribution implementation are maintained by Pinmeter.

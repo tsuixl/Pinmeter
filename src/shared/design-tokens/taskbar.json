@@ -1,0 +1,26 @@
+{
+  "source": "Sakani 0c9a97359001299a1e917ef67fdd0d5af99023a7",
+  "light": {
+    "bg-surface": "#FFFFFF",
+    "bg-subtle": "#F5F4F2",
+    "fg-default": "#141414",
+    "fg-muted": "#78716A",
+    "border-focus": "#FF4700",
+    "bg-inverse": "#141414",
+    "fg-on-inverse": "#FAFAF9"
+  },
+  "dark": {
+    "bg-surface": "#141414",
+    "bg-subtle": "#1F1F1F",
+    "fg-default": "#FAFAF9",
+    "fg-muted": "#A8A29B",
+    "border-focus": "#FF7538",
+    "bg-inverse": "#FAFAF9",
+    "fg-on-inverse": "#141414"
+  },
+  "fontSize": 14,
+  "lineHeight": 20,
+  "outerPadding": 2,
+  "groupGap": 12,
+  "radius": 8
+}

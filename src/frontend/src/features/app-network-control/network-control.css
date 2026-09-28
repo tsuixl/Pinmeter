@@ -1,0 +1,48 @@
+.network-control-menu {
+  position: fixed;
+  z-index: 1000;
+  max-width: calc(100vw - var(--space-16));
+}
+.network-control-menu-note {
+  margin: var(--space-8);
+  max-width: 208px;
+  color: var(--color-fg-muted);
+}
+.network-control-rules {
+  margin-top: var(--space-24);
+  padding-top: var(--space-16);
+  border-top: 1px solid var(--color-border-subtle);
+}
+.network-control-rule {
+  display: flex;
+  gap: var(--space-16);
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-12) 0;
+}
+.network-control-rule > div {
+  min-width: 0;
+}
+.network-control-path {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.network-control-form,
+.network-control-rate {
+  display: grid;
+  gap: var(--space-16);
+}
+.network-control-rate-value {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(100px, 0.6fr);
+  gap: var(--space-12);
+}
+.network-control-error {
+  color: var(--color-danger-solid);
+  overflow-wrap: anywhere;
+}
+.network-control-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}

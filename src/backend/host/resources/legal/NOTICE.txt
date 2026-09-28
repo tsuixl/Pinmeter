@@ -1,0 +1,25 @@
+Pinmeter
+Copyright (C) 2026 Pinmeter contributors
+
+Except for separately identified third-party materials, Pinmeter's source code
+and build scripts are licensed under the GNU Affero General Public License,
+version 3 only (SPDX: AGPL-3.0-only). The combined application is distributed
+under those terms. See Pinmeter-AGPL-3.0.txt for the complete license.
+
+You may use, modify and redistribute this software under that license.
+Pinmeter is provided WITHOUT ANY WARRANTY, including any implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See SOURCE_CODE.txt for
+the project source location and requirements for distributing matching sources.
+
+Third-party components retain their own copyright and license notices.
+The one-ip adaptations and their modifications are documented in one-ip/NOTICE.
+THIRD-PARTY-NOTICES.txt lists the Windows build dependencies with their copyright,
+license texts and version-specific sources. Sakani, Geist and brand-icon notices
+are also included here.
+Windows sensor and network-control notices are also supplied in the adjacent
+sensors/licenses/ and network-control/ directories of the application.
+These notices do not grant rights to third-party trademarks or hosted services.
+
+Other platform bundles need their own dependency inventory. Remaining service,
+brand-resource and installer-source checks are recorded in the source repository at
+docs/development/v0.1.0-development-workflow/execution.md.

@@ -1,0 +1,100 @@
+Pinmeter Windows sensor sources and licenses
+Verified 2026-09-28. All listed DLLs are unmodified.
+Full notices for the 11 support DLLs are in ../../licenses/THIRD-PARTY-NOTICES.txt.
+
+LibreHardwareMonitorLib 0.9.6 - MPL-2.0
+Copyright: LibreHardwareMonitor contributors (including retained upstream notices).
+Source: https://github.com/LibreHardwareMonitor/LibreHardwareMonitor/tree/3d331e3370efb858411f19511373eff65a218701
+Source download: https://github.com/LibreHardwareMonitor/LibreHardwareMonitor/archive/refs/tags/v0.9.6.zip
+License: LibreHardwareMonitor-MPL-2.0.txt
+Upstream binary archive SHA-256:
+086d9f1b5a99e643edc2cfaaac16051685b551e4c5ac0b32a57c58c0e529c001
+
+PawnIO modules 0.1.6 - LGPL-2.1
+Embedded in LibreHardwareMonitorLib; the pinned upstream Resources/PawnIo/README
+identifies this module release. The license is retained in
+LibreHardwareMonitor-third-party.txt; module binaries can be replaced by
+rebuilding LibreHardwareMonitorLib from its published source.
+Source: https://github.com/namazso/PawnIO.Modules/tree/4aa792beb020a14c8261072e9786d2dfb38489d9
+Source download: https://github.com/namazso/PawnIO.Modules/archive/refs/tags/0.1.6.zip
+Provenance: https://github.com/LibreHardwareMonitor/LibreHardwareMonitor/blob/v0.9.6/LibreHardwareMonitorLib/Resources/PawnIo/README
+
+PawnIO driver 2.2.0 - GPL-2.0-or-later with the upstream exception
+Copyright (C) 2026 namazso. Full grant and exception: PawnIO-NOTICE.txt.
+License text: PawnIO-COPYING.txt.
+Source: https://github.com/namazso/PawnIO/tree/5cdf470831fdfff3f7f1d06363ca6b230f3bf35a
+Source download: https://github.com/namazso/PawnIO/archive/refs/tags/2.2.0.zip
+Required PawnPP submodule (MPL-2.0):
+https://github.com/namazso/PawnPP/tree/e64e4c37b2d8ba0d8ee57205faf8183aee12c438
+https://github.com/namazso/PawnPP/archive/e64e4c37b2d8ba0d8ee57205faf8183aee12c438.zip
+After checking out the driver tag, use git submodule update --init --recursive.
+The driver archive alone does not populate its PawnPP submodule.
+The driver is a separate installed component; the exception covers independent
+modules using its device IO control interface, subject to its full terms.
+
+Official signed installer, unmodified, installed only at the user's request:
+https://github.com/namazso/PawnIO.Setup/releases/tag/2.2.0
+SHA-256: 1f519a22e47187f70a1379a48ca604981c4fcf694f4e65b734aaa74a9fba3032
+The Setup repository contains the release README, not the driver's source.
+Use the driver and submodule source locations above. The separate installer
+implementation/license is not supplied by that release repository; its full
+redistribution/source review remains open before public binary distribution.
+
+Support DLL packages
+The distributed DLLs were matched byte-for-byte against the following official
+NuGet packages. The binary package is provenance; a separate pinned repository
+URL below identifies source where provided by the package metadata.
+
+BlackSharp.Core 1.0.7 - MPL-2.0
+Copyright: Florian K.
+Package: https://www.nuget.org/packages/BlackSharp.Core/1.0.7
+Source: https://github.com/Blacktempel/BlackSharp/tree/c70b735c6cec123ee8a046ac4a0bc6c606f52cf0
+
+DiskInfoToolkit 1.1.2 - MPL-2.0
+Copyright: Florian K.
+Package: https://www.nuget.org/packages/DiskInfoToolkit/1.1.2
+Source: https://github.com/Blacktempel/DiskInfoToolkit/tree/25319eae5781e75bcf141e844ceab2afe94d40ea
+
+HidSharp 2.6.4 - Apache-2.0
+Copyright: Copyright 2010-2025 James Bellinger
+Package: https://www.nuget.org/packages/HidSharp/2.6.4
+
+RAMSPDToolkit-NDD 1.4.2 - MPL-2.0
+Copyright: Florian K.
+Package: https://www.nuget.org/packages/RAMSPDToolkit-NDD/1.4.2
+Source: https://github.com/Blacktempel/RAMSPDToolkit/tree/3b47b960e0830fef344624ad5e389675d5f0a1ce
+
+System.Buffers 4.6.1 - MIT
+Copyright: © Microsoft Corporation. All rights reserved.
+Package: https://www.nuget.org/packages/System.Buffers/4.6.1
+Source: https://github.com/dotnet/maintenance-packages/tree/6b84308c9ad012f53240d72c1d716d7e42546483
+
+System.Memory 4.6.3 - MIT
+Copyright: © Microsoft Corporation. All rights reserved.
+Package: https://www.nuget.org/packages/System.Memory/4.6.3
+Source: https://github.com/dotnet/maintenance-packages/tree/f62ca0009b038cab4725a720f386623a969d73ad
+
+System.Numerics.Vectors 4.6.1 - MIT
+Copyright: © Microsoft Corporation. All rights reserved.
+Package: https://www.nuget.org/packages/System.Numerics.Vectors/4.6.1
+Source: https://github.com/dotnet/maintenance-packages/tree/6b84308c9ad012f53240d72c1d716d7e42546483
+
+System.Runtime.CompilerServices.Unsafe 6.1.2 - MIT
+Copyright: © Microsoft Corporation. All rights reserved.
+Package: https://www.nuget.org/packages/System.Runtime.CompilerServices.Unsafe/6.1.2
+Source: https://github.com/dotnet/maintenance-packages/tree/f62ca0009b038cab4725a720f386623a969d73ad
+
+System.Security.AccessControl 6.0.0 - MIT
+Copyright: © Microsoft Corporation. All rights reserved.
+Package: https://www.nuget.org/packages/System.Security.AccessControl/6.0.0
+Source: https://github.com/dotnet/runtime/tree/4822e3c3aa77eb82b2fb33c9321f923cf11ddde6
+
+System.Security.Principal.Windows 5.0.0 - MIT
+Copyright: © Microsoft Corporation. All rights reserved.
+Package: https://www.nuget.org/packages/System.Security.Principal.Windows/5.0.0
+Source: git://github.com/dotnet/runtime/tree/cf258a14b70ad9069470a108f13765e0e5988f51
+
+System.Threading.AccessControl 10.0.3 - MIT
+Copyright: © Microsoft Corporation. All rights reserved.
+Package: https://www.nuget.org/packages/System.Threading.AccessControl/10.0.3
+Source: https://github.com/dotnet/dotnet/tree/c2435c3e0f46de784341ac3ed62863ce77e117b4

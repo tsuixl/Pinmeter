@@ -1,0 +1,14 @@
+{
+  "bundle": {
+    "resources": {
+      "../target/sensors/": "sensors/",
+      "../target/network/pinmeter-network.exe": "network/pinmeter-network.exe",
+      "../target/network-control/": "network-control/"
+    },
+    "windows": {
+      "nsis": {
+        "installerHooks": "network-control-hooks.nsh"
+      }
+    }
+  }
+}

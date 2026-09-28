@@ -1,0 +1,128 @@
+/* Business layout only; shared controls and surfaces use the official Sakani package. */
+.hardware-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  min-width: 0;
+}
+.hardware-toolbar,
+.hardware-actions {
+  display: flex;
+  gap: var(--space-12);
+  align-items: center;
+  flex-wrap: wrap;
+}
+.hardware-toolbar {
+  justify-content: space-between;
+}
+.hardware-toolbar p,
+.hardware-footnote,
+.hardware-copy-status {
+  color: var(--color-fg-muted);
+  font-size: var(--text-sm, 14px);
+}
+.hardware-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-16);
+}
+.hardware-summary > * {
+  min-width: 0;
+}
+.hardware-summary-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  color: var(--color-fg-muted);
+  margin-bottom: var(--space-8);
+}
+.hardware-summary h2 {
+  font-size: var(--text-lg, 18px);
+  font-weight: 600;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.hardware-summary p {
+  font-size: var(--text-sm, 14px);
+  color: var(--color-fg-muted);
+  margin-top: var(--space-8);
+  overflow-wrap: anywhere;
+}
+.hardware-list .section-heading {
+  flex-wrap: wrap;
+  gap: var(--space-8);
+}
+.hardware-rows {
+  margin: 0;
+}
+.hardware-row {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: var(--space-16);
+  padding: var(--space-8) 0;
+  border-top: 1px solid var(--color-border-subtle);
+}
+.hardware-row dt {
+  display: flex;
+  gap: var(--space-8);
+  align-items: center;
+  align-self: start;
+  color: var(--color-fg-muted);
+  padding-top: 1px;
+}
+.hardware-row dd {
+  margin: 0;
+  min-width: 0;
+  text-align: left;
+}
+.hardware-row ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+.hardware-name {
+  display: block;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.hardware-details {
+  display: block;
+  margin-top: var(--space-4);
+  color: var(--color-fg-muted);
+  font-size: var(--text-sm, 14px);
+  overflow-wrap: anywhere;
+}
+.hardware-empty {
+  color: var(--color-fg-muted);
+}
+.hardware-row-summary {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  font-weight: 500;
+}
+.hardware-expanded .hardware-row {
+  grid-template-columns: 112px minmax(0, 1fr);
+  padding: var(--space-16) 0;
+}
+.hardware-row svg,
+.hardware-summary-label svg {
+  flex-shrink: 0;
+}
+@media (max-width: 700px) {
+  .hardware-summary {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 560px) {
+  .hardware-row,
+  .hardware-expanded .hardware-row {
+    grid-template-columns: 1fr;
+    gap: var(--space-8);
+  }
+}

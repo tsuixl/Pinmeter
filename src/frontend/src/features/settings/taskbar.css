@@ -1,0 +1,60 @@
+.taskbar-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.taskbar-metrics legend {
+  margin-bottom: var(--space-8);
+}
+.taskbar-preview-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  margin-top: var(--space-16);
+  overflow-x: auto;
+}
+.taskbar-preview {
+  display: flex;
+  gap: var(--space-12);
+  width: max-content;
+  padding: var(--space-2) var(--space-8);
+  background: transparent;
+  color: var(--color-fg-default);
+  font-size: 14px;
+  line-height: 20px;
+}
+.taskbar-preview-group {
+  display: flex;
+  flex-direction: column;
+}
+.taskbar-preview-group > div {
+  display: grid;
+  grid-template-columns: 22px 5ch 5ch;
+  gap: var(--space-4);
+  align-items: center;
+}
+.taskbar-preview-percent > div {
+  grid-template-columns: 28px 4ch;
+}
+.taskbar-preview-hardware > div {
+  grid-template-columns: 28px 4ch max-content;
+}
+.taskbar-preview-temperature {
+  font-variant-numeric: tabular-nums;
+}
+.taskbar-preview-group strong {
+  font-weight: 400;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.taskbar-preview-group span,
+.taskbar-preview-group svg {
+  color: var(--color-fg-muted);
+}
+.taskbar-preview-single .taskbar-preview-group {
+  flex-direction: row;
+  gap: var(--space-12);
+}

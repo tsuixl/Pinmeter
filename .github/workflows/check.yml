@@ -1,0 +1,43 @@
+name: Build and check
+on: [push, pull_request]
+jobs:
+  desktop:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: src/frontend/package-lock.json
+      - if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.98.1
+          components: rustfmt, clippy
+      - run: npm ci
+        working-directory: src/frontend
+      - run: node tools/check-project.mjs
+      - run: node tools/sync-taskbar-tokens.mjs --check
+      - if: runner.os == 'Windows'
+        run: node tools/desktop.mjs check-tools
+      - run: npm run build
+        working-directory: src/frontend
+      - run: npm test
+        working-directory: src/frontend
+      - run: npm run format:check
+        working-directory: src/frontend
+      - run: cargo fmt --all -- --check
+        working-directory: src/backend
+      - run: cargo test --workspace --all-features --locked
+        working-directory: src/backend
+      - run: cargo clippy --workspace --all-features --all-targets --locked -- -D warnings
+        working-directory: src/backend
+      - run: cargo run -p pinmeter-host --features dev-tools --bin export-contracts -- --check
+        working-directory: src/backend
+      - run: node tools/desktop.mjs build --no-bundle

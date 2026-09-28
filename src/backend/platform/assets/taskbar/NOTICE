@@ -1,0 +1,6 @@
+Geist.ttf is a decompressed TrueType copy of geist-latin-wght-normal.woff2
+from @fontsource-variable/geist 5.3.0, the same font used by Pinmeter's UI.
+No glyph outlines were changed. Container conversion: fontTools TTFont,
+font.flavor = None. Source: https://github.com/google/fonts/tree/main/ofl/geist
+License: Geist.LICENSE (SIL Open Font License 1.1).
+The font is embedded and loaded in-process by DirectWrite, never installed.

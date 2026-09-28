@@ -1,0 +1,302 @@
+/* Layout and business indicators use Sakani tokens; controls remain official components. */
+.ip-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+}
+.ip-toolbar,
+.ip-actions,
+.ip-exit-bottom,
+.ip-ipv6 {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  flex-wrap: wrap;
+}
+.ip-toolbar,
+.ip-exit-bottom {
+  justify-content: space-between;
+}
+.ip-toolbar p {
+  margin: 0;
+}
+.ip-exits,
+.ip-overview-grid,
+.ip-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-16);
+}
+.ip-exit-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  min-width: 0;
+}
+.ip-page .section-heading {
+  flex-wrap: wrap;
+  gap: var(--space-8);
+}
+.ip-page h2,
+.ip-state-label,
+.ip-location,
+.ip-provider,
+.ip-page .data-rows dt {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+}
+.ip-page h2 {
+  margin: 0;
+}
+.ip-exit-summary {
+  display: flex;
+  gap: var(--space-16);
+  align-items: center;
+}
+.ip-exit-identity {
+  min-width: 0;
+  flex: 1;
+}
+.ip-address {
+  font-size: var(--text-xl, 20px);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  margin: 0 0 var(--space-8);
+}
+.ip-location,
+.ip-provider {
+  color: var(--color-fg-muted);
+  font-size: var(--text-sm, 14px);
+  margin: var(--space-6) 0;
+}
+.ip-location svg,
+.ip-provider svg,
+.ip-state-label svg {
+  flex-shrink: 0;
+}
+.ip-kind-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-6);
+  margin-top: var(--space-8);
+}
+.ip-score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  flex-shrink: 0;
+}
+.ip-score strong {
+  font-size: var(--text-4xl, 36px);
+  font-weight: 600;
+  line-height: 1.1;
+}
+.ip-score span {
+  font-size: var(--text-xs, 12px);
+}
+.ip-tone-neutral {
+  color: var(--color-fg-muted);
+}
+.ip-tone-success {
+  color: var(--color-success-fg);
+}
+.ip-tone-warning {
+  color: var(--color-warning-fg);
+}
+.ip-tone-danger {
+  color: var(--color-danger-fg);
+}
+.ip-fetch-time {
+  font-size: var(--text-xs, 12px);
+  color: var(--color-fg-muted);
+}
+.ip-inline-error {
+  color: var(--color-fg-muted);
+  font-size: var(--text-xs, 12px);
+  margin: 0;
+}
+.ip-ipv6 {
+  padding: var(--space-8) var(--space-12);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+}
+.ip-ipv6-address {
+  overflow-wrap: anywhere;
+  min-width: 0;
+  flex: 1;
+}
+.ip-check-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-16) var(--space-24);
+  margin-top: var(--space-16);
+}
+.ip-check-ai .ip-check-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.ip-check-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-4) var(--space-8);
+  min-width: 0;
+}
+.ip-check-target {
+  justify-self: start;
+  max-width: 100%;
+  min-width: 0;
+}
+.ip-brand-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-width: 0;
+  max-width: 100%;
+}
+.ip-check-target span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ip-brand {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-white, #fff);
+  border-radius: var(--radius-sm);
+}
+.ip-brand img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+.ip-samples {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 3px;
+  padding-left: 32px;
+}
+.ip-sample {
+  width: 5px;
+  height: 5px;
+  border-radius: var(--radius-full);
+  background: var(--color-border-subtle);
+}
+.ip-sample.success {
+  background: var(--color-success-fg);
+}
+.ip-sample.failed {
+  background: var(--color-danger-fg);
+}
+.ip-sample.slow {
+  background: var(--color-warning-fg);
+}
+.ip-check-caption {
+  color: var(--color-fg-muted);
+  font-size: var(--text-xs, 12px);
+  margin: var(--space-16) 0 0;
+}
+.ip-check-detail {
+  border-top: 1px solid var(--color-border-subtle);
+  margin-top: var(--space-16);
+  padding-top: var(--space-12);
+  font-size: var(--text-sm, 14px);
+  overflow-wrap: anywhere;
+}
+.ip-check-detail small {
+  display: block;
+  color: var(--color-fg-muted);
+  margin: var(--space-6) 0;
+}
+.ip-check-detail ul {
+  padding-left: var(--space-20);
+  max-height: 240px;
+  overflow: auto;
+}
+.ip-details {
+  border-top: 1px solid var(--color-border-subtle);
+  padding-top: var(--space-16);
+}
+.ip-details > summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+  cursor: pointer;
+}
+.ip-details > summary .processor-caption {
+  margin: 0 0 0 auto;
+}
+.ip-details-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+}
+.ip-page .data-rows div {
+  gap: var(--space-16);
+}
+.ip-page .data-rows dd {
+  max-width: 65%;
+}
+.ip-page :is(p, h2, dt, dd) {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.ip-page table {
+  width: 100%;
+  table-layout: fixed;
+}
+.ip-page :is(td, th) {
+  overflow-wrap: anywhere;
+}
+.ip-page summary {
+  cursor: pointer;
+}
+.ip-license,
+.ip-copy-feedback {
+  color: var(--color-fg-muted);
+  font-size: var(--text-xs, 12px);
+}
+.ip-copy-feedback:empty {
+  display: none;
+}
+.ip-license pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 320px;
+  overflow: auto;
+}
+@media (max-width: 1150px) {
+  .ip-check-ai .ip-check-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ip-overview-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 800px) {
+  .ip-check-ai .ip-check-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ip-detail-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 650px) {
+  .ip-exits {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ip-check-grid,
+  .ip-check-ai .ip-check-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ip-ipv6-address {
+    flex-basis: calc(100% - 80px);
+  }
+}

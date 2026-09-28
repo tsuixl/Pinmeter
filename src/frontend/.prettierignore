@@ -1,0 +1,7 @@
+# Preserve the pinned upstream file byte-for-byte.
+src/shared/ui/sakani/tokens.css
+src/shared/contracts/monitor.ts
+dist
+node_modules
+test-results
+package-lock.json

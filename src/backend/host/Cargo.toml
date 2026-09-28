@@ -1,0 +1,39 @@
+[package]
+name = "pinmeter-host"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+default-run = "pinmeter-host"
+
+[features]
+dev-tools = []
+
+[[bin]]
+name = "export-contracts"
+path = "src/bin/export-contracts.rs"
+required-features = ["dev-tools"]
+
+[[bin]]
+name = "monitor-probe"
+path = "src/bin/monitor-probe.rs"
+required-features = ["dev-tools"]
+
+[lib]
+name = "pinmeter_host"
+
+[build-dependencies]
+tauri-build = { version = "=2.6.3", features = [] }
+
+[dependencies]
+pinmeter-core = { path = "../core" }
+pinmeter-platform = { path = "../platform" }
+serde.workspace = true
+serde_json.workspace = true
+tauri = { version = "=2.11.5", features = ["tray-icon"] }
+ts-rs = "=12.0.1"
+tauri-plugin-single-instance = "=2.4.4"
+tauri-plugin-window-state = "=2.4.1"
+
+[target.'cfg(windows)'.dependencies]
+webview2-com = "=0.38.2"
+windows-core = "=0.61.2"

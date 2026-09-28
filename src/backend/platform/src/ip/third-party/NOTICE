@@ -1,0 +1,49 @@
+Pinmeter IP adapters — source and modification notice
+
+Upstream: One IP, https://github.com/zhihui-hu/one-ip
+Authors: zhihui-hu and One IP contributors
+Pinned commit: 5686f3f1c21eec9e276e6338c67c599cc299629c
+Upstream license: GNU Affero General Public License version 3 (one-ip.LICENSE)
+
+Adapted 2026-09-17 for Pinmeter:
+- src/views/home/api.ts: IPv4/IPv6 and domestic HEAD detection -> ../mod.rs
+- src/views/ip/api.ts and coffee.ts: identity validation and field mapping -> ../coffee.rs
+- public/worker/http.js and ip-health.js: bounded requests, null flags and score validation -> ../http.rs and ../coffee.rs
+- public/worker/http.js: public-address checks -> core/src/ip/model.rs
+- src/components/connectivity.tsx, src/views/link/api.ts, src/views/ai/probe.ts and platforms.ts:
+  fixed resource targets and bounded sampling -> ../checks.rs and core/src/ip/checks.rs
+- src/views/status/services.json and public/worker/service-status.js:
+  eight official status sources and normalization -> ../service_status.rs
+
+2026-09-17 overview additions: native HTTP status is readable; non-2xx responses
+are not counted as successful probes. GitHub and Grok resource paths use robots.txt
+because the upstream generate_204/favicon.ico targets returned 404. Taobao uses
+the fixed Alibaba CDN icon to which its favicon redirects. No redirects or scripts
+are followed. Brand favicon assets are bundled locally with their own source notice.
+
+Changes: Rust async HTTP, project-owned models, explicit proxy policy, strict public
+address checks, independent states, bounded text/lists, no worker server or website
+runtime. These adapted files remain under AGPL-3.0. Preserve this notice and the
+license with copies. Public releases must provide the complete Corresponding
+Source, including build scripts, as required by the applicable licenses.
+
+2026-09-28 project licensing: Pinmeter's own code and the combined application
+are licensed under AGPL-3.0-only. Copyright (C) 2026 Pinmeter contributors.
+You may modify and redistribute Pinmeter under that license, WITHOUT ANY
+WARRANTY, including MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+The complete license follows this notice in the application's IP page and is
+also included as LICENSE at the repository root and in the package licenses/.
+Project source: https://github.com/tsuixl/Pinmeter
+The source revision is shown in Settings. Public releases must make the full
+matching source available; this notice does not assert publication is complete.
+
+Other components retain their respective notices: Sakani/React/lucide/Tauri
+(MIT or MIT/Apache-2.0), Rust HTTP dependencies (see Cargo metadata), and separately
+packaged hardware helpers. Overall release licensing and third-party service
+terms must be checked before public distribution. No public-service SLA is implied.
+2026-09-17 AI response correction: compared src/views/ai/probe.ts and
+src/lib/network.ts (request opaque mode). Non-trace AI probes now finish when
+HTTP headers arrive, without waiting for the favicon body. Unlike an opaque
+browser response, native HTTP can retain the status code: restricted/redirect
+responses keep their measured latency and remain distinct from transport failure.
+HTTP 429 still respects Retry-After. No browser credentials or scripts are used.
