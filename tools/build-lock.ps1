@@ -1,4 +1,12 @@
 $ErrorActionPreference = 'Stop'
+# A pwsh 7 parent can put Core modules before the Windows PowerShell inbox modules.
+# Keep user modules, but resolve this shell's built-in commands from its own module root.
+if ($PSVersionTable.PSEdition -eq 'Desktop') {
+    $inboxModules = $PSHOME + '\Modules'
+    if (($env:PSModulePath -split ';')[0] -ne $inboxModules) {
+        $env:PSModulePath = $inboxModules + ';' + $env:PSModulePath
+    }
+}
 $ProgressPreference = 'SilentlyContinue'
 
 function Get-PinmeterMutexName([string]$Path, [string]$Kind) {

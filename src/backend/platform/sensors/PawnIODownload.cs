@@ -91,6 +91,7 @@ internal static class PawnIODownload
             UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true
         };
         start.EnvironmentVariables["PINMETER_DRIVER_DOWNLOAD"] = path;
+        start.EnvironmentVariables["PSModulePath"] = Path.Combine(Path.GetDirectoryName(powershell), "Modules");
         using (var process = Process.Start(start)) {
             if (process == null) throw new InvalidOperationException("无法检查驱动数字签名");
             process.OutputDataReceived += (sender, args) => {};

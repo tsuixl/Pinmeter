@@ -1,5 +1,7 @@
+#[cfg(target_os = "windows")]
+use pinmeter_core::app_network::ProcessBytes;
 use pinmeter_core::{
-    app_network::{NetworkWindow, ProcessBytes},
+    app_network::NetworkWindow,
     domain::{Failure, Status},
 };
 use std::{

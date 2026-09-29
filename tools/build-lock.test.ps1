@@ -13,6 +13,13 @@ function Child([string]$Code) {
 }
 Child @'
 $ErrorActionPreference = 'Stop'
+$env:PSModulePath = 'C:\Pinmeter-Test-Missing-Core-Modules'
+. $env:PINMETER_LOCK_LIBRARY
+$hash = Get-FileHash -LiteralPath $env:PINMETER_LOCK_LIBRARY -Algorithm SHA256
+if ($hash.Hash.Length -ne 64) { throw 'Windows PowerShell inbox module recovery failed' }
+'@
+Child @'
+$ErrorActionPreference = 'Stop'
 . $env:PINMETER_LOCK_LIBRARY
 $lock = Enter-PinmeterBuildLock $env:PINMETER_TEST_PROJECT
 if ($null -ne $lock) { Exit-PinmeterBuildLock $lock; throw 'Expected inherited build lock' }

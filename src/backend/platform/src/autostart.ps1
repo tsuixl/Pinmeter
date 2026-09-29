@@ -1,4 +1,7 @@
 param([switch]$DefinitionsOnly)
+if ($PSVersionTable.PSEdition -eq 'Desktop') {
+    $env:PSModulePath = $PSHOME + '\Modules;' + $env:PSModulePath
+}
 $ErrorActionPreference = 'Stop'
 
 function Test-PinmeterUninstallTask($Task, [string]$Executable) {
