@@ -3,7 +3,7 @@
 - [x] 实现点击后自动下载、哈希/签名校验、安装与复检，验证下载边界、失败状态、已安装短路及打包不含安装器。
 - [x] 对照 Sakani 检查等待、失败、重启提示和完成状态的深浅主题及窄窗口。
 - [x] 保留独立温度采集、逐项状态和五分钟历史，完成适用自动检查。
-- [ ] 从已提交源码生成并核对新的 Windows release、安装包及对应源码。
+- [x] 从已提交源码生成并核对新的 Windows release、安装包及对应源码。
 - [ ] 在缺驱动的干净 Windows 环境验证完整安装、实际 UAC 取消、需重启及安装后真实温度；补齐原生主窗口和其他硬件环境验收。
 
 ## 进度
@@ -14,4 +14,6 @@
 - 实际通过新下载实现取得官方安装器 3,410,960 字节，SHA-256 为 `1F519A22E47187F70A1379A48CA604981C4FCF694F4E65B734AAA74A9FBA3032`，Windows 数字签名校验通过；验证探针未执行安装器，临时副本已删除。本机已有驱动，真实安装命令返回“已安装，无需重复下载安装”，未更改现有驱动。这不能代替缺驱动电脑的完整安装实测。
 - 完整 `tools/dev.ps1 check` 通过，包括辅助组件编译、自检、Rust 测试/Clippy/格式/契约和前端类型、生产构建、23 项测试与格式；3 项既有管理员/真实桌面测试仍忽略。7 项打包回归继续拒绝缓存或产物中的安装器。
 - 浏览器回归通过点击触发、等待中重复提交保护、下载/校验/UAC 错误、重启提示、安装后自动复检、温度恢复和切页状态清理。复用 Sakani 0.3.1 官方 Button/Alert，并对照[官方加载按钮](assets/driver-reference-button-loading.png)、[官方深色错误](assets/driver-reference-alert-danger-dark.png)与应用[等待](assets/driver-install-pending-light.png)、[深色错误](assets/driver-download-error-dark.png)、[重启提示](assets/driver-install-restart-dark.png)、[窄窗](assets/driver-download-narrow-light.png)；HTML 仅作布局参考。此处使用模拟安装结果，原生 DPI 与正式主窗口安装交互仍未验收。
-- 本轮运行包将在代码提交后的干净源码上构建；不自动推送、公开仓库或发布版本。
+- 最终交付从干净源码 `5f38c28` 经 `node tools/desktop.mjs build -- --locked` 完整构建前端、全部辅助组件、Windows release 与 NSIS；运行入口为 `src/backend/target/test29/Pinmeter.exe`。270 个构建输入前后及交付核对一致，40 个运行文件与来源/清单三方 SHA-256 一致。主程序 SHA-256 为 `87C8653399F8EF62EBF0CD4D7F06350459FA5C57B81AC8162D410C0CD859E3CB`。构建锁与目录独占持续到交付完成，保留用户已有运行实例。
+- 同目录提供安装包、完整便携 ZIP、对应源码 ZIP、中英文 README.txt 与 SHA256SUMS.txt；便携 ZIP 的 41 个条目逐项核对路径及内容哈希，不包含构建或测试日志。NSIS 生成脚本和运行资源均没有捆绑 PawnIO 安装器。下载保护补正后的真实官网下载和签名验证再次通过，验证副本已删除，没有执行安装器。
+- 从最终交付目录运行 CPU/GPU helper 后均正常退出，非管理员 CPU 返回 permission_denied，GPU 正常识别两张设备；驱动检测返回 installed，安装命令返回“无需重复下载安装”。本机已有驱动，未卸载或更改它，也未停止旧主窗口；干净 Windows 的真实安装、UAC/重启流程、原生完整交互及其他硬件验收仍未完成。本轮仅本地提交和交付，未推送或发布。
