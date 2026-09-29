@@ -1,7 +1,8 @@
 ## 任务计划
 
-- [ ] 修复远端 CI 的 PowerShell 模块路径和非 Windows 导入问题，推送并确认检查结果。
-- [ ] 从通过检查的提交重建、核对发布附件，准备并发布首个 Windows 预览版。
+- [x] 修复远端 CI 的 PowerShell 模块路径和非 Windows 导入问题，推送并确认检查结果。
+- [x] 从通过检查的提交重建、核对发布附件，并上传首个 Windows 预览版草稿。
+- [ ] 确认私有仓库的公开范围，完成预览版发布和首页下载入口。
 
 - [x] 完成卸载失败保护、按安装路径清理自启、共享资源准备及 UNIC 声明补正，执行针对性回归和完整项目检查。
 - [x] 从已提交源码构建 Windows release/NSIS，核对全部资源、驱动安装器排除及适用辅助组件启动行为。
@@ -19,6 +20,9 @@
 - [ ] 完成 macOS/Linux 宿主及实机验证；按实际需要拆分职责集中的模块。
 
 ## 进度
+
+- 预览发布准备完成：源码 `cd6f3b1` 的 [GitHub CI](https://github.com/tsuixl/Pinmeter/actions/runs/36585620873) 在 Windows、macOS 和 Linux 全部通过。Windows 运行包与 NSIS 已由同一干净提交重新构建，入口为 `src/backend/target/test31/Pinmeter.exe`，40 个运行文件、270 个构建输入及便携 ZIP 的 41 个条目核对通过；主 EXE SHA-256 为 `31DD32643F086D027BE917FDCF70472F17DA5C1DE6DA8263824D6CC3E84C8604`。真实官方下载与签名验证也在继承 Core 模块路径的环境下通过，未执行安装器。
+- GitHub `v0.1.0` 预览草稿已附安装器、完整便携 ZIP、对应源码 ZIP 和 SHA256SUMS.txt；服务器返回的每个附件大小和 SHA-256 与本地一致。草稿说明明确实际安装/卸载、缺驱动完整安装、管理员网络恢复、VPN 及长时环境仍待实测；仓库仍为私有，尚未公开发布。
 
 - 首次发布前已取得远端 CI 日志：Windows 资源准备因 Windows PowerShell 继承 Core 模块搜索路径而找不到 Get-FileHash；macOS/Linux Clippy 拒绝 Windows 专用 ProcessBytes 的无条件导入。已按运行 shell 恢复内置模块优先级，并限制该导入的编译平台；驱动签名及自启的 PowerShell 调用同时固定对应系统模块来源。仍待推送后的 CI 验证，发布包将从最终通过的提交重新构建。
 - 本地验证：将模块路径置为不兼容的 Core 目录后，资源准备及完整项目检查通过；新增子进程回归确认内置 Get-FileHash 可重新解析。Rust、前端 23 项测试、格式/类型/契约、打包、自启及隔离卸载检查通过。远端检查结果随后单独核对。
