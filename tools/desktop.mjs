@@ -9,7 +9,7 @@ import { packageWindows } from './package-windows.mjs';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const cli = resolve(root, 'src/frontend/node_modules/@tauri-apps/cli/tauri.js');
 const args = process.argv.slice(2);
-if (process.platform === 'win32' && ['dev', 'build', 'check-tools'].includes(args[0]) && !process.env.PINMETER_DESKTOP_WORKER) {
+if (process.platform === 'win32' && ['dev', 'build', 'prepare', 'check-tools'].includes(args[0]) && !process.env.PINMETER_DESKTOP_WORKER) {
   const coordinator = spawnSync('powershell.exe', ['-NoProfile', '-OutputFormat', 'Text', '-ExecutionPolicy', 'Bypass', '-File', resolve(root, 'tools/desktop-windows.ps1')], {
     stdio: 'inherit', windowsHide: true,
     env: { ...process.env, PINMETER_DESKTOP_ARGS: JSON.stringify(args) },
@@ -43,6 +43,8 @@ if (args[0] === 'check-tools') {
   if (!packageDirectory || !process.env.PINMETER_DESKTOP_WORKER) throw new Error('Run check-tools through the Windows coordinator');
   const checks = [
     [process.execPath, ['--test', resolve(root, 'tools/package-windows.test.mjs')]],
+    ['powershell.exe', ['-NoProfile', '-OutputFormat', 'Text', '-ExecutionPolicy', 'Bypass', '-File', resolve(root, 'src/backend/platform/tests/autostart-cleanup.tests.ps1')]],
+    ['powershell.exe', ['-NoProfile', '-OutputFormat', 'Text', '-ExecutionPolicy', 'Bypass', '-File', resolve(root, 'tools/check-uninstall.ps1')]],
     ['powershell.exe', ['-NoProfile', '-OutputFormat', 'Text', '-ExecutionPolicy', 'Bypass', '-File', resolve(root, 'tools/build-lock.test.ps1')]],
   ];
   for (const [command, arguments_] of checks) {
@@ -61,7 +63,7 @@ function sourceManifest() {
 }
 const sources = packageDirectory ? sourceManifest() : null;
 if (sources) fs.writeFileSync(resolve(packageDirectory, 'source-manifest.json'), JSON.stringify(sources, null, 2));
-if (process.platform === 'win32' && ['dev', 'build'].includes(process.argv[2])) {
+if (process.platform === 'win32' && ['dev', 'build', 'prepare'].includes(args[0])) {
   const sensors = run('powershell.exe', ['-NoProfile', '-OutputFormat', 'Text', '-ExecutionPolicy', 'Bypass', '-File', resolve(root, 'tools/build-sensors.ps1')]);
   if (sensors.status !== 0) process.exit(sensors.status ?? 1);
   const network = run('powershell.exe', ['-NoProfile', '-OutputFormat', 'Text', '-ExecutionPolicy', 'Bypass', '-File', resolve(root, 'tools/build-network.ps1')]);
@@ -69,6 +71,7 @@ if (process.platform === 'win32' && ['dev', 'build'].includes(process.argv[2])) 
   const control = run("powershell.exe", ["-NoProfile", "-OutputFormat", "Text", "-ExecutionPolicy", "Bypass", "-File", resolve(root, "tools/build-network-control.ps1")]);
   if (control.status !== 0) process.exit(control.status ?? 1);
 }
+if (args[0] === 'prepare') process.exit(0);
 const result = run(process.execPath, [cli, ...args], {
   cwd: resolve(root, 'src/backend/host'),
   env: { ...process.env, PATH: resolve(homedir(), '.cargo/bin') + delimiter + process.env.PATH },

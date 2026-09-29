@@ -11,8 +11,12 @@ function Run-Checked([string]$Program, [string[]]$Arguments) {
 Push-Location "$projectRoot/src/backend"
 try {
     switch ($Action) {
-        'contracts' { Run-Checked cargo @('run','-p','pinmeter-host','--features','dev-tools','--bin','export-contracts') }
+        'contracts' {
+            Run-Checked node @("$projectRoot/tools/desktop.mjs",'prepare')
+            Run-Checked cargo @('run','-p','pinmeter-host','--features','dev-tools','--bin','export-contracts')
+        }
         'check' {
+            Run-Checked node @("$projectRoot/tools/desktop.mjs",'prepare')
             Run-Checked node @("$projectRoot/tools/check-project.mjs")
             Run-Checked node @("$projectRoot/tools/sync-taskbar-tokens.mjs",'--check')
             Run-Checked node @("$projectRoot/tools/desktop.mjs",'check-tools')

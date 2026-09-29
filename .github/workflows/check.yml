@@ -22,6 +22,8 @@ jobs:
           components: rustfmt, clippy
       - run: npm ci
         working-directory: src/frontend
+      - if: runner.os == 'Windows'
+        run: node tools/desktop.mjs prepare
       - run: node tools/check-project.mjs
       - run: node tools/sync-taskbar-tokens.mjs --check
       - if: runner.os == 'Windows'

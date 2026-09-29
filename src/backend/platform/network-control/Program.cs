@@ -116,7 +116,7 @@ internal static class Program {
     private static int Main(string[] args) {
         Console.InputEncoding = Encoding.UTF8; Console.OutputEncoding = new UTF8Encoding(false);
         if (args.Length == 1 && args[0] == "--self-test") {
-            try { PacketEngine.SelfTest(); WfpBlock.SelfTest(); CleanupSelfTest(); Console.WriteLine("PASS: pacing debt, IPv4/IPv6 packet attribution, protected paths, WFP x64 layout and identity, independent cleanup and verification"); return 0; }
+            try { PacketEngine.SelfTest(); WfpBlock.SelfTest(); CleanupSelfTest(); Uninstall.SelfTest(); Console.WriteLine("PASS: pacing debt, IPv4/IPv6 packet attribution, protected paths, WFP x64 layout and identity, independent cleanup and uninstall sequencing"); return 0; }
             catch (Exception e) { Console.Error.WriteLine(e.Message); return 1; }
         }
         if (args.Length == 1 && args[0] == "--verify-clean") {
@@ -138,6 +138,12 @@ internal static class Program {
             try { return Cleanup(); } finally { Diagnostics.Finish("cleanup-command"); }
         }
         if (args.Length == 1 && args[0] == "--cleanup-request") return WfpBlock.CleanupRequest();
+        if (args.Length == 1 && args[0] == "--uninstall-cleanup-request") return WfpBlock.CleanupRequest(true);
+        if (args.Length == 1 && args[0] == "--uninstall-cleanup") {
+            Diagnostics.Start();
+            try { return Uninstall.Cleanup(Cleanup, Uninstall.RemoveStartup); }
+            finally { Diagnostics.Finish("uninstall-cleanup"); }
+        }
         int pid;
         if (args.Length != 1 || !Int32.TryParse(args[0], out pid) || !ParentIs(pid)) return 2;
         Diagnostics.Start();

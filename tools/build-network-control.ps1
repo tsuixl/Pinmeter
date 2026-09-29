@@ -17,7 +17,7 @@ $dist = Join-Path $cache 'WinDivert-2.2.2-A'
 $driver = Join-Path $dist 'x64/WinDivert64.sys'
 if ((Get-AuthenticodeSignature -LiteralPath $driver).Status -ne 'Valid') { throw 'WinDivert driver signature invalid' }
 $compiler = Join-Path $env:WINDIR 'Microsoft.NET/Framework64/v4.0.30319/csc.exe'
-& $compiler /nologo /target:exe /platform:x64 /optimize+ "/out:$(Join-Path $output 'pinmeter-network-control.exe')" /reference:System.Web.Extensions.dll /reference:Microsoft.CSharp.dll (Join-Path $source 'Program.cs') (Join-Path $source 'PacketEngine.cs') (Join-Path $source 'WfpBlock.cs') (Join-Path $source 'Diagnostics.cs')
+& $compiler /nologo /target:exe /platform:x64 /optimize+ "/out:$(Join-Path $output 'pinmeter-network-control.exe')" "/resource:$(Join-Path $projectRoot 'src/backend/platform/src/autostart.ps1'),autostart.ps1" /reference:System.Web.Extensions.dll /reference:Microsoft.CSharp.dll (Join-Path $source 'Program.cs') (Join-Path $source 'PacketEngine.cs') (Join-Path $source 'WfpBlock.cs') (Join-Path $source 'Diagnostics.cs') (Join-Path $source 'Uninstall.cs')
 if ($LASTEXITCODE -ne 0) { throw 'Network control helper compilation failed' }
 Copy-Item -LiteralPath (Join-Path $dist 'x64/WinDivert.dll'), $driver, (Join-Path $dist 'LICENSE'), (Join-Path $source 'THIRD-PARTY-NOTICES.txt') -Destination $output -Force
 # Ship the upstream distribution (including headers/examples/licenses) alongside replaceable DLL/driver.

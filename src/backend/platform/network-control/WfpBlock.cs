@@ -210,11 +210,11 @@ internal static class WfpBlock {
             } finally { if (!committed) FwpmTransactionAbort0(engine.handle); }
         }
     }
-    internal static int CleanupRequest() {
-        if (Program.Admin) return Program.Cleanup();
+    internal static int CleanupRequest(bool uninstall = false) {
+        if (Program.Admin) return uninstall ? Uninstall.Cleanup(Program.Cleanup, Uninstall.RemoveStartup) : Program.Cleanup();
         // Fixed executable/argument; return the elevated cleanup's verified exit code to NSIS.
         try {
-            using (var p = Process.Start(new ProcessStartInfo(typeof(Program).Assembly.Location, "--cleanup") {
+            using (var p = Process.Start(new ProcessStartInfo(typeof(Program).Assembly.Location, uninstall ? "--uninstall-cleanup" : "--cleanup") {
                 UseShellExecute = true, Verb = "runas", WindowStyle = ProcessWindowStyle.Hidden })) {
                 p.WaitForExit(); return p.ExitCode;
             }

@@ -49,6 +49,8 @@ powershell -ExecutionPolicy Bypass -File tools/dev.ps1 build
 
 Windows 构建入口自动预留空闲的 `src/backend/target/testN/`，输出完整运行目录；默认编译缓存和安装器在 `src/backend/target/desktop-build/`。仅需便携运行包时使用 `node tools/desktop.mjs build --no-bundle -- --locked`，打包与构建锁回归使用 `node tools/desktop.mjs check-tools`。`--package-dir=src/backend/target/testN` 指定的目录仍须通过独占与占用检查；自定义 `CARGO_TARGET_DIR` 必须为绝对路径。直接 npm/Cargo 不取得项目构建锁，不能与完整构建同时写共享产物。
 
+Windows 本地检查及 CI 会先通过 `node tools/desktop.mjs prepare` 编译辅助组件并准备资源，再检查 Rust 宿主；该操作与完整构建共用构建互斥。`check-tools` 包含隔离自启清理与 NSIS 卸载回归；首次尚未下载 NSIS 工具时会明确跳过后者，应在首次安装包构建后重跑。
+
 配置保存于 `%APPDATA%\io.pinmeter.desktop\settings.json`。便携版迁移后，已启用自启的用户在新位置关闭再开启自启，以更新路径。仅调试界面可运行 `npm.cmd --prefix src/frontend run dev`，访问 `http://127.0.0.1:1420/?demo=1`；演示入口仅在开发模式存在，普通浏览器不连接本机采集。
 
 详细构建与管理员/跨平台验证边界见 [desktop-runtime](v0.1.0-desktop-runtime/execution.md)。[Sakani 官方标准](https://main--6a5a658b3681fcc010430db5.chromatic.com/?path=/docs/sakani-design-system--docs) 决定视觉与组件，[HTML 预览](v0.1.0-main-window/assets/main-window-preview.html) 只提供结构参考，界面验收见 [main-window](v0.1.0-main-window/execution.md)。
