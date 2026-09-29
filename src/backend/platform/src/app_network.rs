@@ -1,4 +1,4 @@
-#[cfg(target_os = "windows")]
+#[cfg(any(target_os = "windows", test))]
 use pinmeter_core::app_network::ProcessBytes;
 use pinmeter_core::{
     app_network::NetworkWindow,

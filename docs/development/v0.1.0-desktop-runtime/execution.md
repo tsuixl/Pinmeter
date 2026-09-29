@@ -22,6 +22,7 @@
 
 - 首次发布前已取得远端 CI 日志：Windows 资源准备因 Windows PowerShell 继承 Core 模块搜索路径而找不到 Get-FileHash；macOS/Linux Clippy 拒绝 Windows 专用 ProcessBytes 的无条件导入。已按运行 shell 恢复内置模块优先级，并限制该导入的编译平台；驱动签名及自启的 PowerShell 调用同时固定对应系统模块来源。仍待推送后的 CI 验证，发布包将从最终通过的提交重新构建。
 - 本地验证：将模块路径置为不兼容的 Core 目录后，资源准备及完整项目检查通过；新增子进程回归确认内置 Get-FileHash 可重新解析。Rust、前端 23 项测试、格式/类型/契约、打包、自启及隔离卸载检查通过。远端检查结果随后单独核对。
+- 首轮远端复验已通过 Windows 资源准备，随后发现全新 Windows 检出将文本转换为 CRLF，导致设计变量逐字比较失败；新增根文本属性统一 LF，二进制资源不变。非 Windows 的协议解码测试也需要 ProcessBytes，导入条件补为 Windows 或 test；保持严格 Clippy 和生成文件检查，未绕过失败步骤。
 
 - 后续 CPU 驱动已改为点击后自动从官方来源下载、校验并安装，仍不捆绑安装器；最新 `test29` 运行包、对应源码和验证范围见 [cpu-temperature](../v0.1.0-cpu-temperature/execution.md)。
 

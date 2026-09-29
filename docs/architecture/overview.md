@@ -321,6 +321,7 @@ Pinmeter/
 
 - 常规一级目录限定为 `src/`、`docs/`、`tools/`。仓库管理目录 `.git/` 由 Git 自行维护；`.github/` 在启用相关工具时创建。
 - 根文件保留上述三个入口；`.gitignore`、`.gitattributes`、`.editorconfig` 和 `LICENSE` 按实际需要添加，分别承担仓库忽略、文本属性、编辑规范和许可证职责。
+- `.gitattributes` 将文本检出统一为 LF，图标、截图和字体保持二进制，避免 Windows 自动换行转换让设计变量、生成契约与格式检查误报差异。
 - 项目自有代码使用根 `LICENSE` 的 AGPL-3.0-only，第三方材料保留各自条款。发行用项目告知和源码获取说明位于 `src/backend/host/resources/legal/`，Tauri 通用资源映射原有许可文件到运行包 `licenses/`，不在根目录复制第三方许可集合。
 - 应用清单、锁文件及构建配置随工程放入 `src/`，不散放在仓库根。更具体的位置见下文。
 - 方案、截图、临时脚本、日志与测试报告不放根目录。不另建根级 `assets/`、`tests/`、`config/`、`scripts/` 等重复分类。
