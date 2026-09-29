@@ -11,7 +11,7 @@
 
 - CPU 页缺少 PawnIO 时提供“下载安装驱动”和“重新检测”。仅在用户点击后从 [官方 2.2.0 发行地址](https://github.com/namazso/PawnIO.Setup/releases/tag/2.2.0)下载固定安装器，校验 SHA-256 与 Windows 数字签名，再以固定静默参数安装并重新检测。已安装时不重复下载/安装；保留温度 worker 重试，检测到驱动不等于硬件一定提供有效温度。
 - 下载、校验和安装封装在 platform/sensors，Rust 适配管理调用，宿主仅允许主窗口请求，View 经 ViewModel 与客户端操作。没有接受任意 URL、路径或参数的入口。使用 Sakani 0.3.1 的 [Button](https://main--6a5a658b3681fcc010430db5.chromatic.com/?path=/story/core-button--primary) 和 [Alert](https://main--6a5a658b3681fcc010430db5.chromatic.com/?path=/story/composite-alert--info)，HTML 仅参考布局。
-- 下载限定 HTTPS 官方发布/CDN 主机、最多 5 次跳转、16 MiB 和 120 秒；内容写入管理员专用临时目录，文件校验至安装完成保持禁止写入/删除的文件句柄，并锁定目录避免替换。固定哈希为 `1F519A22E47187F70A1379A48CA604981C4FCF694F4E65B734AAA74A9FBA3032`。跨进程互斥覆盖完整操作；网络错误、损坏下载、签名失败及取消授权均明确失败，安装退出后才清理临时文件，不强制中断正在写驱动的安装器或主动重启电脑。
+- 下载限定 HTTPS 官方发布/CDN 主机、最多 5 次跳转、16 MiB 和 120 秒；内容写入管理员专用临时目录，文件以不跟随重解析点的方式打开并拒绝符号链接，校验至安装完成保持禁止写入/删除的句柄，同时锁定目录避免替换。固定哈希为 `1F519A22E47187F70A1379A48CA604981C4FCF694F4E65B734AAA74A9FBA3032`。跨进程互斥覆盖完整操作；网络错误、损坏下载、签名失败及取消授权均明确失败，安装退出后才清理临时文件，不强制中断正在写驱动的安装器或主动重启电脑。
 - 构建停止下载/复制安装器，清除受管辅助组件输出中的历史安装器；打包检查拒绝夹带该文件。保留实际使用的传感器库、嵌入模块及来源/许可信息，不卸载其他应用共享的驱动。
 
 - 沿用[产品设计](../../design/product-design.md)、[架构](../../architecture/overview.md)和[Windows 调研](../../research/windows-monitoring.md)的可选独立传感器进程。Sakani StatCard 为视觉标准，HTML 仅参考布局。

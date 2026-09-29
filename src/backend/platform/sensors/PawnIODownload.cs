@@ -154,8 +154,7 @@ internal static class PawnIODownload
                         download.Flush(true);
                     }
                     // Deny replacement/writes until installation exits, including signature checks.
-                    using (var verified = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read)) {
-                        if ((File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0) throw new IOException("驱动文件路径不符合要求");
+                    using (var verified = OpenProtectedFile(path)) {
                         VerifyHash(verified);
                         VerifySignature(path);
                         using (var process = Process.Start(new ProcessStartInfo(path, "-install -silent") {
@@ -179,6 +178,17 @@ internal static class PawnIODownload
 
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     private static extern SafeFileHandle CreateFile(string name, uint access, uint share, IntPtr security, uint creation, uint flags, IntPtr template);
+
+    internal static FileStream OpenProtectedFile(string path)
+    {
+        // Lock the path object itself, rather than following a replaceable symbolic link.
+        var handle = CreateFile(path, 0x80000000, 1, IntPtr.Zero, 3, 0x00200000, IntPtr.Zero);
+        if (handle.IsInvalid) { handle.Dispose(); throw new IOException("无法保护已下载的驱动文件"); }
+        try {
+            if ((File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0) throw new IOException("驱动文件路径不能是符号链接");
+            return new FileStream(handle, FileAccess.Read);
+        } catch { handle.Dispose(); throw; }
+    }
 
     internal static SafeFileHandle LockDirectory(string directory)
     {

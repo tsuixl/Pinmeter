@@ -21,7 +21,7 @@ internal static class DriverDownloadTests
                 using (var download = new FileStream(file, FileMode.CreateNew, FileAccess.Write, FileShare.None)) {
                     PawnIODownload.Download(download); download.Flush(true);
                 }
-                using (var verified = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read)) {
+                using (var verified = PawnIODownload.OpenProtectedFile(file)) {
                     PawnIODownload.VerifyHash(verified);
                     PawnIODownload.VerifySignature(file);
                     Console.WriteLine("PASS: official HTTPS download, SHA-256 and Authenticode signature; bytes=" + verified.Length + "; installer not executed");
@@ -54,7 +54,7 @@ internal static class DriverDownloadTests
                 File.WriteAllText(sample, "unsigned fixture");
                 using (PawnIODownload.LockDirectory(directory)) {
                     Reject(() => Directory.Move(directory, directory + "-moved"));
-                    using (var locked = new FileStream(sample, FileMode.Open, FileAccess.Read, FileShare.Read)) {
+                    using (var locked = PawnIODownload.OpenProtectedFile(sample)) {
                         Reject(() => File.WriteAllText(sample, "changed"));
                         Reject(() => File.Delete(sample));
                         Reject(() => PawnIODownload.VerifySignature(sample));
