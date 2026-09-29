@@ -1,4 +1,29 @@
+param([switch]$DefinitionsOnly)
 $ErrorActionPreference = 'Stop'
+
+function Test-PinmeterUninstallTask($Task, [string]$Executable) {
+    if ($Task.Name -notmatch '^Pinmeter-Autostart-S-\d+(?:-\d+)+$') { return $false }
+    $actions = $Task.Definition.Actions
+    if ($actions.Count -ne 1) { return $false }
+    $action = $actions.Item(1)
+    if ($action.Type -ne 0 -or -not [string]::IsNullOrWhiteSpace($action.Arguments)) { return $false }
+    if (-not [IO.Path]::IsPathRooted($action.Path)) { return $false }
+    return [string]::Equals([IO.Path]::GetFullPath($action.Path), [IO.Path]::GetFullPath($Executable), [StringComparison]::OrdinalIgnoreCase)
+}
+
+function Remove-PinmeterInstallationAutostart($Folder, [string]$Executable) {
+    if ([string]::IsNullOrWhiteSpace($Executable) -or -not [IO.Path]::IsPathRooted($Executable)) {
+        throw 'Uninstall requires an absolute executable path'
+    }
+    foreach ($candidate in @($Folder.GetTasks(1))) {
+        if (Test-PinmeterUninstallTask $candidate $Executable) { $Folder.DeleteTask($candidate.Name, 0) }
+    }
+    foreach ($candidate in @($Folder.GetTasks(1))) {
+        if (Test-PinmeterUninstallTask $candidate $Executable) { throw 'Pinmeter startup task remains after cleanup' }
+    }
+}
+
+if ($DefinitionsOnly) { return }
 [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
 try {
     $identity = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
@@ -11,6 +36,10 @@ try {
         if ($_.Exception.HResult -ne -2147024894) { throw }
     }
     switch ($env:PINMETER_AUTOSTART_ACTION) {
+        'uninstall' {
+            Remove-PinmeterInstallationAutostart $folder $env:PINMETER_AUTOSTART_EXE
+            [Console]::Write('ok')
+        }
         'checkpoint' {
             if ($null -ne $task) { [Console]::Write($task.Xml) }
         }
