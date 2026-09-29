@@ -34,16 +34,28 @@ try {
         .find((e) => e.name.includes("/src/shared/client/demo-client.ts")).name;
       const { DemoClient } = await import(url);
       window.__driverMissing = true;
-      window.__downloadCalls = 0;
+      window.__installCalls = 0;
       DemoClient.prototype.temperatureDriverMissing = async () =>
         window.__driverMissing;
-      DemoClient.prototype.openTemperatureDriverDownload = () => {
-        window.__downloadCalls++;
+      DemoClient.prototype.installTemperatureDriver = () => {
+        window.__installCalls++;
         return new Promise((resolve, reject) => {
-          window.__finishOpen = (success) =>
-            success
-              ? resolve()
-              : reject("浏览器无法启动，请手动访问 https://pawnio.eu/");
+          window.__finishInstall = (outcome) => {
+            const failures = {
+              network: "官方驱动下载失败，请检查网络后重试",
+              checksum: "驱动安装器校验失败，未执行安装，请重新下载",
+              canceled: "已取消管理员授权，可重新下载安装",
+            };
+            if (failures[outcome]) reject(failures[outcome]);
+            else if (outcome === "restart")
+              resolve(
+                "驱动安装器要求重启电脑，请保存工作并手动重启后查看温度。",
+              );
+            else {
+              window.__driverMissing = false;
+              resolve("PawnIO 已安装，温度采集将在 30 秒内自动重试。");
+            }
+          };
         });
       };
       const temperature = DemoClient.prototype.temperature;
@@ -61,48 +73,77 @@ try {
       };
     });
     await page.getByRole("button", { name: "CPU", exact: true }).click();
-    const download = page.getByRole("button", {
-      name: "前往官网下载",
-      exact: true,
-    });
+    const install = page.locator(".temperature-driver button").first();
     const recheck = page.getByRole("button", { name: "重新检测", exact: true });
-    await download.waitFor();
+    await page
+      .getByRole("button", { name: "下载安装驱动", exact: true })
+      .waitFor();
     await page.waitForTimeout(1100);
+    assert.equal(
+      await page.evaluate(() => window.__installCalls),
+      0,
+      "Entering CPU must not install a driver",
+    );
     await page.screenshot({
       path: assets + "driver-download-" + theme + ".png",
     });
-    await download.click();
-    await page.waitForFunction(() => window.__downloadCalls === 1);
-    assert(await download.isDisabled());
-    assert(await recheck.isDisabled());
-    await download.evaluate((button) => button.click());
-    assert.equal(await page.evaluate(() => window.__downloadCalls), 1);
-    await page.evaluate(() => window.__finishOpen(false));
-    await page
-      .getByText("浏览器无法启动，请手动访问 https://pawnio.eu/", {
-        exact: true,
-      })
-      .waitFor();
-    await page.waitForTimeout(350);
-    await page.screenshot({
-      path: assets + "driver-download-error-" + theme + ".png",
-    });
-    await download.click();
-    await page.waitForFunction(() => window.__downloadCalls === 2);
-    await page.evaluate(() => window.__finishOpen(true));
-    await page.getByText(/已打开 PawnIO 官网/).waitFor();
-    assert(
-      await download.isVisible(),
-      "Opening the website must not claim the driver is installed",
+    let calls = 0;
+    for (const outcome of [
+      "network",
+      "checksum",
+      "canceled",
+      "restart",
+      "installed",
+    ]) {
+      await install.click();
+      calls++;
+      await page.waitForFunction(
+        (expected) => window.__installCalls === expected,
+        calls,
+      );
+      await page.getByText("正在下载并安装驱动", { exact: true }).waitFor();
+      assert(await install.isDisabled());
+      assert(await recheck.isDisabled());
+      await install.evaluate((button) => button.click());
+      assert.equal(await page.evaluate(() => window.__installCalls), calls);
+      if (outcome === "network")
+        await page.screenshot({
+          path: assets + "driver-install-pending-" + theme + ".png",
+        });
+      await page.evaluate((result) => window.__finishInstall(result), outcome);
+      await recheck.waitFor({ state: "visible" });
+      await page.waitForFunction(
+        () => !document.querySelector(".temperature-driver button").disabled,
+      );
+      await page.waitForTimeout(350);
+      const text = await page.locator(".temperature-driver").innerText();
+      if (outcome === "network") assert.match(text, /下载失败/);
+      if (outcome === "checksum") {
+        assert.match(text, /校验失败/);
+        await page.screenshot({
+          path: assets + "driver-download-error-" + theme + ".png",
+        });
+      }
+      if (outcome === "canceled") assert.match(text, /已取消管理员授权/);
+      if (outcome === "restart") {
+        assert.match(text, /手动重启/);
+        assert.equal(
+          await page
+            .getByRole("button", { name: "下载安装驱动", exact: true })
+            .count(),
+          1,
+        );
+        await page.screenshot({
+          path: assets + "driver-install-restart-" + theme + ".png",
+        });
+      }
+    }
+    assert.equal(
+      await page
+        .getByRole("button", { name: "下载安装驱动", exact: true })
+        .count(),
+      0,
     );
-    await recheck.click();
-    await page.getByText(/尚未检测到 PawnIO/).waitFor();
-    await page.evaluate(() => {
-      window.__driverMissing = false;
-    });
-    await recheck.click();
-    await page.getByText(/已检测到 PawnIO/).waitFor();
-    assert.equal(await download.count(), 0);
     await page.waitForTimeout(1200);
     assert.match(
       await page.locator(".cpu-temperature").innerText(),
@@ -118,18 +159,22 @@ try {
     });
     await page.setViewportSize({ width: 460, height: 850 });
     await page.getByRole("button", { name: "CPU", exact: true }).click();
-    await download.waitFor();
-    await page.waitForTimeout(1200);
-    assert(
-      !/已检测到 PawnIO/.test(
-        await page.locator(".temperature-driver").innerText(),
-      ),
+    await page
+      .getByRole("button", { name: "下载安装驱动", exact: true })
+      .waitFor();
+    await recheck.click();
+    await page.getByText(/尚未检测到 PawnIO/).waitFor();
+    assert.equal(
+      await page.evaluate(() => window.__installCalls),
+      calls,
+      "Detection must not download/install",
     );
     assert(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,
       ),
     );
+    await page.waitForTimeout(1200);
     await page.screenshot({
       path: assets + "driver-download-narrow-" + theme + ".png",
     });
@@ -137,7 +182,7 @@ try {
   }
   assert.deepEqual(errors, []);
   console.log(
-    "PASS: publisher download, duplicate prevention, opening failure/retry, explicit detection, resumed readings and light/dark/narrow presentation (simulated driver).",
+    "PASS: click-only online installation, pending duplicates, download/checksum/UAC failures, reboot result, automatic detection, resumed readings, light/dark/narrow presentation (simulated installer).",
   );
 } finally {
   await browser.close();

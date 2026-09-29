@@ -27,7 +27,8 @@ internal static class Program
         Console.OutputEncoding = new System.Text.UTF8Encoding(false);
         Console.InputEncoding = new System.Text.UTF8Encoding(false);
         if (args.Length != 1) return 2;
-        if (args[0] == "--pawnio-status") return PawnIODriver.Status();
+        if (args[0] == "--pawnio-status") return PawnIODriver.Run(false);
+        if (args[0] == "--install-pawnio") return PawnIODriver.Run(true);
         Process parent;
         try { parent = Process.GetProcessById(int.Parse(args[0], CultureInfo.InvariantCulture)); }
         catch { return 2; }

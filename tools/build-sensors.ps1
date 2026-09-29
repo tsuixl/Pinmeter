@@ -21,7 +21,7 @@ $libraries = @('LibreHardwareMonitorLib.dll', 'HidSharp.dll', 'DiskInfoToolkit.d
 foreach ($library in $libraries) { Copy-Item -LiteralPath (Join-Path $package $library) -Destination $output -Force }
 Copy-Item -LiteralPath (Join-Path $package 'LibreHardwareMonitor.exe.config') -Destination (Join-Path $output 'pinmeter-sensors.exe.config') -Force
 $libraryPath = Join-Path $output 'LibreHardwareMonitorLib.dll'
-& $compiler /nologo /target:exe /platform:x64 /optimize+ "/out:$(Join-Path $output 'pinmeter-sensors.exe')" "/reference:$libraryPath" /reference:System.Web.Extensions.dll (Join-Path $sensorSource 'Program.cs') (Join-Path $sensorSource 'TemperatureSelection.cs') (Join-Path $sensorSource 'PawnIODriver.cs')
+& $compiler /nologo /target:exe /platform:x64 /optimize+ "/out:$(Join-Path $output 'pinmeter-sensors.exe')" "/reference:$libraryPath" /reference:System.Web.Extensions.dll (Join-Path $sensorSource 'Program.cs') (Join-Path $sensorSource 'TemperatureSelection.cs') (Join-Path $sensorSource 'PawnIODriver.cs') (Join-Path $sensorSource 'PawnIODownload.cs')
 if ($LASTEXITCODE -ne 0) { throw 'CPU helper compilation failed' }
 Copy-Item -LiteralPath (Join-Path $package 'LibreHardwareMonitor.exe.config') -Destination (Join-Path $output 'pinmeter-gpu.exe.config') -Force
 & $compiler /nologo /target:exe /platform:x64 /optimize+ "/out:$(Join-Path $output 'pinmeter-gpu.exe')" "/reference:$libraryPath" /reference:System.Web.Extensions.dll (Join-Path $sensorSource 'GpuProgram.cs')
@@ -30,6 +30,10 @@ if ($LASTEXITCODE -ne 0) { throw 'GPU helper compilation failed' }
 if ($LASTEXITCODE -ne 0) { throw 'CPU selection tests compilation failed' }
 & "$cache/selection-tests.exe"
 if ($LASTEXITCODE -ne 0) { throw 'CPU selection tests failed' }
+& $compiler /nologo /target:exe /platform:x64 "/out:$(Join-Path $cache 'driver-download-tests.exe')" /reference:System.Web.Extensions.dll (Join-Path $sensorSource 'PawnIODriver.cs') (Join-Path $sensorSource 'PawnIODownload.cs') (Join-Path $sensorSource 'tests/DriverDownloadTests.cs')
+if ($LASTEXITCODE -ne 0) { throw 'Driver download tests compilation failed' }
+& "$cache/driver-download-tests.exe"
+if ($LASTEXITCODE -ne 0) { throw 'Driver download tests failed' }
 Write-Output "CPU helper built at $output"
 # Retired distribution resource: never let a previously cached installer enter a new bundle.
 Assert-PinmeterPlainPath $output

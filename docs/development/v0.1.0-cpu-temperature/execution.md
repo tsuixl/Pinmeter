@@ -1,14 +1,17 @@
 ## 任务计划
 
-- [x] 将驱动安装改为固定官网入口和重新检测，移除安装命令及随包安装器，检查深浅主题、失败反馈和打包拒绝回归。
-
-- [x] 接入独立温度采集、逐项状态、总览与 CPU 双轴趋势。
-- [x] 保留只读驱动检测及温度重试，打开官网仅接受固定网址，无安装执行入口。
-- [ ] 验证正式主窗口打开官网、用户手动安装/重启后的真实采集，以及其他硬件和异常退出场景。
+- [x] 实现点击后自动下载、哈希/签名校验、安装与复检，验证下载边界、失败状态、已安装短路及打包不含安装器。
+- [x] 对照 Sakani 检查等待、失败、重启提示和完成状态的深浅主题及窄窗口。
+- [x] 保留独立温度采集、逐项状态和五分钟历史，完成适用自动检查。
+- [ ] 从已提交源码生成并核对新的 Windows release、安装包及对应源码。
+- [ ] 在缺驱动的干净 Windows 环境验证完整安装、实际 UAC 取消、需重启及安装后真实温度；补齐原生主窗口和其他硬件环境验收。
 
 ## 进度
 
-- Windows 宿主启动统一请求权限，温度辅助程序继承权限；缺驱动、权限不足、超时、失败与不支持独立呈现。有效温度复用五分钟历史，无效区间断开。
-- 官网入口、打开失败/重试、重复点击保护、显式重新检测、切页后清除旧反馈和温度恢复的浏览器回归通过；模拟状态不代表实际安装驱动。类型、23 项前端测试及完整项目检查通过；7 项打包回归包含拒绝历史缓存和产物中的 PawnIO 安装器。既有温度选择与平台测试继续通过。
-- Sakani 0.3.1 官方 [Button](https://main--6a5a658b3681fcc010430db5.chromatic.com/?path=/story/core-button--primary) 的默认/loading/disabled，以及 [Alert](https://main--6a5a658b3681fcc010430db5.chromatic.com/?path=/story/composite-alert--info) 的 info/danger/dark 已实际打开对照；[官方提示](assets/driver-reference-alert.png)、[官方深色错误](assets/driver-reference-alert-danger-dark.png)与应用[浅色](assets/driver-download-light.png)、[深色错误](assets/driver-download-error-dark.png)、[窄窗](assets/driver-download-narrow-light.png)已复核。直接复用标准控件，HTML 仅作布局参考；原生 DPI 和正式宿主交互仍未验收。
-- 运行包和安装包来源、资源核对及未验证项统一见 [desktop-runtime](../v0.1.0-desktop-runtime/execution.md)。本次不安装、卸载或更改用户已有驱动。
+- 当前 CPU 页提供“下载安装驱动”和“重新检测”。只有用户点击安装才下载固定官方 2.2.0 安装器；打开页面、采样和检测不会触发下载。后端固定网址、版本、参数与哈希，跨进程互斥覆盖完整操作，已安装时直接返回。包内继续禁止携带安装器。
+- 下载仅允许官方 HTTPS 发布/CDN 主机，限制跳转、大小和时间；先校验固定 SHA-256，再校验 Windows Authenticode 签名。临时目录使用管理员/System 权限，校验到安装结束期间锁定目录与文件；失败不执行安装器，安装开始后等待其退出，按真实退出码报告失败、取消或需要手动重启。
+- C# 回归覆盖允许/拒绝的下载地址、长度上限、截断和空响应、错误哈希、无签名文件、目录重命名与文件写入/删除保护，以及安装错误、取消、重启和安装后仍缺驱动。已修正目录锁必须包含目录读取访问才能阻止重命名的问题。
+- 实际通过新下载实现取得官方安装器 3,410,960 字节，SHA-256 为 `1F519A22E47187F70A1379A48CA604981C4FCF694F4E65B734AAA74A9FBA3032`，Windows 数字签名校验通过；验证探针未执行安装器，临时副本已删除。本机已有驱动，真实安装命令返回“已安装，无需重复下载安装”，未更改现有驱动。这不能代替缺驱动电脑的完整安装实测。
+- 完整 `tools/dev.ps1 check` 通过，包括辅助组件编译、自检、Rust 测试/Clippy/格式/契约和前端类型、生产构建、23 项测试与格式；3 项既有管理员/真实桌面测试仍忽略。7 项打包回归继续拒绝缓存或产物中的安装器。
+- 浏览器回归通过点击触发、等待中重复提交保护、下载/校验/UAC 错误、重启提示、安装后自动复检、温度恢复和切页状态清理。复用 Sakani 0.3.1 官方 Button/Alert，并对照[官方加载按钮](assets/driver-reference-button-loading.png)、[官方深色错误](assets/driver-reference-alert-danger-dark.png)与应用[等待](assets/driver-install-pending-light.png)、[深色错误](assets/driver-download-error-dark.png)、[重启提示](assets/driver-install-restart-dark.png)、[窄窗](assets/driver-download-narrow-light.png)；HTML 仅作布局参考。此处使用模拟安装结果，原生 DPI 与正式主窗口安装交互仍未验收。
+- 本轮运行包将在代码提交后的干净源码上构建；不自动推送、公开仓库或发布版本。

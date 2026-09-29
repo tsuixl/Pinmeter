@@ -384,29 +384,36 @@ export function App({
                       title={
                         vm.driverError
                           ? "温度驱动操作未完成"
-                          : vm.driverMissing
-                            ? "CPU 温度需要 PawnIO 驱动"
-                            : "温度驱动状态"
+                          : vm.driverInstalling
+                            ? "正在下载并安装驱动"
+                            : vm.driverPending
+                              ? "正在检测驱动"
+                              : vm.driverMissing
+                                ? "CPU 温度需要 PawnIO 驱动"
+                                : "温度驱动状态"
                       }
                       description={
                         vm.driverError ||
                         vm.driverMessage ||
-                        "请前往 pawnio.eu 下载并安装官方驱动，完成后点击“重新检测”。下载需要联网，安装时可能需要管理员授权。"
+                        (vm.driverInstalling
+                          ? "正在从官方来源下载、校验并安装 PawnIO，请等待操作完成。"
+                          : "点击后将联网下载官方 PawnIO 驱动并安装，完成后自动检测。安装时可能需要管理员授权。")
                       }
                     />
                     {vm.driverMissing && (
                       <Button
-                        loading={vm.driverPending}
+                        loading={vm.driverInstalling}
                         disabled={vm.driverPending || !vm.connected}
-                        onClick={() => void vm.openTemperatureDriverDownload()}
+                        onClick={() => void vm.installTemperatureDriver()}
                       >
-                        前往官网下载
+                        {vm.driverInstalling ? "正在处理…" : "下载安装驱动"}
                       </Button>
                     )}
                     {(vm.driverMissing ||
                       vm.driverMessage ||
                       vm.driverError) && (
                       <Button
+                        loading={vm.driverPending && !vm.driverInstalling}
                         disabled={vm.driverPending || !vm.connected}
                         onClick={() => void vm.checkTemperatureDriver()}
                       >

@@ -22,7 +22,7 @@ export interface MonitorClient {
   reconnect?(): Promise<void>;
   getHardwareInfo?(): Promise<import("../contracts/monitor").HardwareInfoDto>;
   temperatureDriverMissing?(): Promise<boolean>;
-  openTemperatureDriverDownload?(): Promise<void>;
+  installTemperatureDriver?(): Promise<string>;
   onDesktopNavigate?(listener: (page: string) => void): Promise<() => void>;
   requestExit?(): Promise<void>;
   releaseAllNetworkControl?(expectedRevision: string): Promise<void>;

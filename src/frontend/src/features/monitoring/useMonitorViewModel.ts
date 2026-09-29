@@ -44,28 +44,32 @@ export function useMonitorViewModel(client: MonitorClient) {
   const [range, setRange] = useState(300_000);
   const [anchor, setAnchor] = useState<number | null>(null);
   const [driverMissing, setDriverMissing] = useState(false);
-  const [driverPending, setDriverPending] = useState(false);
+  const [driverAction, setDriverAction] = useState<
+    "checking" | "installing" | null
+  >(null);
+  const driverPending = driverAction !== null;
+  const driverInstalling = driverAction === "installing";
   const [driverMessage, setDriverMessage] = useState("");
   const [driverError, setDriverError] = useState("");
   const driverBusy = useRef(false);
   const checkTemperatureDriver = async () => {
     if (driverBusy.current || !client.temperatureDriverMissing) return;
     driverBusy.current = true;
-    setDriverPending(true);
+    setDriverAction("checking");
     setDriverError("");
     try {
       const missing = await client.temperatureDriverMissing();
       setDriverMissing(missing);
       setDriverMessage(
         missing
-          ? "尚未检测到 PawnIO，请完成官方驱动安装后重新检测。"
+          ? "尚未检测到 PawnIO，可以点击“下载安装驱动”。"
           : "已检测到 PawnIO，温度采集将在 30 秒内自动重试；部分设备可能需要重启电脑。",
       );
     } catch (error) {
       setDriverError(String(error));
     } finally {
       driverBusy.current = false;
-      setDriverPending(false);
+      setDriverAction(null);
     }
   };
   useEffect(() => {
@@ -90,22 +94,21 @@ export function useMonitorViewModel(client: MonitorClient) {
       active = false;
     };
   }, [client, page, snapshot.connected]);
-  const openTemperatureDriverDownload = async () => {
-    if (driverBusy.current || !client.openTemperatureDriverDownload) return;
+  const installTemperatureDriver = async () => {
+    if (driverBusy.current || !client.installTemperatureDriver) return;
     driverBusy.current = true;
-    setDriverPending(true);
+    setDriverAction("installing");
     setDriverError("");
     setDriverMessage("");
     try {
-      await client.openTemperatureDriverDownload();
-      setDriverMessage(
-        "已打开 PawnIO 官网。请下载并安装官方驱动，完成后点击“重新检测”；部分设备可能需要重启电脑。",
-      );
+      setDriverMessage(await client.installTemperatureDriver());
+      if (client.temperatureDriverMissing)
+        setDriverMissing(await client.temperatureDriverMissing());
     } catch (error) {
       setDriverError(String(error));
     } finally {
       driverBusy.current = false;
-      setDriverPending(false);
+      setDriverAction(null);
     }
   };
   useEffect(() => client.start(), [client]);
@@ -148,9 +151,10 @@ export function useMonitorViewModel(client: MonitorClient) {
     ...snapshot,
     driverMissing,
     driverPending,
+    driverInstalling,
     driverMessage,
     driverError,
-    openTemperatureDriverDownload,
+    installTemperatureDriver,
     checkTemperatureDriver,
     cpuModel: snapshot.state?.cpu_model?.trim() || "CPU 型号未知",
     page,
