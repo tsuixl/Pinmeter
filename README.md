@@ -4,7 +4,7 @@
 
 轻量的系统监控工具，在主窗口、系统托盘和 Windows 任务栏查看电脑状态。
 
-目前优先支持 Windows，处于 v0.1.0 开发阶段，首个公开版本尚未发布；macOS / Linux 尚未完成实机验收。
+当前提供 [v0.1.0 Windows x64 预览版](https://github.com/tsuixl/Pinmeter/releases/tag/v0.1.0)；macOS / Linux 尚未完成实机验收。
 
 ## 功能
 
@@ -31,13 +31,15 @@ v0.1.0 开发版 Windows 实机截图，点击图片可查看原图。
 
 ## 使用
 
+下载：[Windows 安装版](https://github.com/tsuixl/Pinmeter/releases/download/v0.1.0/Pinmeter_0.1.0_x64-setup.exe) · [Windows 便携版](https://github.com/tsuixl/Pinmeter/releases/download/v0.1.0/Pinmeter-0.1.0-preview-windows-x64.zip)。源码、校验文件及已知限制见[发布说明](https://github.com/tsuixl/Pinmeter/releases/tag/v0.1.0)。
+
 Windows 启动时会请求管理员权限。CPU 温度等能力取决于硬件和驱动支持，缺少驱动时会提示原因。
 
 需要 PawnIO 驱动时，在 CPU 页点击“下载安装驱动”，即可从[官方来源](https://pawnio.eu/)自动下载、校验并安装，完成后自动检测；需要联网和管理员权限，Pinmeter 不捆绑驱动安装器。
 
 最小化后收起到托盘，点击托盘图标可恢复窗口。关闭窗口时可选择最小化或退出；网络页和“运行状态”提供解除全部网络限制的入口。
 
-使用便携版时保留整个运行目录，切换版本前完全退出旧版。当前可从源码构建：
+使用便携版时保留整个运行目录，切换版本前完全退出旧版。也可从源码构建：
 
 ```powershell
 npm.cmd --prefix src/frontend ci

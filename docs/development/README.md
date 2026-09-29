@@ -14,7 +14,7 @@ UI 开发与交接必须明确：[Sakani 官方 Storybook](https://main--6a5a658
 
 **当前实现**：主窗口包含总览、硬件信息、CPU、内存、GPU、网络、IP 与设置；基础指标保留最近五分钟趋势。已接入托盘、任务栏直显、开机自启和应用网络控制。关闭默认询问最小化或退出，最小化隐藏任务栏按钮并保留托盘。用户开启的应用流量监控在切页、托盘及界面重连期间连续累计；明确停止后再次开始建立新统计。完整发行验收尚未完成，各能力以原执行记录为准。
 
-首发验证 Windows；当前参考环境为 Windows 11 专业版 `10.0.26200`、64 位，已实际运行桌面界面与生命周期测试。macOS/Linux 的 core/platform 跨目标 check 已通过，CI 已配置但尚未远端执行；通过构建不等于已完成对应平台发行验收。
+已发布 [v0.1.0 Windows x64 预览版](https://github.com/tsuixl/Pinmeter/releases/tag/v0.1.0)。首发验证 Windows；当前参考环境为 Windows 11 专业版 `10.0.26200`、64 位，已实际运行桌面界面与生命周期测试。发布源码的 Windows、macOS 和 Linux [远端 CI](https://github.com/tsuixl/Pinmeter/actions/runs/36585620873) 已全部通过；通过构建不等于已完成对应平台发行验收。
 
 悬浮窗、磁盘实时读写、通用进程页、风扇、告警与长期历史仍后置；CPU 温度、[GPU 采集及详情页](v0.1.0-gpu-monitoring/design.md)、[应用网络排行](v0.1.0-app-network-ranking/design.md)与[应用网络控制](v0.1.0-app-network-control/design.md)已作为本版能力接入。基础下载限速与新连接禁用/恢复已实测；代理/VPN、多传输场景、升级卸载及长期验收仍按原功能逐项记录。
 
