@@ -21,7 +21,7 @@ $libraries = @('LibreHardwareMonitorLib.dll', 'HidSharp.dll', 'DiskInfoToolkit.d
 foreach ($library in $libraries) { Copy-Item -LiteralPath (Join-Path $package $library) -Destination $output -Force }
 Copy-Item -LiteralPath (Join-Path $package 'LibreHardwareMonitor.exe.config') -Destination (Join-Path $output 'pinmeter-sensors.exe.config') -Force
 $libraryPath = Join-Path $output 'LibreHardwareMonitorLib.dll'
-& $compiler /nologo /target:exe /platform:x64 /optimize+ "/out:$(Join-Path $output 'pinmeter-sensors.exe')" "/reference:$libraryPath" /reference:System.Web.Extensions.dll (Join-Path $sensorSource 'Program.cs') (Join-Path $sensorSource 'TemperatureSelection.cs') (Join-Path $sensorSource 'PawnIOInstaller.cs')
+& $compiler /nologo /target:exe /platform:x64 /optimize+ "/out:$(Join-Path $output 'pinmeter-sensors.exe')" "/reference:$libraryPath" /reference:System.Web.Extensions.dll (Join-Path $sensorSource 'Program.cs') (Join-Path $sensorSource 'TemperatureSelection.cs') (Join-Path $sensorSource 'PawnIODriver.cs')
 if ($LASTEXITCODE -ne 0) { throw 'CPU helper compilation failed' }
 Copy-Item -LiteralPath (Join-Path $package 'LibreHardwareMonitor.exe.config') -Destination (Join-Path $output 'pinmeter-gpu.exe.config') -Force
 & $compiler /nologo /target:exe /platform:x64 /optimize+ "/out:$(Join-Path $output 'pinmeter-gpu.exe')" "/reference:$libraryPath" /reference:System.Web.Extensions.dll (Join-Path $sensorSource 'GpuProgram.cs')
@@ -31,17 +31,17 @@ if ($LASTEXITCODE -ne 0) { throw 'CPU selection tests compilation failed' }
 & "$cache/selection-tests.exe"
 if ($LASTEXITCODE -ne 0) { throw 'CPU selection tests failed' }
 Write-Output "CPU helper built at $output"
-$pawnio = Join-Path $cache 'PawnIO_setup.exe'
-if (-not (Test-Path -LiteralPath $pawnio)) {
-    Invoke-WebRequest -UseBasicParsing -Uri 'https://github.com/namazso/PawnIO.Setup/releases/download/2.2.0/PawnIO_setup.exe' -OutFile $pawnio
-}
-if ((Get-FileHash -LiteralPath $pawnio -Algorithm SHA256).Hash -ne '1F519A22E47187F70A1379A48CA604981C4FCF694F4E65B734AAA74A9FBA3032') { throw 'PawnIO installer checksum mismatch' }
-if ((Get-AuthenticodeSignature -LiteralPath $pawnio).Status -ne 'Valid') { throw 'PawnIO installer signature is not valid' }
-Copy-Item -LiteralPath $pawnio -Destination $output -Force
+# Retired distribution resource: never let a previously cached installer enter a new bundle.
+Assert-PinmeterPlainPath $output
+$retiredInstaller = Join-Path $output 'PawnIO_setup.exe'
+if (Test-Path -LiteralPath $retiredInstaller) { Remove-Item -LiteralPath $retiredInstaller -ErrorAction Stop }
 Copy-Item -LiteralPath (Join-Path $sensorSource 'licenses') -Destination $output -Recurse -Force
 if ($env:PINMETER_HELPER_STAGE -ne 'tauri') { foreach ($profile in @('debug', 'release')) {
     $resources = Join-Path $projectRoot "src/backend/target/$profile/sensors"
     New-Item -ItemType Directory -Path $resources -Force | Out-Null
+    Assert-PinmeterPlainPath $resources
+    $retiredInstaller = Join-Path $resources 'PawnIO_setup.exe'
+    if (Test-Path -LiteralPath $retiredInstaller) { Remove-Item -LiteralPath $retiredInstaller -ErrorAction Stop }
     Get-ChildItem -LiteralPath $output | Copy-Item -Destination $resources -Recurse -Force
 }
 }

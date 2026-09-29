@@ -33,6 +33,8 @@ Captured from the v0.1.0 development build on Windows. The screenshots show the 
 
 On Windows, Pinmeter requests administrator privileges at startup. Features such as CPU temperature monitoring depend on hardware and driver support; the app explains when a required driver is missing.
 
+If PawnIO is required, use the CPU page to open the [official download site](https://pawnio.eu/), install the driver, and check again. Pinmeter does not bundle the driver installer.
+
 Minimizing hides the window in the system tray. Click the tray icon to restore it. Closing the window lets you choose between minimizing and exiting. The Network page and Runtime Status panel provide an option to remove all network restrictions.
 
 Keep the entire application directory when using a portable build, and fully exit the old version before switching. You can currently build from source by running these commands from the repository root:

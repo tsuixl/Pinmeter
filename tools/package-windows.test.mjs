@@ -63,6 +63,19 @@ test('does not overwrite an existing runtime', () => {
   assert.throws(() => packageWindows(f), /Output already contains runtime files/);
 });
 
+test('rejects a retired driver installer in cached resources and delivered files', () => {
+  const f = fixture();
+  const stale = path.join(path.dirname(f.executable), 'sensors/PawnIO_setup.exe');
+  fs.writeFileSync(stale, 'old cached installer');
+  assert.throws(() => packageWindows(f), /Retired PawnIO installer/);
+  assert(!fs.existsSync(path.join(f.outputDirectory, 'Pinmeter.exe')));
+  fs.unlinkSync(stale);
+  packageWindows(f);
+  const entries = resourceManifest(f.hostDirectory, f.resources, f.executable);
+  fs.writeFileSync(path.join(f.outputDirectory, 'sensors/PawnIO_setup.exe'), 'unexpected installer');
+  assert.throws(() => verifyPackage(entries, f.outputDirectory), /Retired PawnIO installer/);
+});
+
 test('requires common license resources and detects a damaged license in the delivered package', () => {
   const f = fixture();
   const baseConfig = path.join(f.hostDirectory, 'tauri.conf.json');

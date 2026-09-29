@@ -32,13 +32,11 @@ The driver archive alone does not populate its PawnPP submodule.
 The driver is a separate installed component; the exception covers independent
 modules using its device IO control interface, subject to its full terms.
 
-Official signed installer, unmodified, installed only at the user's request:
-https://github.com/namazso/PawnIO.Setup/releases/tag/2.2.0
-SHA-256: 1f519a22e47187f70a1379a48ca604981c4fcf694f4e65b734aaa74a9fba3032
-The Setup repository contains the release README, not the driver's source.
-Use the driver and submodule source locations above. The separate installer
-implementation/license is not supplied by that release repository; its full
-redistribution/source review remains open before public binary distribution.
+The PawnIO driver and its installer are not bundled with Pinmeter.
+Users obtain and install the official driver directly from https://pawnio.eu/.
+Pinmeter only detects installation and opens that fixed publisher page on request.
+The source references above describe the separately installed driver, not an
+installer redistributed by this application. Embedded LHM modules remain listed above.
 
 Support DLL packages
 The distributed DLLs were matched byte-for-byte against the following official

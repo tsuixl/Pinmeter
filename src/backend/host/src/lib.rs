@@ -71,7 +71,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::get_hardware_info,
             commands::temperature_driver_missing,
-            commands::install_temperature_driver,
+            commands::open_temperature_driver_download,
             commands::get_app_exit_state,
             commands::resolve_app_close,
             commands::minimize_to_tray,

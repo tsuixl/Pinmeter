@@ -384,33 +384,32 @@ export function App({
                       title={
                         vm.driverError
                           ? "温度驱动操作未完成"
-                          : vm.driverPending
-                            ? "正在安装温度驱动"
-                            : vm.driverMissing
-                              ? "安装 CPU 温度驱动"
-                              : "温度驱动安装结果"
+                          : vm.driverMissing
+                            ? "CPU 温度需要 PawnIO 驱动"
+                            : "温度驱动状态"
                       }
                       description={
                         vm.driverError ||
                         vm.driverMessage ||
-                        "安装随应用提供的官方 PawnIO 驱动，以读取 CPU 温度。无需联网，可能需要确认管理员授权。"
+                        "请前往 pawnio.eu 下载并安装官方驱动，完成后点击“重新检测”。下载需要联网，安装时可能需要管理员授权。"
                       }
                     />
                     {vm.driverMissing && (
                       <Button
                         loading={vm.driverPending}
                         disabled={vm.driverPending || !vm.connected}
-                        onClick={() => void vm.installTemperatureDriver()}
+                        onClick={() => void vm.openTemperatureDriverDownload()}
                       >
-                        {vm.driverPending
-                          ? "正在安装…"
-                          : vm.driverError
-                            ? "重试安装"
-                            : "安装温度驱动"}
+                        前往官网下载
                       </Button>
                     )}
-                    {!vm.driverMissing && vm.driverError && (
-                      <Button onClick={() => void vm.checkTemperatureDriver()}>
+                    {(vm.driverMissing ||
+                      vm.driverMessage ||
+                      vm.driverError) && (
+                      <Button
+                        disabled={vm.driverPending || !vm.connected}
+                        onClick={() => void vm.checkTemperatureDriver()}
+                      >
                         重新检测
                       </Button>
                     )}

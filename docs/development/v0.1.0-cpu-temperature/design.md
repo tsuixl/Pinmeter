@@ -9,9 +9,9 @@
 
 ## 方案
 
-- 2026-09-18：CPU 页检测到缺少 PawnIO 时提供“安装温度驱动”。随 Windows 运行包携带官方签名 PawnIO 2.2.0 安装器，点击后用固定 `-install -silent` 参数安装，无需测试电脑联网；沿用宿主管理员权限。安装前验证固定 SHA-256，安装中禁止重复提交，安装失败可重试；完成后重新读取安装状态，现有温度 worker 最迟 30 秒重试。安装成功不等于硬件一定提供温度，仍保留采集错误与必要重启提示。
-- 状态检测和安装封装在 platform/sensors，Rust 平台适配管理辅助进程，宿主命令仅允许主窗口调用；ViewModel 通过统一客户端管理等待与反馈。仅用户点击安装才改变系统，检测与启动应用不安装驱动。使用 Sakani 0.3.1 的 [Button](https://main--6a5a658b3681fcc010430db5.chromatic.com/?path=/story/core-button--primary) 和 [Alert](https://main--6a5a658b3681fcc010430db5.chromatic.com/?path=/story/composite-alert--info)，HTML 仅参考布局。
-- 固定安装器来自 [官方 2.2.0 release](https://github.com/namazso/PawnIO.Setup/releases/tag/2.2.0)，SHA-256 `1F519A22E47187F70A1379A48CA604981C4FCF694F4E65B734AAA74A9FBA3032`；随包保留官方来源和许可信息，不自动卸载其他应用共用的驱动。
+- CPU 页缺少 PawnIO 时提供“前往官网下载”和“重新检测”。应用只打开固定 [PawnIO 官网](https://pawnio.eu/)，由用户下载并安装；包内不再携带或执行安装器。既有驱动检测及温度 worker 的重试保留，检测到安装不等于硬件一定提供有效温度。
+- 状态检测封装在 platform/sensors，打开固定网址由 Rust 平台适配完成；宿主仅允许主窗口调用，View 经 ViewModel 与客户端操作。没有接受任意 URL、路径或安装参数的入口。使用 Sakani 0.3.1 的 [Button](https://main--6a5a658b3681fcc010430db5.chromatic.com/?path=/story/core-button--primary) 和 [Alert](https://main--6a5a658b3681fcc010430db5.chromatic.com/?path=/story/composite-alert--info)，HTML 仅参考布局。
+- 构建停止下载/复制安装器，清除受管辅助组件输出中的历史安装器；打包检查拒绝夹带该文件。保留实际使用的传感器库、嵌入模块及来源/许可信息，不卸载其他应用共享的驱动。
 
 - 沿用[产品设计](../../design/product-design.md)、[架构](../../architecture/overview.md)和[Windows 调研](../../research/windows-monitoring.md)的可选独立传感器进程。Sakani StatCard 为视觉标准，HTML 仅参考布局。
 - Windows x64 helper 放在 platform 所属 sensors 目录，用系统 .NET Framework 编译器构建，仅开启 LHM CPU 分组。CPU 优先封装温度或实际 Die 温度，再用 Tctl/Tdie、最后核心最高温度；缺失或无效值不能变成零。多 CPU 使用每颗 CPU 所选读数的最高值，任一缺失不发布部分成功。每次更新前清除固定版本 LHM 的温度缓存，避免跳过读取时复用旧温度。

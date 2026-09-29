@@ -105,19 +105,11 @@ pub async fn temperature_driver_missing(window: WebviewWindow) -> Result<bool, S
 }
 
 #[tauri::command]
-pub async fn install_temperature_driver(window: WebviewWindow) -> Result<String, String> {
+pub async fn open_temperature_driver_download(window: WebviewWindow) -> Result<(), String> {
     authorize(&window)?;
-    let helper = window
-        .app_handle()
-        .path()
-        .resource_dir()
+    tauri::async_runtime::spawn_blocking(pinmeter_platform::temperature_driver::open_download_page)
+        .await
         .map_err(|e| e.to_string())?
-        .join("sensors/pinmeter-sensors.exe");
-    tauri::async_runtime::spawn_blocking(move || {
-        pinmeter_platform::temperature_driver::install(&helper)
-    })
-    .await
-    .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]

@@ -22,8 +22,8 @@ export class TauriMonitorClient extends ObservableClient {
   temperatureDriverMissing() {
     return invoke<boolean>("temperature_driver_missing");
   }
-  installTemperatureDriver() {
-    return invoke<string>("install_temperature_driver");
+  openTemperatureDriverDownload() {
+    return invoke<void>("open_temperature_driver_download");
   }
   onDesktopNavigate(listener: (page: string) => void) {
     return listen<string>("desktop-navigate", ({ payload }) =>

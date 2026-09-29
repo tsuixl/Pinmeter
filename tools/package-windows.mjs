@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 export const requiredRuntimeFiles = [
   'Pinmeter.exe',
   'sensors/pinmeter-sensors.exe', 'sensors/pinmeter-sensors.exe.config',
-  'sensors/PawnIO_setup.exe', 'sensors/licenses/PawnIO-COPYING.txt',
+  'sensors/licenses/PawnIO-COPYING.txt',
   'sensors/licenses/PawnIO-NOTICE.txt', 'sensors/licenses/SOURCES.txt',
   'sensors/pinmeter-gpu.exe', 'sensors/pinmeter-gpu.exe.config',
   ...['LibreHardwareMonitorLib.dll', 'HidSharp.dll', 'DiskInfoToolkit.dll',
@@ -61,6 +61,8 @@ export function resourceManifest(hostDirectory, resources, executable) {
   for (const entry of entries) {
     assert(fs.statSync(entry.source).isFile(), `Missing source: ${entry.source}`);
     const key = entry.relative.toLowerCase();
+    assert(path.basename(entry.source).toLowerCase() !== 'pawnio_setup.exe',
+      'Retired PawnIO installer must not be distributed');
     assert(!names.has(key), `Duplicate package path: ${entry.relative}`);
     names.add(key);
   }
@@ -68,6 +70,8 @@ export function resourceManifest(hostDirectory, resources, executable) {
 }
 
 export function verifyPackage(entries, outputDirectory) {
+  assert(!filesUnder(outputDirectory).some(file => path.basename(file).toLowerCase() === 'pawnio_setup.exe'),
+    'Retired PawnIO installer must not be distributed');
   for (const name of requiredRuntimeFiles) {
     assert(fs.existsSync(path.join(outputDirectory, name)), `Missing runtime file: ${name}`);
   }

@@ -49,11 +49,23 @@ export function useMonitorViewModel(client: MonitorClient) {
   const [driverError, setDriverError] = useState("");
   const driverBusy = useRef(false);
   const checkTemperatureDriver = async () => {
+    if (driverBusy.current || !client.temperatureDriverMissing) return;
+    driverBusy.current = true;
+    setDriverPending(true);
     setDriverError("");
     try {
-      setDriverMissing(await client.temperatureDriverMissing!());
+      const missing = await client.temperatureDriverMissing();
+      setDriverMissing(missing);
+      setDriverMessage(
+        missing
+          ? "尚未检测到 PawnIO，请完成官方驱动安装后重新检测。"
+          : "已检测到 PawnIO，温度采集将在 30 秒内自动重试；部分设备可能需要重启电脑。",
+      );
     } catch (error) {
       setDriverError(String(error));
+    } finally {
+      driverBusy.current = false;
+      setDriverPending(false);
     }
   };
   useEffect(() => {
@@ -64,6 +76,8 @@ export function useMonitorViewModel(client: MonitorClient) {
     )
       return;
     let active = true;
+    setDriverMessage("");
+    setDriverError("");
     void client
       .temperatureDriverMissing()
       .then((missing) => {
@@ -76,15 +90,17 @@ export function useMonitorViewModel(client: MonitorClient) {
       active = false;
     };
   }, [client, page, snapshot.connected]);
-  const installTemperatureDriver = async () => {
-    if (driverBusy.current || !client.installTemperatureDriver) return;
+  const openTemperatureDriverDownload = async () => {
+    if (driverBusy.current || !client.openTemperatureDriverDownload) return;
     driverBusy.current = true;
     setDriverPending(true);
     setDriverError("");
     setDriverMessage("");
     try {
-      setDriverMessage(await client.installTemperatureDriver());
-      setDriverMissing(await client.temperatureDriverMissing!());
+      await client.openTemperatureDriverDownload();
+      setDriverMessage(
+        "已打开 PawnIO 官网。请下载并安装官方驱动，完成后点击“重新检测”；部分设备可能需要重启电脑。",
+      );
     } catch (error) {
       setDriverError(String(error));
     } finally {
@@ -134,7 +150,7 @@ export function useMonitorViewModel(client: MonitorClient) {
     driverPending,
     driverMessage,
     driverError,
-    installTemperatureDriver,
+    openTemperatureDriverDownload,
     checkTemperatureDriver,
     cpuModel: snapshot.state?.cpu_model?.trim() || "CPU 型号未知",
     page,
