@@ -1,7 +1,7 @@
 ## 任务计划
 
 - [x] 将已选设计稿导出为宿主多尺寸图标，接入应用、托盘、NSIS 与 GitHub README 展示。
-- [ ] 检查图标格式、深浅背景和小尺寸，构建并核对本次 Windows 运行包与安装器。
+- [x] 检查图标格式、深浅背景和小尺寸，构建并核对本次 Windows 运行包与安装器。
 
 - [x] 根据名称和产品定位生成应用/安装共用图标设计稿，保存原图与生成说明，检查透明通道及视觉轮廓。
 
@@ -27,7 +27,10 @@
 ## 进度
 
 - 2026-10-02 图标接入：采用用户确认的设计稿，经锁定 Tauri CLI 2.11.4 `icon` 命令导出到临时目录后替换已有宿主图标集合；移除无引用旧 SVG。Windows ICO 包含 16/24/32/48/64/256 像素，PNG 尺寸与文件名一致且角点透明；NSIS 安装和卸载图标显式引用 `icons/icon.ico`，窗口与托盘仍复用默认宿主图标。中英文 README 展示同一 PNG，未修改 GitHub 账户头像、未推送或发布。前端标识和深浅/折叠截图见 [main-window 执行记录](../v0.1.0-main-window/execution.md)。
-- 本机原缺少 npm 依赖与 Rust，已使用锁文件安装前端依赖，并从 Rust 官方安装 1.98.1 minimal 工具链（未修改全局 PATH）；项目 `prepare` 辅助组件构建及其既有检查通过。文档/工程检查与差异格式检查通过，正在通过项目互斥入口构建 Windows release/NSIS；完成后补充实际运行包路径与核对结果。
+- 本机原缺少 npm 依赖与 Rust，已使用锁文件安装前端依赖，并从 Rust 官方安装 1.98.1 minimal 工具链（未修改全局 PATH）；项目 `prepare` 辅助组件构建及其既有检查通过。首次 npm 下载停滞后，使用缓存、关闭 audit 并设置有界下载重试重新执行 `npm ci` 成功，未改变锁文件。
+- 本次交付来源为干净提交 `ec7c30cba9d57711f29601c728957355d35cb26d`，通过 `PINMETER_HOLD_DELIVERY=1 node tools/desktop.mjs build -- --locked` 完成前端、helper、Rust release 与 NSIS 构建；构建锁与 test1 独占保留至交付核对结束。运行入口为 `src/backend/target/test1/Pinmeter.exe`，完整 40 个运行文件路径与源文件 SHA-256 一致；安装器由构建缓存复制到同目录 `Pinmeter_0.1.0_x64-setup.exe`，复制哈希一致。EXE SHA-256：`5B32BE66C03DEDBEE93E10ABD2D9E0C428A44FE0BED27DCC42DF6AE3B80F6884`；安装器 SHA-256：`14D1474B7DD401A868E83AA9B92D185FE8B08D1AFC46C382FF4E8E5EA5D632A9`。构建只有 MSVC 输出“创建库和对象”的 linker_messages 提示，无编译错误。
+- 已将两个 EXE 作为数据读取 Windows PE 图标资源，应用与安装器的 16/24/32/48/64/256 六个图标帧均与新 ICO 逐字节一致；核对结果保留在运行目录 `icon-verification.json`。从运行包启动 CPU/GPU helper 均正常退出：GPU 两帧由 warming 转 normal 并返回真实指标；CPU 明确返回缺少 PawnIO 驱动的 unsupported，未安装驱动。未启动需要 UAC 的主程序，未执行真实安装/卸载、原生托盘、多 DPI 或 Shell 缓存刷新验收；图标资源验证不替代这些实机检查。
+- 本批最终 `node tools/check-project.mjs` 通过（236 个本地 Markdown 链接及工程约束），类型、修改文件格式与差异检查通过。前端深浅主题/折叠截图已保存；完整 UI 视觉验收状态仍见 main-window。GitHub README 改动仅在本地提交，线上须推送后生效；未上传或替换已有 Release。
 
 - 图标设计（2026-10-02）：交付 [透明 PNG 设计稿](assets/pinmeter-icon-concept-v1.png)，内置 imagegen 生成，完整提示词见 design.md。实际尺寸 1254×1254、32 位 ARGB，角点 alpha=0，中心 alpha=254；SHA-256 为 `E7F540626D1D7B397C7576DD38B0729FDC983DCC8E5A36FE096AF20098C98D7F`。已目视确认单一图标、橙色固定针/仪表轮廓、白色指针及无文字；色值存在生成偏差，像素级多尺寸适配与深浅背景视觉验收未完成。
 - 本轮仅增加设计文档与预览素材，运行图标和安装配置保持现状，EXE 未重新构建；本工作区不存在 `src/backend/target/`，没有可核对并复用的 Windows EXE。未执行应用、安装器或管理员场景测试。
