@@ -1,8 +1,8 @@
 ## 任务计划
 
-- [ ] 同步 v0.1.1 版本、发布入口和说明，推送准备提交并确认三平台 CI。
-- [ ] 从该干净提交重建 Windows 包，生成并核对安装器、便携 ZIP、源码 ZIP 与校验文件。
-- [ ] 创建并发布 v0.1.1 预览 Release，核对标签、附件摘要与匿名下载。
+- [x] 同步 v0.1.1 版本、发布入口和说明，推送准备提交并确认三平台 CI。
+- [x] 从该干净提交重建 Windows 包，生成并核对安装器、便携 ZIP、源码 ZIP 与校验文件。
+- [x] 创建并发布 v0.1.1 预览 Release，核对标签、附件摘要与匿名下载。
 
 - [x] 将已选设计稿导出为宿主多尺寸图标，接入应用、托盘、NSIS 与 GitHub README 展示。
 - [x] 检查图标格式、深浅背景和小尺寸，构建并核对本次 Windows 运行包与安装器。
@@ -30,7 +30,12 @@
 
 ## 进度
 
-- v0.1.1 发布准备（2026-10-02）：已核对用户推送的 `bafa356` 与远端 main 一致，选择补丁版本并保留预览标记。同步前后端清单、Cargo/npm 锁文件中的项目版本、宿主及请求 User-Agent；中英文首页更新新版本下载入口，历史截图与功能目录名保持原版本。类型、清单格式、Rust 格式、锁文件元数据及工程检查通过（237 个本地 Markdown 链接）；待准备提交的远端三平台 CI 与本次 Windows release 构建完成后发布，不复用标为 0.1.0 的旧二进制。
+- v0.1.1 已于 2026-10-02 20:04（Asia/Shanghai）[公开发布为 Windows 预览版](https://github.com/tsuixl/Pinmeter/releases/tag/v0.1.1)，保留 v0.1.0。发布源码为 `368e1adad6694c488c201680a74e9a0f7a27973c`，其 [Windows/macOS/Linux CI](https://github.com/tsuixl/Pinmeter/actions/runs/37002886261) 全部通过；已推送的附注标签 `v0.1.1` 解引用到同一提交，Release target、源码 ZIP 和 Windows 构建来源一致。发布后的本段记录不改变标签或构建源码。
+- Windows 从上述干净提交经 `PINMETER_HOLD_DELIVERY=1 node tools/desktop.mjs build -- --locked` 重建，复用已确认空闲的 `src/backend/target/test1/` 并保持构建锁与目录独占至交付结束。运行入口 `src/backend/target/test1/Pinmeter.exe` 的产品版本为 `0.1.1`，SHA-256 为 `465B32276B428AF6E13E3591F54AC6B428C888D266A6808BC0BF09B0C7BE0C07`；40 个完整运行文件路径与哈希通过核对。
+- 四个发行附件保存在 `src/backend/target/test1/release-assets/`：`Pinmeter_0.1.1_x64-setup.exe`、`Pinmeter-0.1.1-preview-windows-x64.zip`、`Pinmeter-0.1.1-source.zip`、`SHA256SUMS.txt`。便携包包含 40 个运行文件及两份去除本机绝对路径的构建来源资料，42 个 ZIP 条目逐项哈希核对通过；源码包 331 个文件逐一核对 Git blob ID。安装器复制哈希一致，上传后 GitHub 的四个附件摘要/长度均与本地一致；公开后再匿名下载四个附件，长度和 SHA-256 均通过。公开校验值见 [SHA256SUMS.txt](https://github.com/tsuixl/Pinmeter/releases/download/v0.1.1/SHA256SUMS.txt)，详细本地证据为运行目录内 `release-verification.json` 与 `public-release-verification.json`。
+- 本次运行包的 CPU/GPU helper 启动并正常退出：GPU 返回 normal 与真实指标，CPU 返回缺少 PawnIO 的 unsupported；未安装驱动、未启动需 UAC 的主程序、未执行真实安装/升级/卸载。发布说明保留管理员、VPN、多 DPI、多屏、休眠和长时验收边界；CI 与打包通过不替代这些实机验证。
+
+- v0.1.1 发布准备（2026-10-02）：已核对用户推送的 `bafa356` 与远端 main 一致，选择补丁版本并保留预览标记。同步前后端清单、Cargo/npm 锁文件中的项目版本、宿主及请求 User-Agent；中英文首页更新新版本下载入口，历史截图与功能目录名保持原版本。类型、清单格式、Rust 格式、锁文件元数据及工程检查通过；从发布准备提交重建 0.1.1 二进制，未复用 0.1.0 包。发布流程及最终核对结果见上文。
 
 - 2026-10-02 图标接入：采用用户确认的设计稿，经锁定 Tauri CLI 2.11.4 `icon` 命令导出到临时目录后替换已有宿主图标集合；移除无引用旧 SVG。Windows ICO 包含 16/24/32/48/64/256 像素，PNG 尺寸与文件名一致且角点透明；NSIS 安装和卸载图标显式引用 `icons/icon.ico`，窗口与托盘仍复用默认宿主图标。中英文 README 展示同一 PNG，未修改 GitHub 账户头像、未推送或发布。前端标识和深浅/折叠截图见 [main-window 执行记录](../v0.1.0-main-window/execution.md)。
 - 本机原缺少 npm 依赖与 Rust，已使用锁文件安装前端依赖，并从 Rust 官方安装 1.98.1 minimal 工具链（未修改全局 PATH）；项目 `prepare` 辅助组件构建及其既有检查通过。首次 npm 下载停滞后，使用缓存、关闭 audit 并设置有界下载重试重新执行 `npm ci` 成功，未改变锁文件。
