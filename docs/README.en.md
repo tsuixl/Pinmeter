@@ -1,5 +1,7 @@
 # Pinmeter
 
+<img src="../src/backend/host/icons/128x128.png" alt="Pinmeter icon" width="96" height="96" />
+
 [简体中文](../README.md) | **English**
 
 A lightweight system monitor for viewing your computer's status in the main window, system tray, and Windows taskbar.

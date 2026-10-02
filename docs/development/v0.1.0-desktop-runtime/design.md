@@ -30,7 +30,7 @@ Constraints: exactly one icon, transparent exterior, no text, no letters, no num
 
 </details>
 
-- 应用与安装图标设计稿：依据产品名称「Pin + Meter：固定在屏幕角落的小仪表」，探索固定针与仪表指针结合的简洁标识；应用和安装程序共用主标识，避免添加安装箱、文字及小尺寸细节。本轮使用内置 imagegen 生成透明 PNG 设计稿，保存于本功能 `assets/`，暂不替换运行资源。视觉方向参考 Sakani 的中性色与品牌色；Sakani 是视觉与组件标准，HTML 预览仅提供布局结构。设计稿不等于已通过 ICO 多尺寸、深浅桌面背景、任务栏或安装器实机验收；采用后再导出并接入宿主与 NSIS。
+- 应用与安装图标：用户已采用上述设计稿。保留原稿，使用锁定版本的 Tauri CLI 导出宿主 PNG、Windows 多尺寸 ICO 与已有其他平台格式；移除已被替换且无引用的旧 SVG。应用窗口、托盘和 NSIS 安装器使用同一标识，并显式配置安装器图标；前端品牌区和 favicon 复用导出图片，中英文 GitHub README 展示同一图标。只更新仓库内展示资源，不修改个人头像，不自动 push 或发布。Sakani 是视觉与组件标准，HTML 预览仅提供布局结构。检查小尺寸与深浅背景并保留预览，构建 Windows release/NSIS，分别记录资源核对和实际运行边界。
 
 - 首次预览发布：先核对远端 CI，修复托管 Windows 的 PowerShell 模块搜索路径及非 Windows 条件编译问题；Windows PowerShell 子进程使用系统内置模块目录，避免继承 PowerShell 7 模块而丢失命令。通过 CI 后，从修复后的干净提交重新构建 Windows 预览包，发布标签、二进制和源码附件对应同一构建提交。GitHub Release 标记为预览版，说明未完成的实机验收；上传并核对全部附件后再发布，不把本地校验代替远端 CI。
 

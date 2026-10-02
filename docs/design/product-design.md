@@ -14,7 +14,7 @@
 
 **Pinmeter 是一款小巧、精准、干净、实用的跨平台系统性能监控工具，让用户一瞥就能了解电脑状态。**
 
-名称采用当前仓库名 Pinmeter，含义是 **Pin + Meter：固定在屏幕角落的小仪表**。中文名、Logo 和正式标语尚未确定。
+名称采用当前仓库名 Pinmeter，含义是 **Pin + Meter：固定在屏幕角落的小仪表**。应用 Logo 已选用橙色固定针与仪表盘结合的标识，应用及安装器共用；原稿与接入见 [desktop-runtime](../development/v0.1.0-desktop-runtime/design.md)。中文名和正式标语尚未确定。
 
 建议英文简介：
 

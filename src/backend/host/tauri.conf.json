@@ -29,6 +29,6 @@
       "../platform/assets/taskbar/NOTICE": "licenses/Geist-NOTICE.txt",
       "../../frontend/src/features/ip/assets/brands/NOTICE": "licenses/brands-NOTICE.txt"
     },
-    "windows": { "nsis": { "installMode": "currentUser" } }
+    "windows": { "nsis": { "installMode": "currentUser", "installerIcon": "icons/icon.ico", "uninstallerIcon": "icons/icon.ico" } }
   }
 }

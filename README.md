@@ -1,5 +1,7 @@
 # Pinmeter
 
+<img src="src/backend/host/icons/128x128.png" alt="Pinmeter 图标" width="96" height="96" />
+
 **简体中文** | [English](docs/README.en.md)
 
 轻量的系统监控工具，在主窗口、系统托盘和 Windows 任务栏查看电脑状态。
