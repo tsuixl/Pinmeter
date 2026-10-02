@@ -91,6 +91,48 @@ fn sample(at: u64, bytes: u64) -> RawSample {
 }
 
 #[test]
+fn long_gap_rewarms_network_instead_of_showing_sleep_traffic_as_a_spike() {
+    let mut monitor = Monitor::new(Settings::default(), None);
+    assert!(monitor.accept(sample(1000, 100), 0));
+    assert!(monitor.accept(sample(2000, 1100), 0));
+    let before = monitor.latest_at(2000).unwrap();
+    assert_eq!(before.download.value, Some(1000.));
+    assert_eq!(
+        monitor.latest_at(3_602_000).unwrap().download.status,
+        Status::Stale
+    );
+    monitor.reset_baseline();
+    assert!(monitor.accept(sample(3_602_000, 1_000_001_100), 0));
+    let warmed = monitor.latest_at(3_602_000).unwrap();
+    assert_eq!(warmed.download.status, Status::Warming);
+    assert!(warmed.download.value.is_none());
+    assert!(warmed.generation > before.generation);
+    assert!(monitor.accept(sample(3_603_000, 1_000_003_100), 0));
+    assert_eq!(
+        monitor.latest_at(3_603_000).unwrap().download.value,
+        Some(2000.)
+    );
+}
+
+#[test]
+fn eight_hours_of_samples_keep_only_the_bounded_five_minute_history() {
+    let mut monitor = Monitor::new(Settings::default(), None);
+    for second in 1..=8 * 60 * 60u64 {
+        assert!(monitor.accept(sample(second * 1000, second * 1024), 0));
+        assert!(monitor.history.len() <= 301);
+    }
+    assert_eq!(monitor.history.len(), 301);
+    assert_eq!(
+        monitor.history.back().unwrap().elapsed_ms - monitor.history.front().unwrap().elapsed_ms,
+        300_000
+    );
+    assert_eq!(
+        monitor.latest_at(28_800_000).unwrap().download.value,
+        Some(1024.)
+    );
+}
+
+#[test]
 fn gpu_history_freezes_samples_and_marks_a_stopped_producer_stale() {
     use pinmeter_core::gpu::{GpuMetric, GpuSample};
     let mut monitor = Monitor::new(Settings::default(), None);
