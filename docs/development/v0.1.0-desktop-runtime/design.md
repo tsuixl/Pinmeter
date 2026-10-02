@@ -11,6 +11,27 @@
 
 ## 方案
 
+图标设计稿：[pinmeter-icon-concept-v1.png](assets/pinmeter-icon-concept-v1.png)。参考 [Sakani 官方文档](https://main--6a5a658b3681fcc010430db5.chromatic.com/?path=/docs/sakani-design-system--docs)及仓库 tokens.css 的中性色 `#141414`、品牌橙 `#FF4700` 和暖白 `#FAFAF9`；生成像素不保证严格等于设计变量。
+
+<details>
+<summary>图标设计稿 v1 完整生成提示词（内置 imagegen，transparent_background=true）</summary>
+
+```text
+Use case: logo-brand.
+Asset type: a finished standalone desktop application icon for Pinmeter, also used unchanged for its Windows installer.
+Product: a small, precise, clean system-performance monitor. Pinmeter means "Pin + Meter", a little instrument pinned to the corner of the screen.
+Primary request: design one strong, original symbol fusing a pushpin and a performance gauge. A compact, almost circular orange instrument head, a short broad tapering pin stem pointing downward, and a very simple gauge inside the head: dark negative-space dial, one thick warm-white partial arc and one bold warm-white needle pointing upper-right. The orange outer silhouette suggests a pinned instrument, not a navigation/location app. Integrate the parts into one cohesive logo, not separate pictograms. Generous negative space, bold geometry.
+Composition: single icon centered, straight-on, filling about 84 percent of a square canvas; a dark charcoal rounded-square app tile behind the symbol, with consistent generous inset; completely transparent outside the rounded tile. Tile corners soft and precise. The inner symbol occupies roughly 68 percent of tile width.
+Style: premium minimal flat geometric software identity, crisply antialiased, confident and quiet, compatible with Sakani UI's visual language. Very restrained subtle edge definition only, no glossy plastic or dimensional mockup.
+Color palette based on project Sakani tokens: charcoal #141414 tile, vivid orange #FF4700 symbol, warm white #FAFAF9 gauge needle/arc. Keep colors flat, high contrast.
+Small-size requirements: clearly recognizable at 32x32, thick shapes, wide gaps, no tiny ticks, no fine hairlines.
+Constraints: exactly one icon, transparent exterior, no text, no letters, no numbers, no badge, no installer box, no download arrow, no screenshot, no presentation board, no watermark, no texture, no cast shadow outside the tile, no blue/purple gradient, no map-marker hole. Create a clean 1024x1024 master.
+```
+
+</details>
+
+- 应用与安装图标设计稿：依据产品名称「Pin + Meter：固定在屏幕角落的小仪表」，探索固定针与仪表指针结合的简洁标识；应用和安装程序共用主标识，避免添加安装箱、文字及小尺寸细节。本轮使用内置 imagegen 生成透明 PNG 设计稿，保存于本功能 `assets/`，暂不替换运行资源。视觉方向参考 Sakani 的中性色与品牌色；Sakani 是视觉与组件标准，HTML 预览仅提供布局结构。设计稿不等于已通过 ICO 多尺寸、深浅桌面背景、任务栏或安装器实机验收；采用后再导出并接入宿主与 NSIS。
+
 - 首次预览发布：先核对远端 CI，修复托管 Windows 的 PowerShell 模块搜索路径及非 Windows 条件编译问题；Windows PowerShell 子进程使用系统内置模块目录，避免继承 PowerShell 7 模块而丢失命令。通过 CI 后，从修复后的干净提交重新构建 Windows 预览包，发布标签、二进制和源码附件对应同一构建提交。GitHub Release 标记为预览版，说明未完成的实机验收；上传并核对全部附件后再发布，不把本地校验代替远端 CI。
 
 - 首版收尾：保留现有服务图标与声明；补齐固定依赖的 UNIC 版权。Windows 项目入口增加共享的辅助组件准备操作，本地检查和 CI 在宿主测试前调用，继续遵守构建互斥。卸载使用明确的卸载清理命令：网络规则清理并复查后，仅移除指向本安装 EXE 的 Pinmeter 自启任务；缺辅助程序、清理失败或验证失败均中止卸载并保留应用文件，同目录升级保留原规则与自启。自动回归使用隔离夹具，不操作用户日常应用的网络规则。最终从已提交源码构建 Windows 运行包与安装包，记录适用的启动、资源及卸载检查；公开仓库和发布版本另行执行。

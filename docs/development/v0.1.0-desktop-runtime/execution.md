@@ -1,5 +1,7 @@
 ## 任务计划
 
+- [x] 根据名称和产品定位生成应用/安装共用图标设计稿，保存原图与生成说明，检查透明通道及视觉轮廓。
+
 - [x] 修复远端 CI 的 PowerShell 模块路径和非 Windows 导入问题，推送并确认检查结果。
 - [x] 从通过检查的提交重建、核对发布附件，并上传首个 Windows 预览版草稿。
 - [x] 按用户确认公开现有仓库，完成预览版发布和中英文首页下载入口。
@@ -20,6 +22,10 @@
 - [ ] 完成 macOS/Linux 宿主及实机验证；按实际需要拆分职责集中的模块。
 
 ## 进度
+
+- 图标设计（2026-10-02）：交付 [透明 PNG 设计稿](assets/pinmeter-icon-concept-v1.png)，内置 imagegen 生成，完整提示词见 design.md。实际尺寸 1254×1254、32 位 ARGB，角点 alpha=0，中心 alpha=254；SHA-256 为 `E7F540626D1D7B397C7576DD38B0729FDC983DCC8E5A36FE096AF20098C98D7F`。已目视确认单一图标、橙色固定针/仪表轮廓、白色指针及无文字；色值存在生成偏差，像素级多尺寸适配与深浅背景视觉验收未完成。
+- 本轮仅增加设计文档与预览素材，运行图标和安装配置保持现状，EXE 未重新构建；本工作区不存在 `src/backend/target/`，没有可核对并复用的 Windows EXE。未执行应用、安装器或管理员场景测试。
+- 设计稿文档检查：`node tools/check-project.mjs` 通过（231 个本地 Markdown 链接、功能文档与工程约束），`git diff --check` 通过；原图复制后 SHA-256 与生成文件一致。
 
 - 预览发布准备完成：源码 `cd6f3b1` 的 [GitHub CI](https://github.com/tsuixl/Pinmeter/actions/runs/36585620873) 在 Windows、macOS 和 Linux 全部通过。Windows 运行包与 NSIS 已由同一干净提交重新构建，入口为 `src/backend/target/test31/Pinmeter.exe`，40 个运行文件、270 个构建输入及便携 ZIP 的 41 个条目核对通过；主 EXE SHA-256 为 `31DD32643F086D027BE917FDCF70472F17DA5C1DE6DA8263824D6CC3E84C8604`。真实官方下载与签名验证也在继承 Core 模块路径的环境下通过，未执行安装器。
 - 2026-09-29 按用户确认将现有仓库改为公开并发布 [v0.1.0 Windows 预览版](https://github.com/tsuixl/Pinmeter/releases/tag/v0.1.0)，保留预发布标记。未登录 API 已核对仓库公开、Release 已发布、标签指向构建源码 `cd6f3b1ea194c2cfd3b8b3773253df0e5360191c`，以及安装器、完整便携 ZIP、对应源码 ZIP、SHA256SUMS.txt 四个附件的大小和 SHA-256。中英文 README 已提供下载入口；实际安装/卸载、缺驱动完整安装、管理员网络恢复、VPN 及长时环境仍待实测。发布后的首页更新仅涉及文档，复用已核对的 `test31`，未重新构建 EXE。
