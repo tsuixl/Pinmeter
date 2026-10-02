@@ -32,6 +32,7 @@ import {
   Checkbox,
 } from "../shared/ui/sakani";
 import { icons } from "../shared/ui/icons";
+import pinmeterIcon from "../assets/pinmeter.png";
 import type { ReadingStatus } from "../shared/contracts/monitor";
 import type { WindowClient } from "../shared/client/window-client";
 import { useWindowViewModel } from "./useWindowViewModel";
@@ -240,7 +241,7 @@ export function App({
           className="brand"
           data-tauri-drag-region={windowVm.native ? "" : undefined}
         >
-          <icons.gauge size={24} strokeWidth={1.5} />
+          <img src={pinmeterIcon} width={24} height={24} alt="" />
           <span>
             Pinmeter<span className="brand-dot">.</span>
           </span>
