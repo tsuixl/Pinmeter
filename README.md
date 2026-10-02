@@ -6,7 +6,7 @@
 
 轻量的系统监控工具，在主窗口、系统托盘和 Windows 任务栏查看电脑状态。
 
-当前提供 [v0.1.0 Windows x64 预览版](https://github.com/tsuixl/Pinmeter/releases/tag/v0.1.0)；macOS / Linux 尚未完成实机验收。
+当前提供 [v0.1.1 Windows x64 预览版](https://github.com/tsuixl/Pinmeter/releases/tag/v0.1.1)；macOS / Linux 尚未完成实机验收。
 
 ## 功能
 
@@ -33,7 +33,7 @@ v0.1.0 开发版 Windows 实机截图，点击图片可查看原图。
 
 ## 使用
 
-下载：[Windows 安装版](https://github.com/tsuixl/Pinmeter/releases/download/v0.1.0/Pinmeter_0.1.0_x64-setup.exe) · [Windows 便携版](https://github.com/tsuixl/Pinmeter/releases/download/v0.1.0/Pinmeter-0.1.0-preview-windows-x64.zip)。源码、校验文件及已知限制见[发布说明](https://github.com/tsuixl/Pinmeter/releases/tag/v0.1.0)。
+下载：[Windows 安装版](https://github.com/tsuixl/Pinmeter/releases/download/v0.1.1/Pinmeter_0.1.1_x64-setup.exe) · [Windows 便携版](https://github.com/tsuixl/Pinmeter/releases/download/v0.1.1/Pinmeter-0.1.1-preview-windows-x64.zip)。源码、校验文件及已知限制见[发布说明](https://github.com/tsuixl/Pinmeter/releases/tag/v0.1.1)。
 
 Windows 启动时会请求管理员权限。CPU 温度等能力取决于硬件和驱动支持，缺少驱动时会提示原因。
 

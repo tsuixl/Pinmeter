@@ -30,7 +30,7 @@ pub fn client() -> Result<(reqwest::Client, String), IpError> {
         .connect_timeout(Duration::from_secs(3))
         .timeout(Duration::from_secs(10))
         .pool_max_idle_per_host(1)
-        .user_agent("Pinmeter/0.1.0 (IP inspection)");
+        .user_agent("Pinmeter/0.1.1 (IP inspection)");
     if let Some(server) = c.server {
         let server = if server.contains("://") {
             server

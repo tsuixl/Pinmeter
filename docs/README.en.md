@@ -6,7 +6,7 @@
 
 A lightweight system monitor for viewing your computer's status in the main window, system tray, and Windows taskbar.
 
-The [v0.1.0 Windows x64 preview](https://github.com/tsuixl/Pinmeter/releases/tag/v0.1.0) is available. macOS and Linux have not completed testing on real devices.
+The [v0.1.1 Windows x64 preview](https://github.com/tsuixl/Pinmeter/releases/tag/v0.1.1) is available. macOS and Linux have not completed testing on real devices.
 
 ## Features
 
@@ -33,7 +33,7 @@ Captured from the v0.1.0 development build on Windows. The screenshots show the 
 
 ## Usage
 
-Download the [Windows installer](https://github.com/tsuixl/Pinmeter/releases/download/v0.1.0/Pinmeter_0.1.0_x64-setup.exe) or [Windows portable ZIP](https://github.com/tsuixl/Pinmeter/releases/download/v0.1.0/Pinmeter-0.1.0-preview-windows-x64.zip). See the [release notes](https://github.com/tsuixl/Pinmeter/releases/tag/v0.1.0) for source code, checksums, and known limitations.
+Download the [Windows installer](https://github.com/tsuixl/Pinmeter/releases/download/v0.1.1/Pinmeter_0.1.1_x64-setup.exe) or [Windows portable ZIP](https://github.com/tsuixl/Pinmeter/releases/download/v0.1.1/Pinmeter-0.1.1-preview-windows-x64.zip). See the [release notes](https://github.com/tsuixl/Pinmeter/releases/tag/v0.1.1) for source code, checksums, and known limitations.
 
 On Windows, Pinmeter requests administrator privileges at startup. Features such as CPU temperature monitoring depend on hardware and driver support; the app explains when a required driver is missing.
 

@@ -56,7 +56,7 @@ internal static class PawnIODownload
             request.AllowAutoRedirect = false;
             request.Timeout = Math.Min(20000, remaining);
             request.ReadWriteTimeout = Math.Min(15000, remaining);
-            request.UserAgent = "Pinmeter/0.1.0";
+            request.UserAgent = "Pinmeter/0.1.1";
             using (var response = (HttpWebResponse)request.GetResponse()) {
                 int status = (int)response.StatusCode;
                 if (status == 301 || status == 302 || status == 303 || status == 307 || status == 308) {

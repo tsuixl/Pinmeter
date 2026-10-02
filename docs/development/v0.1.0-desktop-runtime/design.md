@@ -1,6 +1,6 @@
 # desktop-runtime
 
-> 当前工作版本：v0.1.0 · 状态：实现中，验收以 execution.md 为准。
+> 当前工作版本：v0.1.1 · 状态：实现中，验收以 execution.md 为准。
 
 ## 目标与范围
 
@@ -10,6 +10,8 @@
 - 关闭主窗口默认询问最小化或退出，支持记住选择；与任务栏显示开关独立。悬浮窗后置；2026-09-18 开机自启纳入 [preferences](../v0.1.0-preferences/design.md)，默认关闭，开启后用当前用户最高权限登录任务启动，沿用主窗口和单实例行为。
 
 ## 方案
+
+- v0.1.1 图标更新预览发布：同步前后端、宿主和请求标识版本；保留现有预览状态及功能验收边界。推送发布准备提交并等待该提交的三平台 CI，通过后发布指向同一源码的标签及 Release。Windows 使用项目入口从干净提交构建，提供安装器、由运行文件清单生成的完整便携 ZIP、`git archive` 对应源码 ZIP 与 SHA-256 清单；先上传草稿并校验远端附件，再发布并核对匿名下载。此次用户明确授权版本发布，包含必要的推送和新标签，不覆盖旧版本。
 
 图标设计稿：[pinmeter-icon-concept-v1.png](assets/pinmeter-icon-concept-v1.png)。参考 [Sakani 官方文档](https://main--6a5a658b3681fcc010430db5.chromatic.com/?path=/docs/sakani-design-system--docs)及仓库 tokens.css 的中性色 `#141414`、品牌橙 `#FF4700` 和暖白 `#FAFAF9`；生成像素不保证严格等于设计变量。
 
