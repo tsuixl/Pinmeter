@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
 import { App } from "./App";
 import { TauriMonitorClient } from "../shared/client/tauri-client";
+import { TauriUpdateClient } from "../shared/client/tauri-update-client";
 import {
   createWindowClient,
   showStartupError,
@@ -12,12 +13,23 @@ import "./style.css";
 
 async function bootstrap() {
   const windowClient = await createWindowClient();
+  const demo =
+    import.meta.env.DEV && new URLSearchParams(location.search).has("demo");
+  const updateClient = demo
+    ? new (
+        await import("../shared/client/demo-update-client")
+      ).DemoUpdateClient(new URLSearchParams(location.search).get("update"))
+    : new TauriUpdateClient();
   const client =
     import.meta.env.DEV && new URLSearchParams(location.search).has("demo")
       ? new (await import("../shared/client/demo-client")).DemoClient()
       : new TauriMonitorClient();
   createRoot(document.getElementById("root")!).render(
-    <App client={client} windowClient={windowClient} />,
+    <App
+      client={client}
+      windowClient={windowClient}
+      updateClient={updateClient}
+    />,
   );
 }
 void bootstrap().catch(showStartupError);

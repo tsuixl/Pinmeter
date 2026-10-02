@@ -209,6 +209,9 @@ pub struct HistoryDto {
 pub fn typescript() -> String {
     let config = ts_rs::Config::default();
     let declarations = [
+        crate::updates::dto::ReleaseSectionDto::decl(&config),
+        crate::updates::dto::ReleaseNotesDto::decl(&config),
+        crate::updates::dto::UpdateSnapshotDto::decl(&config),
         crate::hardware::HardwareItemDto::decl(&config),
         crate::hardware::HardwareSectionDto::decl(&config),
         crate::hardware::HardwareInfoDto::decl(&config),

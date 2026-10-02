@@ -9,6 +9,7 @@ mod network_control;
 pub mod presenters;
 mod runtime;
 mod settings;
+mod updates;
 
 pub fn run() {
     use tauri::Manager;
@@ -26,6 +27,7 @@ pub fn run() {
         }
     }
     let app = tauri::Builder::default()
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_single_instance::init(|app, _, _| {
             if let Some(window) = app.get_webview_window("main") {
                 let _ = bridges::activate(&window);
@@ -41,6 +43,9 @@ pub fn run() {
                 .build(),
         )
         .setup(|app| {
+            let updates = updates::Updates::new(app.handle())?;
+            app.manage(updates.clone());
+            updates.start(app.handle().clone());
             if let Some(window) = app.get_webview_window("main") {
                 let _ = bridges::ensure_visible(&window, false);
             }
@@ -69,6 +74,12 @@ pub fn run() {
             }
         })
         .invoke_handler(tauri::generate_handler![
+            updates::get_update_state,
+            updates::check_app_update,
+            updates::download_app_update,
+            updates::install_app_update,
+            updates::update_update_preference,
+            updates::open_update_downloads,
             commands::get_hardware_info,
             commands::temperature_driver_missing,
             commands::install_temperature_driver,

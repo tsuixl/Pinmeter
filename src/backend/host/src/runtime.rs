@@ -325,6 +325,16 @@ impl Runtime {
         }
         self.stopped.store(true, Ordering::Release);
     }
+    pub fn resume_after_failed_update(self: &Arc<Self>, app: AppHandle) {
+        app.remove_tray_by_id("pinmeter-resident");
+        self.tray_ready.store(false, Ordering::Release);
+        self.stop.store(false, Ordering::Release);
+        self.stopped.store(false, Ordering::Release);
+        self.inner.lock().unwrap().monitor.reset_baseline();
+        *self.exit.lock().unwrap() = Default::default();
+        self.start(app.clone());
+        let _ = app.emit("pinmeter-exit", self.exit_status());
+    }
     pub fn subscribe(&self, channel: Channel<MonitorBatchDto>) -> Result<String, String> {
         let mut state = self.inner.lock().map_err(|e| e.to_string())?;
         // UI subscription lifetime does not own an explicitly started collection.

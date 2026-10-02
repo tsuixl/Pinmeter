@@ -8,7 +8,7 @@ UI 开发与交接必须明确：[Sakani 官方 Storybook](https://main--6a5a658
 
 ## v0.1.0 首版计划
 
-当前维护版本为 **v0.1.1**，[Windows x64 预览版已发布](https://github.com/tsuixl/Pinmeter/releases/tag/v0.1.1)，统一应用、托盘、安装/卸载器和品牌图标；Windows 预览发行沿用原 [desktop-runtime](v0.1.0-desktop-runtime/design.md) 功能目录。下列 v0.1.0 表格和目录保留首版计划含义，当前发布记录以该功能执行文档为准。
+当前工作版本为 **v0.1.2**，在线更新正在实现；最近已发布版本仍为 [v0.1.1 Windows x64 预览版](https://github.com/tsuixl/Pinmeter/releases/tag/v0.1.1)。Windows 预览发行沿用原 [desktop-runtime](v0.1.0-desktop-runtime/design.md) 功能目录，在线更新维护在 [app-update](v0.1.2-app-update/design.md)。下列 v0.1.0 表格和目录保留首版计划含义，发布与验收以各功能执行记录为准。
 
 [preferences](v0.1.0-preferences/design.md) 包含默认关闭的开机自启；任务注册、即时保存和验证由原设置功能维护。
 
@@ -127,6 +127,8 @@ docs: [v0.1.0] development-workflow - 建立项目文档与开发规则
 ```
 
 ## 功能索引
+
+- [app-update 设计](v0.1.2-app-update/design.md)与[执行记录](v0.1.2-app-update/execution.md)：v0.1.2 在线更新、轻提示与更新公告；实现中，线上发布和实机验证按执行记录。
 
 [hardware-info 设计](v0.1.0-hardware-info/design.md)与[执行记录](v0.1.0-hardware-info/execution.md)：先交付 Windows 硬件信息页，启动时异步查询一次并缓存，沿用现有 Sakani 样式。
 

@@ -3,6 +3,8 @@ import type { MonitorStateDto } from "../../shared/contracts/monitor";
 import { TaskbarPreview } from "./TaskbarPreview";
 import { useSettingsViewModel } from "./useSettingsViewModel";
 import { buildInfo } from "../../shared/client/build-info";
+import { UpdateSettings } from "../updates/UpdateViews";
+import type { UpdateViewModel } from "../updates/useUpdateViewModel";
 import {
   Alert,
   Button,
@@ -15,9 +17,11 @@ import {
 export function SettingsView({
   client,
   state,
+  updates,
 }: {
   client: MonitorClient;
   state: MonitorStateDto | null;
+  updates: UpdateViewModel;
 }) {
   const vm = useSettingsViewModel(client, state?.settings);
   const adapters = [
@@ -274,29 +278,7 @@ export function SettingsView({
           最小化不解除限制；强制结束或断电可能留下禁用规则。
         </p>
       </Card>
-      <Card title="版本与升级" description={`Pinmeter ${buildInfo.version}`}>
-        <dl className="data-rows">
-          <div>
-            <dt>源码标识</dt>
-            <dd>{buildInfo.revision}</dd>
-          </div>
-          <div>
-            <dt>构建时间</dt>
-            <dd>
-              {buildInfo.time
-                ? new Date(buildInfo.time).toLocaleString()
-                : "开发环境"}
-            </dd>
-          </div>
-        </dl>
-        <p className="settings-note">
-          升级前请从设置或托盘菜单完全退出旧版，再打开新版。便携版需要保留完整运行目录，不能只移动
-          EXE。
-        </p>
-        <p className="settings-note">
-          如果已启用开机自启，迁移目录后请在新版中关闭再开启自启，以更新启动路径。
-        </p>
-      </Card>
+      <UpdateSettings vm={updates} />
       <div className="about">
         <div>
           <strong>

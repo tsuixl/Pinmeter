@@ -5,6 +5,7 @@ import { homedir } from 'node:os';
 import fs from 'node:fs';
 import { createHash } from 'node:crypto';
 import { packageWindows } from './package-windows.mjs';
+import { prepareUpdate } from './prepare-update.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const cli = resolve(root, 'src/frontend/node_modules/@tauri-apps/cli/tauri.js');
@@ -43,6 +44,7 @@ if (args[0] === 'check-tools') {
   if (!packageDirectory || !process.env.PINMETER_DESKTOP_WORKER) throw new Error('Run check-tools through the Windows coordinator');
   const checks = [
     [process.execPath, ['--test', resolve(root, 'tools/package-windows.test.mjs')]],
+    [process.execPath, ['--test', resolve(root, 'tools/prepare-update.test.mjs')]],
     ['powershell.exe', ['-NoProfile', '-OutputFormat', 'Text', '-ExecutionPolicy', 'Bypass', '-File', resolve(root, 'src/backend/platform/tests/autostart-cleanup.tests.ps1')]],
     ['powershell.exe', ['-NoProfile', '-OutputFormat', 'Text', '-ExecutionPolicy', 'Bypass', '-File', resolve(root, 'tools/check-uninstall.ps1')]],
     ['powershell.exe', ['-NoProfile', '-OutputFormat', 'Text', '-ExecutionPolicy', 'Bypass', '-File', resolve(root, 'tools/build-lock.test.ps1')]],
@@ -72,9 +74,17 @@ if (process.platform === 'win32' && ['dev', 'build', 'prepare'].includes(args[0]
   if (control.status !== 0) process.exit(control.status ?? 1);
 }
 if (args[0] === 'prepare') process.exit(0);
+const signing = {};
+if (args[0] === 'build' && !args.includes('--no-bundle') && !process.env.TAURI_SIGNING_PRIVATE_KEY) {
+  const key = resolve(process.env.LOCALAPPDATA || homedir(), 'Pinmeter/signing/updater.key');
+  if (fs.existsSync(key)) {
+    signing.TAURI_SIGNING_PRIVATE_KEY = key;
+    signing.TAURI_SIGNING_PRIVATE_KEY_PASSWORD = '';
+  }
+}
 const result = run(process.execPath, [cli, ...args], {
   cwd: resolve(root, 'src/backend/host'),
-  env: { ...process.env, PATH: resolve(homedir(), '.cargo/bin') + delimiter + process.env.PATH },
+  env: { ...process.env, ...signing, PATH: resolve(homedir(), '.cargo/bin') + delimiter + process.env.PATH },
 });
 if (result.error) console.error(result.error);
 if (result.status === 0 && packageDirectory) {
@@ -84,6 +94,11 @@ if (result.status === 0 && packageDirectory) {
     executable: resolve(root, 'src/backend', process.env.CARGO_TARGET_DIR || 'target', 'release/pinmeter-host.exe'),
     outputDirectory: packageDirectory,
   });
+  if (args[0] === 'build' && !args.includes('--no-bundle')) {
+    const config = JSON.parse(fs.readFileSync(resolve(root, 'src/backend/host/tauri.conf.json'), 'utf8'));
+    const installer = resolve(root, 'src/backend', process.env.CARGO_TARGET_DIR || 'target', 'release/bundle/nsis', `Pinmeter_${config.version}_x64-setup.exe`);
+    prepareUpdate({ installer, outputDirectory: resolve(packageDirectory, 'update-artifacts') });
+  }
   const commit = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' });
   fs.writeFileSync(resolve(packageDirectory, 'build-source.json'), JSON.stringify({
     commit: commit.stdout.trim(), sourceManifest: 'source-manifest.json',

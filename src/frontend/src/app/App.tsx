@@ -40,6 +40,9 @@ import { WindowControls } from "./WindowControls";
 import { MonitorStatus } from "../features/monitoring/MonitorStatus";
 import { buildInfo } from "../shared/client/build-info";
 import { monitorHealth } from "../features/monitoring/health";
+import type { UpdateClient } from "../shared/client/update-client";
+import { useUpdateViewModel } from "../features/updates/useUpdateViewModel";
+import { UpdateBanner, UpdateDialogs } from "../features/updates/UpdateViews";
 
 const labels: Record<MetricKey, string> = {
   cpu: "CPU 使用率",
@@ -55,9 +58,11 @@ const rangeOptions = [
 export function App({
   client,
   windowClient,
+  updateClient,
 }: {
   client: MonitorClient;
   windowClient?: WindowClient;
+  updateClient: UpdateClient;
 }) {
   const vm = useMonitorViewModel(client);
   const health = monitorHealth(vm);
@@ -65,6 +70,17 @@ export function App({
   const gpuVm = useGpuViewModel(vm.state?.gpu, vm.connected, vm.history);
   const windowVm = useWindowViewModel(windowClient);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [documentVisible, setDocumentVisible] = useState(!document.hidden);
+  useEffect(() => {
+    const changed = () => setDocumentVisible(!document.hidden);
+    document.addEventListener("visibilitychange", changed);
+    return () => document.removeEventListener("visibilitychange", changed);
+  }, []);
+  const updateVisible =
+    documentVisible &&
+    (windowVm.exit.stage === "idle" || windowVm.exit.stage === "updating") &&
+    !helpOpen;
+  const updateVm = useUpdateViewModel(updateClient, updateVisible);
   const theme =
     vm.state?.settings.theme ?? windowClient?.initialTheme ?? "system";
   const [collapsed, setCollapsed] = useState(
@@ -142,6 +158,7 @@ export function App({
     <div
       className={`app ${collapsed ? "compact-nav" : ""} ${windowVm.mac && !windowVm.fullscreen ? "mac-window" : ""}`}
     >
+      <UpdateDialogs vm={updateVm} visible={updateVisible} />
       <Modal
         open={helpOpen && windowVm.exit.stage === "idle"}
         title="使用 Pinmeter"
@@ -174,6 +191,7 @@ export function App({
       <Modal
         open={
           windowVm.exit.stage !== "idle" &&
+          windowVm.exit.stage !== "updating" &&
           windowVm.exit.stage !== "choose_close"
         }
         title={
@@ -260,6 +278,7 @@ export function App({
           ).map(nav)}
         </nav>
         <div className="sidebar-bottom">
+          <UpdateBanner vm={updateVm} collapsed={collapsed} />
           {nav("settings")}
           <div className="device">
             <icons.monitor size={18} />
@@ -588,7 +607,7 @@ export function App({
             </>
           )}
           {vm.page === "settings" && (
-            <SettingsView client={client} state={vm.state} />
+            <SettingsView client={client} state={vm.state} updates={updateVm} />
           )}
         </main>
         <footer className="footer">

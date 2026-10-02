@@ -4,6 +4,18 @@ use std::sync::Arc;
 use tauri::{AppHandle, Emitter, Manager};
 use ts_rs::TS;
 
+pub(crate) enum PreparationError {
+    Confirmation(String),
+    Failed(String),
+}
+impl std::fmt::Display for PreparationError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Confirmation(s) | Self::Failed(s) => f.write_str(s),
+        }
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
 pub struct ExitStatusDto {
     pub stage: String,
@@ -122,7 +134,7 @@ impl Runtime {
             .try_lock()
             .map_err(|_| "正在保存设置，请稍候")?;
         let mut state = self.exit.lock().unwrap();
-        if state.stage == "releasing" {
+        if matches!(state.stage.as_str(), "releasing" | "updating") {
             return Err("正在解除限制，请稍候".into());
         }
         *state = ExitStatusDto::default();
@@ -132,10 +144,9 @@ impl Runtime {
     }
     pub fn begin_exit(self: &Arc<Self>, app: &AppHandle, confirmed: bool) {
         let mut state = self.exit.lock().unwrap();
-        if state.stage == "releasing" || self.is_stopped() {
+        if matches!(state.stage.as_str(), "releasing" | "updating") || self.is_stopped() {
             return;
         }
-        let control = self.control.lock().unwrap().clone();
         state.stage = "releasing".into();
         state.detail = "正在等待已接纳的设置操作并处理退出…".into();
         drop(state);
@@ -145,43 +156,15 @@ impl Runtime {
         std::thread::spawn(move || {
             // Marking releasing rejects new writers; wait off the event loop for
             // an accepted save, then read the final authoritative exit preference.
-            let _writer = runtime.settings_operation.lock().unwrap();
-            let release = runtime
-                .inner
-                .lock()
-                .unwrap()
-                .monitor
-                .settings
-                .release_network_on_exit;
-            let result = match control {
-                Some(control) if release => control.release_all(None, true),
-                Some(control) => match control.freeze_and_has_blocks() {
-                    Ok(true) if !confirmed => {
-                        control.unfreeze();
-                        *runtime.exit.lock().unwrap() = ExitStatusDto { stage: "confirm".into(), detail: "退出后，已禁用的应用仍无法联网；限速会停止。可返回设置开启退出时解除限制。".into() };
-                        runtime.notify_exit(&app);
-                        return;
-                    }
-                    Ok(_) => Ok(()),
-                    Err(error) if !confirmed => {
-                        control.unfreeze();
-                        *runtime.exit.lock().unwrap() = ExitStatusDto {
-                            stage: "confirm".into(),
-                            detail: format!(
-                                "无法确认现有禁用状态：{error}。继续退出可能保留网络禁用；限速会停止。"
-                            ),
-                        };
-                        runtime.notify_exit(&app);
-                        return;
-                    }
-                    Err(_) => Ok(()),
-                },
-                None => Ok(()),
-            };
-            if let Err(error) = result {
+            if let Err(error) = runtime.prepare_shutdown(confirmed) {
+                let stage = if matches!(error, PreparationError::Confirmation(_)) {
+                    "confirm"
+                } else {
+                    "failed"
+                };
                 *runtime.exit.lock().unwrap() = ExitStatusDto {
-                    stage: "failed".into(),
-                    detail: format!("未退出 Pinmeter。部分限制可能仍然生效：{error}"),
+                    stage: stage.into(),
+                    detail: error.to_string(),
                 };
                 runtime.notify_exit(&app);
                 return;
@@ -189,5 +172,51 @@ impl Runtime {
             runtime.stop();
             app.exit(0);
         });
+    }
+
+    fn prepare_shutdown(&self, confirmed: bool) -> Result<(), PreparationError> {
+        let _writer = self.settings_operation.lock().unwrap();
+        let release = self
+            .inner
+            .lock()
+            .unwrap()
+            .monitor
+            .settings
+            .release_network_on_exit;
+        let control = self.control.lock().unwrap().clone();
+        match control {
+            Some(control) if release => control.release_all(None, true).map_err(|e| {
+                PreparationError::Failed(format!("未退出 Pinmeter。部分限制可能仍然生效：{e}"))
+            }),
+            Some(control) => match control.freeze_and_has_blocks() {
+                Ok(true) if !confirmed => {
+                    control.unfreeze();
+                    Err(PreparationError::Confirmation("退出后，已禁用的应用仍无法联网；限速会停止。可返回设置开启退出时解除限制。".into()))
+                }
+                Ok(_) => Ok(()),
+                Err(error) if !confirmed => {
+                    control.unfreeze();
+                    Err(PreparationError::Confirmation(format!(
+                        "无法确认现有禁用状态：{error}。继续退出可能保留网络禁用；限速会停止。"
+                    )))
+                }
+                Err(_) => Ok(()),
+            },
+            None => Ok(()),
+        }
+    }
+    pub(crate) fn prepare_update(&self, confirmed: bool) -> Result<(), PreparationError> {
+        {
+            let mut state = self.exit.lock().unwrap();
+            if state.stage != "idle" || self.is_stopped() {
+                return Err(PreparationError::Failed("请先完成当前退出操作".into()));
+            }
+            state.stage = "updating".into();
+        }
+        if let Err(error) = self.prepare_shutdown(confirmed) {
+            *self.exit.lock().unwrap() = ExitStatusDto::default();
+            return Err(error);
+        }
+        Ok(())
     }
 }

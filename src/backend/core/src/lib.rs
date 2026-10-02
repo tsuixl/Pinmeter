@@ -8,3 +8,4 @@ pub mod gpu;
 pub mod hardware;
 pub mod ip;
 pub mod ports;
+pub mod updates;

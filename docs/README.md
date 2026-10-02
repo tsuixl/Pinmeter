@@ -55,6 +55,8 @@ docs/
 
 ## 开发记录 · development
 
+- 在线更新：[设计](development/v0.1.2-app-update/design.md) · [任务计划与进度](development/v0.1.2-app-update/execution.md)。v0.1.2 实现中，包含安装版更新、提示及公告。
+
 - 硬件信息：[设计](development/v0.1.0-hardware-info/design.md) · [任务计划与进度](development/v0.1.0-hardware-info/execution.md)。启动时一次查询，沿用 Sakani 展示本机硬件清单。
 
 回答“本次功能如何设计、准备做什么、实际完成了什么”。

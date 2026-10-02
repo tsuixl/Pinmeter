@@ -401,6 +401,8 @@ Sakani 样式与字体由前端入口统一加载，基础控件和必要的业�
 
 ### 7.3 文件归属与生成物
 
+在线更新使用 `core/src/updates.rs` 管理纯状态与公告，`platform/src/updates.rs` 负责存储和安装形态，`host/src/updates/` 封装 Tauri 更新与命令，`frontend/src/features/updates/` 使用 ViewModel 呈现。受控公告和公开更新配置放 `src/shared/updates/`；签名私钥只在仓库外保存，待发布清单与签名包放忽略的构建目录。更新安装复用宿主退出准备，不绕过网络限制清理；详见 [app-update](../development/v0.1.2-app-update/design.md)。
+
 | 内容 | 放置约定 |
 | --- | --- |
 | Rust 工作区 | `src/backend/Cargo.toml` 声明 core、platform、host；`src/backend/Cargo.lock` 统一锁定，不创建重复工作区或成员锁文件 |

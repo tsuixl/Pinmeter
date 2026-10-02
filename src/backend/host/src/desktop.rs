@@ -51,6 +51,7 @@ impl Desktop {
                     "memory" => DesktopIntent::Open("memory"),
                     "network" => DesktopIntent::Open("network"),
                     "settings" => DesktopIntent::Open("settings"),
+                    "updates" => DesktopIntent::Open("updates"),
                     "toggle" => DesktopIntent::ToggleReadings,
                     "exit" => DesktopIntent::Exit,
                     "overview" => DesktopIntent::Open("overview"),
@@ -163,12 +164,13 @@ fn build_tray(app: &AppHandle, tx: SyncSender<DesktopIntent>) -> tauri::Result<T
     let gpu = MenuItem::with_id(app, "gpu", "GPU 详情", true, None::<&str>)?;
     let memory = MenuItem::with_id(app, "memory", "内存详情", true, None::<&str>)?;
     let settings = MenuItem::with_id(app, "settings", "设置", true, None::<&str>)?;
+    let updates = MenuItem::with_id(app, "updates", "检查更新", true, None::<&str>)?;
     let toggle = MenuItem::with_id(app, "toggle", "显示 / 隐藏任务栏读数", true, None::<&str>)?;
     let exit = MenuItem::with_id(app, "exit", "退出 Pinmeter", true, None::<&str>)?;
     let menu = Menu::with_items(
         app,
         &[
-            &overview, &network, &cpu, &gpu, &memory, &settings, &toggle, &exit,
+            &overview, &network, &cpu, &gpu, &memory, &settings, &updates, &toggle, &exit,
         ],
     )?;
     let click_tx = tx.clone();
@@ -196,9 +198,19 @@ fn build_tray(app: &AppHandle, tx: SyncSender<DesktopIntent>) -> tauri::Result<T
 fn act(runtime: &Arc<Runtime>, app: &AppHandle, intent: DesktopIntent) {
     match intent {
         DesktopIntent::Open(page) => {
+            if page == "updates" {
+                let updates = app.state::<Arc<crate::updates::Updates>>().inner().clone();
+                let app = app.clone();
+                tauri::async_runtime::spawn(async move {
+                    let _ = updates.check(&app, true).await;
+                });
+            }
             if let Some(window) = app.get_webview_window("main") {
                 let _ = bridges::activate(&window);
-                let _ = window.emit("desktop-navigate", page);
+                let _ = window.emit(
+                    "desktop-navigate",
+                    if page == "updates" { "settings" } else { page },
+                );
             }
         }
         DesktopIntent::Exit => runtime.begin_exit(app, false),

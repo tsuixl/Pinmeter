@@ -18,5 +18,6 @@ export {
   Table,
   Progress,
   Popover,
+  Toast,
 } from "@sakaniui/react";
 export { Select } from "./Select";

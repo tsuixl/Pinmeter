@@ -41,3 +41,4 @@ pub fn provider() -> Box<dyn pinmeter_core::ports::MetricProvider> {
     }
 }
 pub mod autostart;
+pub mod updates;

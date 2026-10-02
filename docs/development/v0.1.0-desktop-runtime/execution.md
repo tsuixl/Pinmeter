@@ -30,6 +30,8 @@
 
 ## 进度
 
+- v0.1.2：更新安装与普通退出复用设置等待及网络清理；安装器启动失败重建采集和托盘。NSIS 增加与实际 EXE 路径绑定的安装标记，签名及公告材料随构建生成。当前项目检查通过，真实管理员更新/安装与长时场景仍待验收，证据见 [app-update](../v0.1.2-app-update/execution.md)。
+
 - v0.1.1 已于 2026-10-02 20:04（Asia/Shanghai）[公开发布为 Windows 预览版](https://github.com/tsuixl/Pinmeter/releases/tag/v0.1.1)，保留 v0.1.0。发布源码为 `368e1adad6694c488c201680a74e9a0f7a27973c`，其 [Windows/macOS/Linux CI](https://github.com/tsuixl/Pinmeter/actions/runs/37002886261) 全部通过；已推送的附注标签 `v0.1.1` 解引用到同一提交，Release target、源码 ZIP 和 Windows 构建来源一致。发布后的本段记录不改变标签或构建源码。
 - Windows 从上述干净提交经 `PINMETER_HOLD_DELIVERY=1 node tools/desktop.mjs build -- --locked` 重建，复用已确认空闲的 `src/backend/target/test1/` 并保持构建锁与目录独占至交付结束。运行入口 `src/backend/target/test1/Pinmeter.exe` 的产品版本为 `0.1.1`，SHA-256 为 `465B32276B428AF6E13E3591F54AC6B428C888D266A6808BC0BF09B0C7BE0C07`；40 个完整运行文件路径与哈希通过核对。
 - 四个发行附件保存在 `src/backend/target/test1/release-assets/`：`Pinmeter_0.1.1_x64-setup.exe`、`Pinmeter-0.1.1-preview-windows-x64.zip`、`Pinmeter-0.1.1-source.zip`、`SHA256SUMS.txt`。便携包包含 40 个运行文件及两份去除本机绝对路径的构建来源资料，42 个 ZIP 条目逐项哈希核对通过；源码包 331 个文件逐一核对 Git blob ID。安装器复制哈希一致，上传后 GitHub 的四个附件摘要/长度均与本地一致；公开后再匿名下载四个附件，长度和 SHA-256 均通过。公开校验值见 [SHA256SUMS.txt](https://github.com/tsuixl/Pinmeter/releases/download/v0.1.1/SHA256SUMS.txt)，详细本地证据为运行目录内 `release-verification.json` 与 `public-release-verification.json`。

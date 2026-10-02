@@ -1,4 +1,14 @@
 ; Remove only rules owned by this installation, before removing its recovery tool.
+!macro NSIS_HOOK_POSTINSTALL
+  FileOpen $1 "$INSTDIR\.pinmeter-installed" w
+  FileWriteUTF16LE /BOM $1 "$INSTDIR\${MAINBINARYNAME}.exe"
+  FileClose $1
+!macroend
+
+!macro NSIS_HOOK_POSTUNINSTALL
+  Delete "$INSTDIR\.pinmeter-installed"
+!macroend
+
 !macro NSIS_HOOK_PREUNINSTALL
   ; Stop the rule writer before cleanup. The standard template checks again afterwards.
   !insertmacro CheckIfAppIsRunning "${MAINBINARYNAME}.exe" "${PRODUCTNAME}"
