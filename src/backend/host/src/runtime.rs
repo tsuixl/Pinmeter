@@ -32,6 +32,9 @@ pub struct RuntimeState {
     pub next_subscription: u64,
 }
 pub struct Runtime {
+    desktop_menu_registered: AtomicBool,
+    desktop_actions:
+        Mutex<Option<std::sync::mpsc::SyncSender<pinmeter_core::desktop::DesktopIntent>>>,
     pub settings_operation: Mutex<()>,
     pub hardware: Mutex<pinmeter_core::hardware::HardwareState>,
     hardware_worker: Mutex<Option<JoinHandle<()>>>,
@@ -64,6 +67,8 @@ impl Runtime {
         monitor.app_network =
             pinmeter_core::app_network::AppNetwork::new(cfg!(target_os = "windows"));
         Arc::new(Self {
+            desktop_menu_registered: AtomicBool::new(false),
+            desktop_actions: Mutex::new(None),
             settings_operation: Mutex::new(()),
             hardware: Mutex::new(pinmeter_core::hardware::HardwareState::Loading),
             hardware_worker: Mutex::new(None),
@@ -280,6 +285,18 @@ impl Runtime {
     pub fn control_snapshot(&self) -> Option<crate::network_control::NetworkControlDto> {
         self.control.lock().unwrap().as_ref().map(|c| c.snapshot())
     }
+    pub fn bind_desktop_actions(
+        &self,
+        sender: std::sync::mpsc::SyncSender<pinmeter_core::desktop::DesktopIntent>,
+    ) -> bool {
+        *self.desktop_actions.lock().unwrap() = Some(sender);
+        !self.desktop_menu_registered.swap(true, Ordering::AcqRel)
+    }
+    pub fn send_desktop_action(&self, intent: pinmeter_core::desktop::DesktopIntent) {
+        if let Some(sender) = self.desktop_actions.lock().unwrap().as_ref() {
+            let _ = sender.try_send(intent);
+        }
+    }
     pub fn set_app_network(&self, enabled: bool) -> Result<(), String> {
         use pinmeter_core::ports::Clock;
         let mut state = self.inner.lock().map_err(|e| e.to_string())?;
@@ -324,6 +341,7 @@ impl Runtime {
             let _ = worker.join();
         }
         self.stopped.store(true, Ordering::Release);
+        *self.desktop_actions.lock().unwrap() = None;
     }
     pub fn resume_after_failed_update(self: &Arc<Self>, app: AppHandle) {
         app.remove_tray_by_id("pinmeter-resident");

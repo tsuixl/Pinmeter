@@ -43,22 +43,26 @@ impl Desktop {
     pub fn tick(&mut self, runtime: &Arc<Runtime>, app: &AppHandle) {
         if !self.menu_registered {
             self.menu_registered = true;
-            let tx = self.tx.clone();
-            app.on_menu_event(move |_, event| {
-                let intent = match event.id.as_ref() {
-                    "cpu" => DesktopIntent::Open("cpu"),
-                    "gpu" => DesktopIntent::Open("gpu"),
-                    "memory" => DesktopIntent::Open("memory"),
-                    "network" => DesktopIntent::Open("network"),
-                    "settings" => DesktopIntent::Open("settings"),
-                    "updates" => DesktopIntent::Open("updates"),
-                    "toggle" => DesktopIntent::ToggleReadings,
-                    "exit" => DesktopIntent::Exit,
-                    "overview" => DesktopIntent::Open("overview"),
-                    _ => return,
-                };
-                let _ = tx.try_send(intent);
-            });
+            if runtime.bind_desktop_actions(self.tx.clone()) {
+                let owner = Arc::downgrade(runtime);
+                app.on_menu_event(move |_, event| {
+                    let intent = match event.id.as_ref() {
+                        "cpu" => DesktopIntent::Open("cpu"),
+                        "gpu" => DesktopIntent::Open("gpu"),
+                        "memory" => DesktopIntent::Open("memory"),
+                        "network" => DesktopIntent::Open("network"),
+                        "settings" => DesktopIntent::Open("settings"),
+                        "updates" => DesktopIntent::Open("updates"),
+                        "toggle" => DesktopIntent::ToggleReadings,
+                        "exit" => DesktopIntent::Exit,
+                        "overview" => DesktopIntent::Open("overview"),
+                        _ => return,
+                    };
+                    if let Some(runtime) = owner.upgrade() {
+                        runtime.send_desktop_action(intent);
+                    }
+                });
+            }
         }
         while let Ok(intent) = self.rx.try_recv() {
             act(runtime, app, intent);
@@ -68,12 +72,13 @@ impl Desktop {
                 act(runtime, app, intent);
             }
         }
-        let summary = summary_at(
-            runtime,
-            pinmeter_platform::shared::SystemClock::default().monotonic_ms(),
-            self.gpu_id.as_deref(),
-        );
-        self.gpu_id.clone_from(&summary.gpu_id);
+        let (revision, enabled) = {
+            let state = runtime.inner.lock().unwrap();
+            (
+                state.monitor.settings.revision,
+                state.monitor.settings.taskbar.enabled,
+            )
+        };
         if Instant::now() >= self.next_tray_check {
             self.next_tray_check = Instant::now() + Duration::from_secs(5);
             if self.tray.as_ref().is_some_and(|tray| {
@@ -93,12 +98,12 @@ impl Desktop {
             }
         }
         if self.native.as_ref().is_some_and(|native| native.finished())
-            && self.native_revision != Some(summary.revision)
+            && self.native_revision != Some(revision)
         {
             self.native = None;
         }
-        if self.tray.is_none() && self.attempted_revision != Some(summary.revision) {
-            self.attempted_revision = Some(summary.revision);
+        if self.tray.is_none() && self.attempted_revision != Some(revision) {
+            self.attempted_revision = Some(revision);
             match build_tray(app, self.tx.clone()) {
                 Ok(tray) => {
                     self.tray = Some(tray);
@@ -115,12 +120,12 @@ impl Desktop {
                 }
             }
         }
-        if !summary.settings.enabled || !cfg!(target_os = "windows") {
+        if !enabled || !cfg!(target_os = "windows") {
             self.native = None;
             self.native_revision = None;
             runtime.inner.lock().unwrap().monitor.desktop = DesktopStatus {
                 supported: cfg!(target_os = "windows"),
-                revision: summary.revision,
+                revision,
                 stage: "disabled".into(),
                 detail: if cfg!(target_os = "windows") {
                     "任务栏显示已关闭"
@@ -131,21 +136,27 @@ impl Desktop {
             };
             return;
         }
+        let summary = summary_at(
+            runtime,
+            pinmeter_platform::shared::SystemClock::default().monotonic_ms(),
+            self.gpu_id.as_deref(),
+        );
+        self.gpu_id.clone_from(&summary.gpu_id);
+        let revision = summary.revision;
         if self.native.is_none() {
             self.native_revision = Some(summary.revision);
             self.native = Some(pinmeter_platform::taskbar::Taskbar::start());
         }
         let native = self.native.as_ref().unwrap();
-        native.submit(summary.clone());
+        native.submit(summary);
         let mut status = native.status();
-        if status.revision != summary.revision
-            && !matches!(status.stage.as_str(), "failed" | "unsupported")
+        if status.revision != revision && !matches!(status.stage.as_str(), "failed" | "unsupported")
         {
             status = DesktopStatus {
                 supported: cfg!(target_os = "windows"),
                 stage: "connecting".into(),
                 detail: "正在应用任务栏设置".into(),
-                revision: summary.revision,
+                revision,
             };
         }
         if let Some(error) = &self.tray_error {
@@ -429,6 +440,36 @@ pub fn minimize_to_tray(app: &AppHandle) -> Result<(), String> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn restarting_desktop_routes_to_the_new_bounded_queue_without_registering_again() {
+        let runtime = Runtime::new(Arc::new(Repository));
+        let (old_tx, old_rx) = sync_channel(1);
+        assert!(runtime.bind_desktop_actions(old_tx));
+        runtime.send_desktop_action(DesktopIntent::Open("cpu"));
+        assert!(matches!(old_rx.try_recv(), Ok(DesktopIntent::Open("cpu"))));
+        let (new_tx, new_rx) = sync_channel(1);
+        assert!(!runtime.bind_desktop_actions(new_tx));
+        runtime.send_desktop_action(DesktopIntent::Open("memory"));
+        runtime.send_desktop_action(DesktopIntent::Exit);
+        assert!(matches!(
+            old_rx.try_recv(),
+            Err(std::sync::mpsc::TryRecvError::Disconnected)
+        ));
+        assert!(matches!(
+            new_rx.try_recv(),
+            Ok(DesktopIntent::Open("memory"))
+        ));
+        assert!(matches!(
+            new_rx.try_recv(),
+            Err(std::sync::mpsc::TryRecvError::Empty)
+        ));
+        runtime.stop();
+        runtime.send_desktop_action(DesktopIntent::Open("cpu"));
+        assert!(matches!(
+            new_rx.try_recv(),
+            Err(std::sync::mpsc::TryRecvError::Disconnected)
+        ));
+    }
     use super::*;
     use pinmeter_core::{domain::*, ports::SettingsRepository};
     struct Repository;
