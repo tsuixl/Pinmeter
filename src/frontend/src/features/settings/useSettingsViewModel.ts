@@ -3,12 +3,15 @@ import type { MonitorClient } from "../../shared/client/monitor-client";
 import type { SettingsDto } from "../../shared/contracts/monitor";
 import { moveTaskbarGroup } from "./taskbar-model";
 import { defaultFontFamily, loadFont } from "../../shared/ui/fonts";
+import { defaultAlertsConfig } from "../../shared/client/alert-defaults";
 import {
   builtinFontCatalog,
   fontLabel,
   fontStyleOptions,
 } from "../../shared/fonts";
 const defaults: SettingsDto = {
+  alerts: defaultAlertsConfig(),
+  onboarding_completed: false,
   record_app_traffic_on_start: false,
   start_in_tray: false,
   autostart: false,
@@ -174,6 +177,17 @@ export function useSettingsViewModel(
       }
     },
     reset: () => change(defaults),
+    resetAppearance: () =>
+      change({
+        theme: defaults.theme,
+        font_family: defaults.font_family,
+        font_style: defaults.font_style,
+      }),
+    resetMonitoring: () =>
+      change({
+        interval_ms: defaults.interval_ms,
+        network_id: defaults.network_id,
+      }),
   };
 }
 export type SettingsViewModel = ReturnType<typeof useSettingsViewModel>;
