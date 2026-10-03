@@ -1,6 +1,6 @@
 ## 任务计划
 
-- [ ] v0.1.3：完成 P1 六项集成、隐藏停止刷新、统一公告、项目检查和本地 Windows 完整运行包。
+- [x] v0.1.3：完成 P1 六项集成、隐藏停止刷新、统一公告、项目检查和本地 Windows 完整运行包。
 
 - [x] 同步 v0.1.1 版本、发布入口和说明，推送准备提交并确认三平台 CI。
 - [x] 从该干净提交重建 Windows 包，生成并核对安装器、便携 ZIP、源码 ZIP 与校验文件。
@@ -32,9 +32,13 @@
 
 ## 进度
 
-- v0.1.3：六项实现已分别本地提交；本轮集成核对发现原生隐藏事件需要同时传递给磁盘/进程/历史页，现已接入，仅可见页面轮询。新增页面深浅与 420×400 浏览器检查完成，源码构建及交付记录在本轮打包后补齐。当前检测到已有安装版 `pinmeter-host` 与辅助组件正在运行，本轮保留实例，不进行冷启动替换、登录或管理员交互验收。
+- v0.1.3：P1 六项实现、浏览器检查与完整本地运行包已交付，各功能分别本地提交。原生隐藏事件同时暂停磁盘/进程/历史页轮询。已有安装版 `pinmeter-host` 与辅助组件正在运行，本轮保留实例，不进行冷启动替换、登录或管理员交互验收。
 - [v0.1.3 公告弹窗](assets/p1-release-notes-light.jpg)已核对，六项变化与统计边界完整展示，浏览器控制台无错误。Sakani 决定组件视觉，HTML 只供结构参考。
 - 统一入口 `tools/dev.ps1 check` 已完整通过：helper/安装清理与构建互斥回归、310 个本地 Markdown 链接与分层检查、Rust 格式/工作区测试/Clippy、生成契约一致性、前端 production 构建、33 项测试与格式检查。原有 3 项需要管理员 ETW/Explorer 环境的测试保持跳过。更新演示的目标版本随应用升为 0.1.3 后改为 0.1.4，相关测试按目标版本断言，修复初次检查中的旧固定版本断言后已重跑全部检查成功。
+- Windows v0.1.3 交付：从干净提交 `4d2b1143e7d280345cc64f3339674b1395661a5b` 执行 `PINMETER_HOLD_DELIVERY=1 node tools/desktop.mjs build -- --locked`，release 与 NSIS 构建成功；实际运行入口为 `E:\dev\github\Pinmeter\src\backend\target\test2\Pinmeter.exe`，文件版本 0.1.3、16,344,064 字节。test1 因已有进程路径无法确认而跳过；项目构建锁与 test2 预留保持至交付，未覆盖既有实例。
+- 资源/来源：按当前 Tauri Windows 资源配置核对全部 40 个运行文件与来源 SHA-256，325 个源码文件指纹构建前后及交付前一致。记录在同目录 `build-source.json`、`source-manifest.json`、`package-hashes.json`、`delivery-verification.json`。主 EXE SHA-256 为 `1cae1eb8bafb3876c8e14830f834b972afe7ea2f04ffe9b45c0e2b2fa01d867c`。完整 sensors、network、network-control、licenses 目录必须随 EXE 保留。
+- 更新材料：本次安装器和 `.sig` 已另存于 `test2/update-artifacts/`，与构建源哈希一致，并用应用内嵌公钥独立验证 Tauri/minisign 签名；安装器 SHA-256 为 `aad3fb2ea6c59b4cc619e5355c0e68089185ec9f05e3cb672cb52e6f25cd9b49`。同目录提供 v0.1.3 待发布公告与清单；未推送、打标签、上传或发布，Tauri 更新签名不代表 Windows Authenticode 签名。
+- 运行验证边界：随包 CPU/GPU helper 在当前权限下均输出有效协议并以 0 退出；CPU 温度为 `permission_denied`，GPU 枚举 1 个设备，记录见 `test2/helper-smoke.json`。P1 原生磁盘/进程只读探针和历史退出/重载测试通过；保留正在运行的旧实例，未将启动旧窗口当作新版冷启动成功。管理员托盘冷启动、真实下载目录导出、实际安装升级、Explorer/休眠/混合 DPI 和真实 24 小时长期运行仍未验收。切换时先完全退出旧版，再启动新入口；移动时保留整个 test2 运行目录。
 
 - v0.1.2：更新安装与普通退出复用设置等待及网络清理；安装器启动失败重建采集和托盘。NSIS 增加与实际 EXE 路径绑定的安装标记，签名及公告材料随构建生成。当前项目检查通过，真实管理员更新/安装与长时场景仍待验收，证据见 [app-update](../v0.1.2-app-update/execution.md)。
 - v0.1.2 本次运行包为 `E:\dev\github\Pinmeter\src\backend\target\test1\Pinmeter.exe`，构建来源为干净提交 `6986f39`，完整资源 40 项及源码 287 项复核通过。签名安装器与待发布清单位于同目录的 `update-artifacts/`；helper 启动结果及准确哈希集中记录在上述 app-update 执行文档。正式主窗口、实际安装升级、休眠/Explorer/多屏与八小时常驻仍未验收，不能将本次构建成功标记为 S4 完成。
