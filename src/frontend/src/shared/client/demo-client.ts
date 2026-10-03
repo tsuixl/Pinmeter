@@ -13,6 +13,38 @@ import { demoIp } from "./demo-ip";
 import { demoHardware } from "./demo-hardware";
 import { demoDisk } from "./demo-disk";
 export class DemoClient extends ObservableClient {
+  async getProcessSnapshot(
+    sort: string,
+  ): Promise<import("../contracts/monitor").ProcessSnapshotDto> {
+    const status = this.getSnapshot().state?.frame?.cpu.status ?? "normal";
+    return {
+      sort,
+      status,
+      detail: "演示进程数据",
+      sampled_at_ms: Date.now(),
+      total: 84,
+      unreadable: 3,
+      truncated: false,
+      rows:
+        status === "normal"
+          ? Array.from({ length: 10 }, (_, i) => ({
+              id: `demo-${i}`,
+              pid: 2048 + i * 4,
+              name: [
+                "浏览器.exe",
+                "编辑器.exe",
+                "Pinmeter.exe",
+                "文件管理器.exe",
+                "终端.exe",
+              ][i % 5],
+              cpu: 12 / (i + 1),
+              cpu_status: "normal",
+              working_set: 500_000_000 / (i + 1),
+              memory_status: "normal",
+            }))
+          : [],
+    };
+  }
   async getDiskSnapshot(id: string | null) {
     return demoDisk(
       id,

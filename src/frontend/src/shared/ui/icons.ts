@@ -16,10 +16,12 @@ import {
   Thermometer,
   Info,
   HardDrive,
+  ListOrdered,
 } from "lucide-react";
 export const icons = {
   info: Info,
   disk: HardDrive,
+  processes: ListOrdered,
   app: AppWindow,
   chevronDown: ChevronDown,
   chevronRight: ChevronRight,

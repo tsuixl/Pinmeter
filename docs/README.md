@@ -55,6 +55,8 @@ docs/
 
 ## 开发记录 · development
 
+- 进程排行：[设计](development/v0.1.3-process-ranking/design.md) · [执行](development/v0.1.3-process-ranking/execution.md)，只读 CPU/工作集 Top 10。
+
 - 磁盘监控：[设计](development/v0.1.3-disk-monitoring/design.md) · [执行](development/v0.1.3-disk-monitoring/execution.md)，按需采样和短期趋势。
 
 - 本地诊断：[设计](development/v0.1.3-diagnostics/design.md) · [执行](development/v0.1.3-diagnostics/execution.md)，字段白名单、预览及本地导出。

@@ -21,6 +21,7 @@ pub mod disk;
 pub mod gpu;
 pub mod hardware;
 pub mod ip;
+pub mod processes;
 pub mod settings;
 pub mod shared;
 pub mod startup;

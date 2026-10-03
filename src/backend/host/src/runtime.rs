@@ -34,6 +34,7 @@ pub struct RuntimeState {
 pub struct Runtime {
     pub visible: Arc<AtomicBool>,
     pub disks: Mutex<Option<Arc<crate::disk::Disks>>>,
+    pub processes: Mutex<Option<Arc<crate::processes::Processes>>>,
     pub startup_visibility: Mutex<pinmeter_core::desktop::StartupVisibility>,
     desktop_menu_registered: AtomicBool,
     desktop_actions:
@@ -72,6 +73,7 @@ impl Runtime {
         Arc::new(Self {
             visible: Arc::new(AtomicBool::new(false)),
             disks: Mutex::new(None),
+            processes: Mutex::new(None),
             startup_visibility: Mutex::new(Default::default()),
             desktop_menu_registered: AtomicBool::new(false),
             desktop_actions: Mutex::new(None),
@@ -104,6 +106,8 @@ impl Runtime {
     }
     pub fn start(self: &Arc<Self>, app: AppHandle) {
         *self.disks.lock().unwrap() = Some(crate::disk::Disks::start(self.visible.clone()));
+        *self.processes.lock().unwrap() =
+            Some(crate::processes::Processes::start(self.visible.clone()));
         let hardware_runtime = Arc::clone(self);
         *self.hardware_worker.lock().unwrap() = Some(thread::spawn(move || {
             let inventory = pinmeter_platform::hardware::collect(&hardware_runtime.stop);
@@ -337,6 +341,9 @@ impl Runtime {
         self.stopped.load(Ordering::Acquire)
     }
     pub fn stop(&self) {
+        if let Some(processes) = self.processes.lock().unwrap().take() {
+            processes.stop();
+        }
         if let Some(disks) = self.disks.lock().unwrap().take() {
             disks.stop();
         }

@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { IpView } from "../features/ip/IpView";
 import { HardwareView } from "../features/hardware/HardwareView";
 import { DiskView } from "../features/disk/DiskView";
+import { ProcessView } from "../features/processes/ProcessView";
 import { ipClient } from "../shared/client/ip-client";
 import type { MonitorClient } from "../shared/client/monitor-client";
 import {
@@ -275,6 +276,7 @@ export function App({
               "gpu",
               "network",
               "disk",
+              "processes",
               "ip",
             ] as Page[]
           ).map(nav)}
@@ -345,6 +347,7 @@ export function App({
             </h1>
             {vm.page !== "settings" &&
               vm.page !== "disk" &&
+              vm.page !== "processes" &&
               vm.page !== "ip" &&
               vm.page !== "hardware" && (
                 <div aria-label="趋势时间范围">
@@ -371,7 +374,8 @@ export function App({
               <Badge variant="warning">演示数据 · 不代表系统实际读数</Badge>
               {vm.page !== "ip" &&
                 vm.page !== "hardware" &&
-                vm.page !== "disk" && (
+                vm.page !== "disk" &&
+                vm.page !== "processes" && (
                   <Select
                     label="演示状态"
                     size="sm"
@@ -567,6 +571,7 @@ export function App({
           )}
           {vm.page === "gpu" && <GpuView vm={gpuVm} range={vm.range} />}
           {vm.page === "disk" && <DiskView client={client} />}
+          {vm.page === "processes" && <ProcessView client={client} />}
           {vm.page === "ip" && <IpView client={ip} />}
           {vm.page === "network" && (
             <>

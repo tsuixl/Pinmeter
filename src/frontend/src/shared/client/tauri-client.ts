@@ -10,6 +10,12 @@ import { type NetworkControlChange, ObservableClient } from "./monitor-client";
 import { acceptBatch, mergeHistory } from "../state/history";
 
 export class TauriMonitorClient extends ObservableClient {
+  getProcessSnapshot(sort: string) {
+    return invoke<import("../contracts/monitor").ProcessSnapshotDto>(
+      "get_process_snapshot",
+      { sort },
+    );
+  }
   getDiskSnapshot(diskId: string | null) {
     return invoke<import("../contracts/monitor").DiskSnapshotDto>(
       "get_disk_snapshot",

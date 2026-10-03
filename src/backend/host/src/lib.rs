@@ -9,6 +9,7 @@ mod hardware;
 mod ip;
 mod network_control;
 pub mod presenters;
+mod processes;
 mod runtime;
 mod settings;
 mod startup_window;
@@ -82,6 +83,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             disk::get_disk_snapshot,
+            processes::get_process_snapshot,
             diagnostics::prepare_diagnostics,
             diagnostics::export_diagnostics,
             startup_window::complete_window_startup,

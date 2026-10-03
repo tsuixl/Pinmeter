@@ -1,0 +1,23 @@
+.process-page {
+  display: grid;
+  gap: var(--space-24);
+  min-width: 0;
+}
+.process-page .section-heading,
+.process-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-12);
+}
+.process-page td {
+  font-variant-numeric: tabular-nums;
+}
+.process-name {
+  display: inline-block;
+  max-width: min(280px, 40vw);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}

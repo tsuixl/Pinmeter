@@ -9,6 +9,7 @@ export type Page =
   | "gpu"
   | "network"
   | "disk"
+  | "processes"
   | "ip"
   | "settings";
 export const pageLabels: Record<Page, string> = {
@@ -19,6 +20,7 @@ export const pageLabels: Record<Page, string> = {
   memory: "内存",
   network: "网络",
   disk: "磁盘",
+  processes: "进程",
   ip: "IP",
   settings: "设置",
 };

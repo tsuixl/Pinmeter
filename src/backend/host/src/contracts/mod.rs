@@ -216,6 +216,8 @@ pub struct HistoryDto {
 pub fn typescript() -> String {
     let config = ts_rs::Config::default();
     let declarations = [
+        crate::processes::ProcessRowDto::decl(&config),
+        crate::processes::ProcessSnapshotDto::decl(&config),
         crate::disk::DiskPointDto::decl(&config),
         crate::disk::DiskFrameDto::decl(&config),
         crate::disk::DiskSnapshotDto::decl(&config),
