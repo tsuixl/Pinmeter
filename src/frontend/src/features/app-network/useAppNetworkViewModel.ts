@@ -65,7 +65,7 @@ export interface DisplayRow {
   process?: boolean;
   observed?: boolean;
 }
-export function useAppNetworkViewModel(client: MonitorClient) {
+export function useAppNetworkViewModel(client: MonitorClient, active = true) {
   const snapshot = useSyncExternalStore(client.subscribe, client.getSnapshot);
   const [sorting, setSorting] = useState<{
     sort: AppNetworkSort;
@@ -73,6 +73,11 @@ export function useAppNetworkViewModel(client: MonitorClient) {
   }>({ sort: { key: "download", order: "desc" }, direction: "download" });
   const { sort, direction } = sorting;
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [search, setSearch] = useState("");
+  const [pinned, setPinned] = useState<{ id: string; name: string } | null>(
+    null,
+  );
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const data = snapshot.state?.app_network;
@@ -90,13 +95,24 @@ export function useAppNetworkViewModel(client: MonitorClient) {
           upload_share: null,
         };
   const rows: DisplayRow[] = [];
-  for (const app of sortedApps(
-    (data?.apps ?? []).map((app) => ({
+  const apps = sortedApps(
+    (active ? (data?.apps ?? []) : []).map((app) => ({
       ...app,
       traffic: safeTraffic(app.traffic),
     })),
     sort,
-  )) {
+  );
+  const needle = search.trim().toLocaleLowerCase();
+  const matching = apps.filter((app) =>
+    `${app.name}\n${app.path}`.toLocaleLowerCase().includes(needle),
+  );
+  const visibleApps = pinned
+    ? [
+        ...matching.filter((a) => a.id === pinned.id),
+        ...matching.filter((a) => a.id !== pinned.id),
+      ]
+    : matching;
+  for (const app of visibleApps) {
     rows.push({
       ...app,
       download: app.traffic.download,
@@ -122,7 +138,11 @@ export function useAppNetworkViewModel(client: MonitorClient) {
     ["unknown", "未归属"],
   ] as const) {
     const traffic = data?.[key];
-    if (traffic && (traffic.received !== "0" || traffic.sent !== "0"))
+    if (
+      !needle &&
+      traffic &&
+      (traffic.received !== "0" || traffic.sent !== "0")
+    )
       rows.push({
         id: key,
         name,
@@ -135,6 +155,19 @@ export function useAppNetworkViewModel(client: MonitorClient) {
   return {
     data: data as AppNetworkDto | undefined,
     rows,
+    search,
+    setSearch,
+    pinned,
+    pin: (app: AppNetworkRowDto) =>
+      setPinned((current) =>
+        current?.id === app.id ? null : { id: app.id, name: app.name },
+      ),
+    clearPin: () => setPinned(null),
+    pinnedMissing: !!pinned && !apps.some((a) => a.id === pinned.id),
+    selectedId,
+    select: setSelectedId,
+    totalApps: apps.length,
+    matchingApps: matching.length,
     status,
     expanded,
     direction,

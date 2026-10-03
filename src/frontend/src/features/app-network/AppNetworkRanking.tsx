@@ -8,7 +8,7 @@ import {
   controllable,
 } from "../app-network-control/useNetworkControlViewModel";
 import type { MonitorClient } from "../../shared/client/monitor-client";
-import { Badge, Button, Card, Progress } from "../../shared/ui/sakani";
+import { Badge, Button, Card, Input, Progress } from "../../shared/ui/sakani";
 import { RankingTable } from "./RankingTable";
 import { icons } from "../../shared/ui/icons";
 import {
@@ -21,12 +21,13 @@ export function AppNetworkRanking({
   client,
   suspended = false,
   onHistory,
+  vm,
 }: {
   client: MonitorClient;
   suspended?: boolean;
-  onHistory?: () => void;
+  onHistory?: (app?: { id: string; name: string }) => void;
+  vm: ReturnType<typeof useAppNetworkViewModel>;
 }) {
-  const vm = useAppNetworkViewModel(client);
   const control = useNetworkControlViewModel(client, suspended);
   return (
     <Card className="app-network">
@@ -53,14 +54,35 @@ export function AppNetworkRanking({
           点击列标题排序 · 占比仅在已归属应用中计算
         </span>
         {onHistory && (
-          <Button variant="ghost" size="sm" onClick={onHistory}>
+          <Button variant="ghost" size="sm" onClick={() => onHistory()}>
             查看应用历史
           </Button>
         )}
       </div>
+      <div className="app-network-toolbar">
+        <Input
+          label="查找当前应用"
+          placeholder="应用名称或路径"
+          value={vm.search}
+          onChange={(e) => vm.setSearch(e.target.value)}
+        />
+        <span className="processor-caption">
+          本次已记录 {vm.totalApps} 个应用 · 匹配 {vm.matchingApps} 个
+        </span>
+        {vm.pinned && (
+          <Button variant="secondary" size="sm" onClick={vm.clearPin}>
+            取消固定 {vm.pinned.name}
+          </Button>
+        )}
+      </div>
+      {vm.pinnedMissing && (
+        <p className="processor-caption" role="status">
+          固定应用未在当前快照中；不显示为零流量。
+        </p>
+      )}
       <p className="processor-caption">
-        应用收发量同时保留最近 24
-        小时历史；重新开始只重置本次累计，已保存历史仍可查看。
+        应用收发量同时保留最长 30
+        天分层历史；重新开始只重置本次累计，已保存历史仍可查看。
       </p>
       {(vm.detail || vm.error) && (
         <p className="processor-caption" role="status">
@@ -127,7 +149,38 @@ export function AppNetworkRanking({
                     </>
                   ) : null}
                   <div>
-                    <span title={row.path || undefined}>{row.name}</span>
+                    <div className="app-network-title">
+                      {row.app && onHistory ? (
+                        <Button
+                          variant={
+                            vm.selectedId === row.id ? "secondary" : "ghost"
+                          }
+                          size="sm"
+                          title={row.path || undefined}
+                          aria-label={`查看 ${row.name} 的历史`}
+                          onClick={() => {
+                            vm.select(row.id);
+                            onHistory({ id: row.id, name: row.name });
+                          }}
+                        >
+                          {row.name}
+                        </Button>
+                      ) : (
+                        <span title={row.path || undefined}>{row.name}</span>
+                      )}
+                      {row.app && (
+                        <Button
+                          variant={
+                            vm.pinned?.id === row.id ? "secondary" : "ghost"
+                          }
+                          size="sm"
+                          aria-pressed={vm.pinned?.id === row.id}
+                          onClick={() => vm.pin(row.app!)}
+                        >
+                          {vm.pinned?.id === row.id ? "已固定" : "固定"}
+                        </Button>
+                      )}
+                    </div>
                     {row.app && (
                       <small className="processor-caption">
                         {row.app.processes.length} 个已记录进程
@@ -224,11 +277,13 @@ export function AppNetworkRanking({
         />
       ) : (
         <p className="app-network-empty processor-caption">
-          {vm.status === "normal"
-            ? "当前尚未观察到应用流量"
-            : vm.status === "unsupported"
-              ? "当前环境暂不支持应用网络采集"
-              : "开始监控后，这里会显示正在使用网络的应用"}
+          {vm.search
+            ? "本次监控中没有匹配的应用。"
+            : vm.status === "normal"
+              ? "当前尚未观察到应用流量"
+              : vm.status === "unsupported"
+                ? "当前环境暂不支持应用网络采集"
+                : "开始监控后，这里会显示正在使用网络的应用"}
         </p>
       )}
       <p className="processor-caption app-network-note">
