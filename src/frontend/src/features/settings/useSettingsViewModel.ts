@@ -2,12 +2,14 @@ import { useRef, useState } from "react";
 import type { MonitorClient } from "../../shared/client/monitor-client";
 import type { SettingsDto } from "../../shared/contracts/monitor";
 import { moveTaskbarGroup } from "./taskbar-model";
+import { defaultFontFamily, loadFont } from "../../shared/ui/fonts";
 const defaults: SettingsDto = {
   start_in_tray: false,
   autostart: false,
   close_action: "ask",
   revision: "0",
   theme: "system",
+  font_family: defaultFontFamily,
   interval_ms: 1000,
   network_id: null,
   release_network_on_exit: true,
@@ -47,8 +49,12 @@ export function useSettingsViewModel(
     const next = { ...previous, ...patch, revision: previous.revision };
     setDraft(next);
     setFeedback("正在保存…");
-    void client
-      .updateSettings(next)
+    void (
+      next.font_family !== previous.font_family
+        ? loadFont(next.font_family)
+        : Promise.resolve()
+    )
+      .then(() => client.updateSettings(next))
       .then((saved) => {
         const current = client.getSnapshot().state?.settings;
         setDraft(

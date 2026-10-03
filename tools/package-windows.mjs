@@ -21,6 +21,7 @@ export const requiredRuntimeFiles = [
   'licenses/THIRD-PARTY-NOTICES.txt',
   'licenses/one-ip/NOTICE', 'licenses/one-ip/one-ip.LICENSE', 'licenses/Sakani-MIT.txt',
   'licenses/Geist-OFL-1.1.txt', 'licenses/Geist-NOTICE.txt', 'licenses/brands-NOTICE.txt',
+  'licenses/HarmonyOS-Sans-LICENSE.txt', 'licenses/HarmonyOS-Sans-NOTICE.txt',
 ];
 
 const portable = value => value.split(path.sep).join('/');

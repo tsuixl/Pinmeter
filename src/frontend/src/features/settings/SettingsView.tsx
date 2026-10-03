@@ -5,6 +5,7 @@ import { useSettingsViewModel } from "./useSettingsViewModel";
 import { buildInfo } from "../../shared/client/build-info";
 import { UpdateSettings } from "../updates/UpdateViews";
 import { DiagnosticsCard } from "../diagnostics/DiagnosticsCard";
+import { fontOptions } from "../../shared/ui/fonts";
 import type { UpdateViewModel } from "../updates/useUpdateViewModel";
 import {
   Alert,
@@ -62,7 +63,10 @@ export function SettingsView({
         />
       )}
 
-      <Card title="外观" description="标题栏与内容使用同一主题">
+      <Card
+        title="外观"
+        description="主题作用于主窗口，字体同时作用于主窗口和任务栏"
+      >
         <fieldset className="theme-options" disabled={vm.pending}>
           <legend className="sr-only">主题</legend>
           {[
@@ -81,6 +85,24 @@ export function SettingsView({
             />
           ))}
         </fieldset>
+        <div className="settings-fields font-settings">
+          <Select
+            id="font-family"
+            label="界面字体"
+            description="更改后立即保存，下次启动继续使用"
+            value={vm.draft.font_family}
+            disabled={vm.pending}
+            options={fontOptions}
+            onChange={(font_family) => vm.change({ font_family })}
+          />
+        </div>
+        <p className="font-preview" aria-label="字体预览">
+          内存与网络 CPU 0123456789 · 100% · 128 MB/s
+        </p>
+        <p className="settings-note">
+          本软件使用 HarmonyOS Sans 字体，版权所有 © 2021 华为终端有限公司。
+          字体许可随运行目录提供。
+        </p>
       </Card>
       <Card title="启动" description="登录电脑后自动打开 Pinmeter">
         <Switch

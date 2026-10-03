@@ -110,6 +110,7 @@ pub fn settings(value: &Settings) -> SettingsDto {
         },
         revision: value.revision.to_string(),
         theme: value.theme.clone(),
+        font_family: value.font_family.clone(),
         interval_ms: value.interval_ms as u32,
         release_network_on_exit: value.release_network_on_exit,
         network_id: value.network_id.clone(),

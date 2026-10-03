@@ -13,6 +13,8 @@
 
 ## 进度
 
+- 2026-10-03 任务栏接入后端全局字体，默认使用内嵌鸿蒙 Regular，可选 Geist 和系统默认。变化时同时重建读数/Tooltip 字体和布局缓存，保留原固定数值槽。三字体 × 100%/150%/200% 的透明及百分比/温度像素对齐回归通过；当前保留旧版运行实例，正式管理员实时切换与 Explorer 恢复尚未实测。源码、资源和运行包证据统一见 [preferences](../v0.1.0-preferences/execution.md)。
+
 - P1 浏览器：核对 Sakani Checkbox/Select/Icon Button（受控 0.3.1），[浅色排序与温度独显](assets/p1-custom-light.jpg)、[深色显卡选单](assets/p1-custom-dark.jpg)、[窄窗](assets/p1-narrow-dark.jpg)及[最后一项禁用保护](assets/p1-last-metric-disabled.jpg)均可复核。GPU 排到 CPU 前、CPU 仅保留温度、显卡指定和最后一项不能取消均已操作检查；窄窗仅预览区域横向滚动，页面无溢出。HTML 只提供结构。真实 Explorer 绘制、混合 DPI 和权限边界保持未完成；统一交付见 [desktop-runtime](../v0.1.0-desktop-runtime/execution.md)。
 
 - v0.1.3 P1：新增网络、CPU/GPU 使用率与温度、内存六项独立开关，支持组排序和指定 GPU；显卡失联保留身份，不静默切换。旧配置的温度开关跟随原 CPU/GPU 开关，启用时至少保留一项读数。原生布局与前端预览使用同一组五种排列夹具；新增迁移、温度独显及多卡缺失回归。前端类型检查、最终 33 项测试、Rust 工作区测试与全目标 Clippy 通过；浏览器截图已留存。已包含在本轮 `test2/Pinmeter.exe`，来源与资源哈希见 desktop-runtime 交付记录；原生 Explorer/DPI 场景仍未验收。

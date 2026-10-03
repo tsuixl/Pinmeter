@@ -1,4 +1,5 @@
 Pinmeter third-party notices
+HarmonyOS Sans SC font resources added 2026-10-03.
 Verified 2026-09-28 for the Windows x64 build.
 Updater dependency additions verified 2026-10-03 against pinned registry sources.
 
@@ -6,13 +7,14 @@ This file preserves upstream copyright and license texts. Component rights remai
 with their respective authors. The index refers to full text blocks below by
 identifier; identical texts are stored once without removing notices.
 
-Scope: JavaScript retained in the production bundle, bundled Geist font, the
+Scope: JavaScript retained in the production bundle, bundled Geist and HarmonyOS Sans fonts, the
 Windows host's normal Cargo dependency closure (including procedural macros),
 and the unmodified sensor DLLs. A Cargo entry may be removed by final linking;
 its inclusion here does not claim it runs inside the application. Development
 tools not distributed with Pinmeter are not part of this inventory.
 
 Additional notices shipped with this package:
+- HarmonyOS-Sans-LICENSE.txt and HarmonyOS-Sans-NOTICE.txt: unmodified HarmonyOS Sans SC fonts.
 - one-ip/NOTICE and one-ip/one-ip.LICENSE: adapted IP implementation.
 - Geist-NOTICE.txt: taskbar font container conversion.
 - brands-NOTICE.txt: third-party brand images and source information.

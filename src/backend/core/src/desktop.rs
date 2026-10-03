@@ -227,6 +227,7 @@ mod display_settings_tests {
                 gpu_id: None,
                 revision: 0,
                 settings: case.settings,
+                font_family: crate::domain::default_font_family(),
                 network: String::new(),
                 readings: ["network", "network", "cpu", "memory", "gpu"]
                     .into_iter()
@@ -305,6 +306,7 @@ pub struct DesktopSummary {
     pub gpu_id: Option<String>,
     pub revision: u64,
     pub settings: TaskbarSettings,
+    pub font_family: String,
     pub network: String,
     pub readings: Vec<SummaryReading>,
 }

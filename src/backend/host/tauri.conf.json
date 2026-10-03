@@ -35,6 +35,8 @@
       "../../frontend/src/shared/ui/sakani/LICENSE": "licenses/Sakani-MIT.txt",
       "../platform/assets/taskbar/Geist.LICENSE": "licenses/Geist-OFL-1.1.txt",
       "../platform/assets/taskbar/NOTICE": "licenses/Geist-NOTICE.txt",
+      "../../shared/fonts/harmonyos-sans-sc/LICENSE.txt": "licenses/HarmonyOS-Sans-LICENSE.txt",
+      "../../shared/fonts/harmonyos-sans-sc/NOTICE.txt": "licenses/HarmonyOS-Sans-NOTICE.txt",
       "../../frontend/src/features/ip/assets/brands/NOTICE": "licenses/brands-NOTICE.txt"
     },
     "windows": { "nsis": { "installMode": "currentUser", "installerIcon": "icons/icon.ico", "uninstallerIcon": "icons/icon.ico" } }

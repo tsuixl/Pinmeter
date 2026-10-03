@@ -40,6 +40,7 @@ import type { ReadingStatus } from "../shared/contracts/monitor";
 import type { WindowClient } from "../shared/client/window-client";
 import { useWindowViewModel } from "./useWindowViewModel";
 import { WindowControls } from "./WindowControls";
+import { applyFont, defaultFontFamily, loadFont } from "../shared/ui/fonts";
 import { MonitorStatus } from "../features/monitoring/MonitorStatus";
 import { buildInfo } from "../shared/client/build-info";
 import { monitorHealth } from "../features/monitoring/health";
@@ -86,6 +87,32 @@ export function App({
   const updateVm = useUpdateViewModel(updateClient, updateVisible);
   const theme =
     vm.state?.settings.theme ?? windowClient?.initialTheme ?? "system";
+  const fontFamily =
+    vm.state?.settings.font_family ??
+    windowClient?.initialFontFamily ??
+    defaultFontFamily;
+  const [fontError, setFontError] = useState<string | null>(null);
+  useLayoutEffect(() => {
+    let active = true;
+    void loadFont(fontFamily)
+      .then(() => {
+        if (active) {
+          applyFont(fontFamily);
+          setFontError(null);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          applyFont("system");
+          setFontError(
+            "所选字体加载失败，暂用系统字体。请检查完整运行目录或在设置中重新选择。",
+          );
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [fontFamily]);
   const [collapsed, setCollapsed] = useState(
     () => matchMedia("(max-width: 1023px)").matches,
   );
@@ -341,6 +368,13 @@ export function App({
               color="warning"
               title="窗口操作"
               description={windowVm.error}
+            />
+          )}
+          {fontError && (
+            <Alert
+              color="warning"
+              title="字体暂不可用"
+              description={fontError}
             />
           )}
           <div className="page-heading">

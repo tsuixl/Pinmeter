@@ -305,6 +305,7 @@ fn save_settings(
         schema_version: 1,
         revision: expected,
         theme: settings.theme,
+        font_family: settings.font_family,
         interval_ms: settings.interval_ms as u64,
         network_id: settings.network_id,
         release_network_on_exit: settings.release_network_on_exit,

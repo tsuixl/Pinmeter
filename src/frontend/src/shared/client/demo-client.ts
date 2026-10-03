@@ -136,6 +136,7 @@ export class DemoClient extends ObservableClient {
           start_in_tray: false,
           revision: "0",
           theme: "system",
+          font_family: "harmonyos_sans_sc",
           interval_ms: 1000,
           network_id: null,
           release_network_on_exit: true,

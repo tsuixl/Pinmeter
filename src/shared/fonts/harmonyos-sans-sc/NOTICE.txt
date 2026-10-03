@@ -1,0 +1,10 @@
+Pinmeter uses HarmonyOS Sans SC (Regular, Medium and Bold).
+Copyright 2021 Huawei Device Co., Ltd.
+
+These original TrueType files are distributed unchanged under the accompanying
+HarmonyOS Sans Fonts License Agreement (LICENSE.txt). They are bundled with
+Pinmeter, not installed on the operating system. The frontend loads all three
+weights; the native Windows taskbar embeds the same Regular source file.
+
+Official source: https://developer.huawei.com/consumer/cn/design/resource/
+Original files were supplied from the user's HarmonyOS_Sans download.

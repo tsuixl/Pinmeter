@@ -10,6 +10,8 @@
 
 ## 进度
 
+- 2026-10-03 全局字体默认改为 HarmonyOS Sans SC，并可在设置选择 Geist / 系统默认。主窗口启动预加载和确认后切换已接入；Sakani 控件、主题与间距继续沿用，HTML 只供布局。字体浏览器深浅截图、失败回滚及本次构建证据统一见 [preferences](../v0.1.0-preferences/execution.md)；原有正式宿主和完整视觉未验收项保持。
+
 - 2026-10-02 品牌图标：侧栏和 favicon 复用 128×128 导出 PNG，侧栏保持 24×24 布局与拖动排除。浏览器演示环境检查 [浅色](assets/icon-light.jpg)、[深色](assets/icon-dark.jpg)（1280×720）及[折叠侧栏](assets/icon-compact.jpg)（880×600）；图片完整加载且无拉伸、溢出，主题与控件继续复用 Sakani，HTML 仅供结构参考。本次仅验收新标识在这些浏览器状态中的呈现，原生托盘、Shell 图标缓存和混合 DPI 未验证。
 - `npm --prefix src/frontend run check`、修改文件 Prettier 检查与 `git diff --check` 通过；最初在 npm 安装尚未完成时的类型检查未启动，依赖安装完成后重跑通过。生产前端随 desktop-runtime 的完整构建验证。
 

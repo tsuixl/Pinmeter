@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Pinmeter 字体设置回归</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module">
+      // Development-only fixture: the real View/ViewModel with isolated save failures.
+      import { createElement } from "react";
+      import { createRoot } from "react-dom/client";
+      import { App } from "../src/app/App";
+      import { DemoClient } from "../src/shared/client/demo-client";
+      import { DemoUpdateClient } from "../src/shared/client/demo-update-client";
+      import { applyFont, loadFont } from "../src/shared/ui/fonts";
+      import "@fontsource-variable/geist";
+      import "../src/shared/ui/sakani/tokens.css";
+      import "@sakaniui/react/style.css";
+      import "../src/shared/ui/fonts.css";
+      import "../src/app/style.css";
+
+      const mode = new URLSearchParams(location.search).get("save");
+      class FontSettingsClient extends DemoClient {
+        async updateSettings(settings) {
+          await new Promise((resolve) =>
+            setTimeout(resolve, mode === "slow" ? 5000 : 100),
+          );
+          if (mode === "fail") throw new Error("字体设置保存失败（隔离测试）");
+          return super.updateSettings(settings);
+        }
+      }
+      await loadFont("harmonyos_sans_sc");
+      applyFont("harmonyos_sans_sc");
+      createRoot(document.getElementById("root")).render(
+        createElement(App, {
+          client: new FontSettingsClient(),
+          updateClient: new DemoUpdateClient(null),
+        }),
+      );
+    </script>
+  </body>
+</html>

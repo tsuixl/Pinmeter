@@ -574,7 +574,7 @@ unsafe fn run_inner(
                     last_placement = None;
                     last_good = None;
                 } else {
-                    let config = summary.settings.clone();
+                    let config = (summary.settings.clone(), summary.font_family.clone());
                     let changed = last_config.as_ref() != Some(&config);
                     let observation = observer.geometry.lock().unwrap().clone();
                     let observed_at = observation.as_ref().map(|(at, _)| *at);
@@ -701,7 +701,12 @@ unsafe fn run_inner(
                                         last_placement = None;
                                     }
                                     let scale = state.dpi / 96.;
-                                    if state.paint_failed {
+                                    if state.paint_failed
+                                        || state
+                                            .painter
+                                            .as_ref()
+                                            .is_some_and(|p| !p.uses_font(&summary.font_family))
+                                    {
                                         state.painter = None;
                                         state.tip_painter = None;
                                         state.paint_failed = false;
@@ -709,8 +714,14 @@ unsafe fn run_inner(
                                     }
                                     if state.painter.is_none() {
                                         state.painter = Some(
-                                            Painter::new(state.hwnd, 1, 1, state.dpi)
-                                                .map_err(|e| e.to_string())?,
+                                            Painter::new(
+                                                state.hwnd,
+                                                1,
+                                                1,
+                                                state.dpi,
+                                                &summary.font_family,
+                                            )
+                                            .map_err(|e| e.to_string())?,
                                         );
                                     }
                                     let painter = state.painter.as_mut().unwrap();
@@ -868,6 +879,7 @@ unsafe fn run_inner(
                                     width as u32,
                                     height as u32,
                                     state.dpi,
+                                    &state.summary.font_family,
                                 )
                                 .ok();
                             }
@@ -1325,6 +1337,7 @@ mod tests {
     fn live_observer_reads_without_embedding() {
         use pinmeter_core::desktop::TaskbarSettings;
         let latest = Arc::new(Mutex::new(Some(DesktopSummary {
+            font_family: pinmeter_core::domain::default_font_family(),
             session: "read-only-observer-probe".into(),
             cursor: 1,
             network_id: None,

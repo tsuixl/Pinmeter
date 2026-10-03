@@ -8,53 +8,91 @@ use windows::{
             Dxgi::Common::DXGI_FORMAT_B8G8R8A8_UNORM,
             Gdi::*,
         },
-        UI::WindowsAndMessaging::{ULW_ALPHA, UpdateLayeredWindow},
+        UI::WindowsAndMessaging::{
+            NONCLIENTMETRICSW, SPI_GETNONCLIENTMETRICS, SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS,
+            SystemParametersInfoW, ULW_ALPHA, UpdateLayeredWindow,
+        },
     },
-    core::{Result, w},
+    core::{Interface, PCWSTR, Result, w},
 };
 use windows_numerics::Vector2;
 
 const FONT: &[u8] = include_bytes!("../../assets/taskbar/Geist.ttf");
+const HARMONY_FONT: &[u8] =
+    include_bytes!("../../../../shared/fonts/harmonyos-sans-sc/HarmonyOS_Sans_SC_Regular.ttf");
 
 pub struct Painter {
     target: ID2D1DCRenderTarget,
     hwnd: HWND,
     surface: Surface,
     write: IDWriteFactory5,
-    _font_loader: FontLoader,
+    _font_loader: Option<FontLoader>,
+    font_family: String,
     format: IDWriteTextFormat,
     typography: IDWriteTypography,
     tokens: serde_json::Value,
 }
 impl Painter {
-    pub fn new(hwnd: HWND, width: u32, height: u32, dpi: f32) -> Result<Self> {
+    pub fn new(hwnd: HWND, width: u32, height: u32, dpi: f32, font_family: &str) -> Result<Self> {
         // SAFETY: all COM graphics objects remain on the owning native UI thread.
         unsafe {
             let factory: ID2D1Factory = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, None)?;
             let write: IDWriteFactory5 = DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED)?;
-            let loader = write.CreateInMemoryFontFileLoader()?;
-            write.RegisterFontFileLoader(&loader)?;
-            let font_loader = FontLoader {
-                write: write.clone(),
-                loader: loader.clone(),
+            let (family, bytes) = match font_family {
+                "harmonyos_sans_sc" => ("HarmonyOS Sans SC".to_owned(), Some(HARMONY_FONT)),
+                "geist" => ("Geist".to_owned(), Some(FONT)),
+                "system" => {
+                    let mut metrics = NONCLIENTMETRICSW {
+                        cbSize: std::mem::size_of::<NONCLIENTMETRICSW>() as u32,
+                        ..Default::default()
+                    };
+                    SystemParametersInfoW(
+                        SPI_GETNONCLIENTMETRICS,
+                        metrics.cbSize,
+                        Some((&mut metrics as *mut NONCLIENTMETRICSW).cast()),
+                        SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS(0),
+                    )?;
+                    let name = &metrics.lfMessageFont.lfFaceName;
+                    let end = name.iter().position(|c| *c == 0).unwrap_or(name.len());
+                    (String::from_utf16_lossy(&name[..end]), None)
+                }
+                _ => return Err(E_INVALIDARG.into()),
             };
-            let file = loader.CreateInMemoryFontFileReference(
-                &write,
-                FONT.as_ptr().cast(),
-                FONT.len() as u32,
-                None,
-            )?;
-            let builder = write.CreateFontSetBuilder()?;
-            builder.AddFontFile(&file)?;
-            let set = builder.CreateFontSet()?;
-            let collection = write.CreateFontCollectionFromFontSet(&set)?;
+            let (collection, font_loader) = if let Some(bytes) = bytes {
+                let loader = write.CreateInMemoryFontFileLoader()?;
+                write.RegisterFontFileLoader(&loader)?;
+                let font_loader = FontLoader {
+                    write: write.clone(),
+                    loader: loader.clone(),
+                };
+                let file = loader.CreateInMemoryFontFileReference(
+                    &write,
+                    bytes.as_ptr().cast(),
+                    bytes.len() as u32,
+                    None,
+                )?;
+                let builder = write.CreateFontSetBuilder()?;
+                builder.AddFontFile(&file)?;
+                let set = builder.CreateFontSet()?;
+                let collection: IDWriteFontCollection =
+                    write.CreateFontCollectionFromFontSet(&set)?.cast()?;
+                (Some(collection), Some(font_loader))
+            } else {
+                (None, None)
+            };
             let tokens: serde_json::Value = serde_json::from_str(include_str!(
                 "../../../../shared/design-tokens/taskbar.json"
             ))
             .expect("checked Sakani tokens");
             let format = write.CreateTextFormat(
-                w!("Geist"),
-                &collection,
+                PCWSTR(
+                    family
+                        .encode_utf16()
+                        .chain(Some(0))
+                        .collect::<Vec<_>>()
+                        .as_ptr(),
+                ),
+                collection.as_ref(),
                 DWRITE_FONT_WEIGHT_NORMAL,
                 DWRITE_FONT_STYLE_NORMAL,
                 DWRITE_FONT_STRETCH_NORMAL,
@@ -95,11 +133,15 @@ impl Painter {
                 surface,
                 write,
                 _font_loader: font_loader,
+                font_family: font_family.into(),
                 format,
                 typography,
                 tokens,
             })
         }
+    }
+    pub fn uses_font(&self, font_family: &str) -> bool {
+        self.font_family == font_family
     }
     pub fn resize(&mut self, width: u32, height: u32, dpi: f32) -> Result<()> {
         unsafe {
@@ -544,6 +586,39 @@ mod tests {
     use super::*;
     use pinmeter_core::desktop::{SummaryReading, SummaryTemperature, TaskbarSettings};
 
+    fn font_scales() -> impl Iterator<Item = (&'static str, f32)> {
+        ["harmonyos_sans_sc", "geist", "system"]
+            .into_iter()
+            .flat_map(|font| [96., 144., 192.].map(|dpi| (font, dpi)))
+    }
+
+    #[test]
+    fn native_font_selection_loads_real_faces_and_rejects_unknown_values() {
+        for font in ["harmonyos_sans_sc", "geist", "system"] {
+            let painter = Painter::new(HWND::default(), 1, 1, 96., font).unwrap();
+            assert!(painter.uses_font(font));
+            let mut name =
+                vec![0; unsafe { painter.format.GetFontFamilyNameLength() } as usize + 1];
+            unsafe {
+                painter.format.GetFontFamilyName(&mut name).unwrap();
+            }
+            let family = String::from_utf16_lossy(&name[..name.len() - 1]);
+            match font {
+                "harmonyos_sans_sc" => assert_eq!(family, "HarmonyOS Sans SC"),
+                "geist" => assert_eq!(family, "Geist"),
+                _ => assert!(!family.is_empty()),
+            }
+            assert!(painter.measure("内存 100% CPU 57°C").unwrap() > 0.);
+            if font == "harmonyos_sans_sc" {
+                let widths: Vec<_> = (0..10)
+                    .map(|digit| painter.measure(&digit.to_string()).unwrap())
+                    .collect();
+                assert!(widths.iter().all(|width| (width - widths[0]).abs() < 0.01));
+            }
+        }
+        assert!(Painter::new(HWND::default(), 1, 1, 96., "unknown").is_err());
+    }
+
     fn pixels(painter: &Painter) -> Vec<[u8; 4]> {
         // EndDraw has completed; the owning DIB stays alive and is not being painted.
         unsafe {
@@ -564,6 +639,7 @@ mod tests {
             network_id: None,
             gpu_id: None,
             settings: TaskbarSettings::default(),
+            font_family: pinmeter_core::domain::default_font_family(),
             network: "Example".into(),
             readings: [
                 ("network", "3.2"),
@@ -596,8 +672,8 @@ mod tests {
     #[test]
     fn transparent_readings_keep_glyph_alpha_and_clear_previous_frames() {
         let summary = example();
-        for dpi in [96., 144., 192.] {
-            let mut painter = Painter::new(HWND::default(), 1, 1, dpi).unwrap();
+        for (font, dpi) in font_scales() {
+            let mut painter = Painter::new(HWND::default(), 1, 1, dpi, font).unwrap();
             for double in [true, false] {
                 let (cells, width, height) = layout(&painter, &summary, double, false).unwrap();
                 painter
@@ -663,7 +739,7 @@ mod tests {
     }
     #[test]
     fn metric_combinations_fit_without_overlap_or_temperature_width_changes() {
-        let painter = Painter::new(HWND::default(), 1, 1, 96.).unwrap();
+        let painter = Painter::new(HWND::default(), 1, 1, 96., "harmonyos_sans_sc").unwrap();
         let mut summary = example();
         for mask in 0..8 {
             summary.settings.cpu = mask & 1 != 0;
@@ -718,10 +794,10 @@ mod tests {
     }
     #[test]
     fn percent_and_temperature_pixels_stay_aligned_across_digit_counts() {
-        for dpi in [96., 144., 192.] {
+        for (font, dpi) in font_scales() {
             let scale = dpi / 96.;
             let mut summary = example();
-            let mut painter = Painter::new(HWND::default(), 1, 1, dpi).unwrap();
+            let mut painter = Painter::new(HWND::default(), 1, 1, dpi, font).unwrap();
             let (cells, width, height) = layout(&painter, &summary, true, false).unwrap();
             painter
                 .resize(

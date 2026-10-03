@@ -1,0 +1,24 @@
+@font-face {
+  font-family: "Pinmeter HarmonyOS Sans SC";
+  src: url("../../../../shared/fonts/harmonyos-sans-sc/HarmonyOS_Sans_SC_Regular.ttf")
+    format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Pinmeter HarmonyOS Sans SC";
+  src: url("../../../../shared/fonts/harmonyos-sans-sc/HarmonyOS_Sans_SC_Medium.ttf")
+    format("truetype");
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Pinmeter HarmonyOS Sans SC";
+  src: url("../../../../shared/fonts/harmonyos-sans-sc/HarmonyOS_Sans_SC_Bold.ttf")
+    format("truetype");
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}

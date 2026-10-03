@@ -52,6 +52,22 @@ mod tests {
         fs::write(&path, br#"{"schema_version":1,"revision":2,"theme":"dark","interval_ms":1000,"network_id":null,"taskbar":{"enabled":false,"hidden":false,"layout":"double","cpu":true,"memory":true}}"#).unwrap();
         let repository = FileSettings::new(path);
         let mut settings = repository.load().unwrap().unwrap();
+        assert_eq!(settings.font_family, "harmonyos_sans_sc");
+        for font in ["geist", "system", "harmonyos_sans_sc"] {
+            settings.font_family = font.into();
+            repository.save(&settings).unwrap();
+            let saved = repository.load().unwrap().unwrap();
+            assert_eq!(saved.font_family, font);
+            assert_eq!(saved.theme, "dark");
+            assert_eq!(saved.revision, 2);
+        }
+        settings.font_family = "unknown".into();
+        assert!(repository.save(&settings).is_err());
+        assert_eq!(
+            repository.load().unwrap().unwrap().font_family,
+            "harmonyos_sans_sc"
+        );
+        settings.font_family = pinmeter_core::domain::default_font_family();
         assert!(!settings.start_in_tray);
         settings.start_in_tray = true;
         repository.save(&settings).unwrap();

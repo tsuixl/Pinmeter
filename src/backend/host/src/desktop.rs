@@ -371,6 +371,7 @@ fn summary_at(runtime: &Runtime, now: u64, preferred_gpu: Option<&str>) -> Deskt
             .or_else(|| device.map(|d| d.id.clone())),
         revision: monitor.settings.revision,
         settings: monitor.settings.taskbar.clone(),
+        font_family: monitor.settings.font_family.clone(),
         network: monitor
             .selected
             .as_ref()

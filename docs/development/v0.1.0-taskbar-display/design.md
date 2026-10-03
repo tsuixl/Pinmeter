@@ -19,6 +19,8 @@
 
 ## 技术方案
 
+- 2026-10-03 全局字体沿用 [preferences](../v0.1.0-preferences/design.md)：HarmonyOS Sans SC 默认，Geist 与系统默认可选，覆盖下文早期固定 Geist 的说明。摘要携带已确认字体偏好；变化时重建读数和自绘提示字体、清除旧测量再布局。鸿蒙原始 Regular 内嵌，系统默认从 Windows 非客户区消息字体解析；其余 Sakani 样式和固定数值列规则不变。
+
 ### 现状与路线
 
 现有 `host/src/runtime.rs` 管理基础采样与主窗口订阅；主窗口隐藏/最小化后停止其推送及按需应用网络排行，基础采样继续。`core/src/ports.rs` 尚无桌面集成端口，架构中的 `DesktopIntegration` 是设计约定，不能当作现成实现。任务栏需要独立的摘要消费者，不能放在当前 `if visible` 的主窗口推送分支内。

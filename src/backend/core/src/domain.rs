@@ -177,6 +177,8 @@ pub struct Settings {
     pub schema_version: u32,
     pub revision: u64,
     pub theme: String,
+    #[serde(default = "default_font_family")]
+    pub font_family: String,
     pub interval_ms: u64,
     pub network_id: Option<String>,
     #[serde(default = "release_network_by_default")]
@@ -184,6 +186,9 @@ pub struct Settings {
 }
 fn ask_on_close() -> String {
     "ask".into()
+}
+pub fn default_font_family() -> String {
+    "harmonyos_sans_sc".into()
 }
 fn release_network_by_default() -> bool {
     true
@@ -199,6 +204,7 @@ impl Default for Settings {
             taskbar: Default::default(),
             revision: 0,
             theme: "system".into(),
+            font_family: default_font_family(),
             interval_ms: 1000,
             network_id: None,
             release_network_on_exit: true,
@@ -217,6 +223,12 @@ impl Settings {
         }
         if !matches!(self.theme.as_str(), "system" | "light" | "dark") {
             return Err("无效的主题".into());
+        }
+        if !matches!(
+            self.font_family.as_str(),
+            "harmonyos_sans_sc" | "geist" | "system"
+        ) {
+            return Err("无效的界面字体".into());
         }
         if !matches!(self.interval_ms, 1000 | 2000 | 5000) {
             return Err("采样间隔必须为 1、2 或 5 秒".into());

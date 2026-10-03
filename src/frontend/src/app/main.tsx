@@ -9,10 +9,21 @@ import {
 import "@fontsource-variable/geist";
 import "../shared/ui/sakani/tokens.css";
 import "@sakaniui/react/style.css";
+import "../shared/ui/fonts.css";
 import "./style.css";
+import { applyFont, defaultFontFamily, loadFont } from "../shared/ui/fonts";
 
 async function bootstrap() {
   const windowClient = await createWindowClient();
+  const font = windowClient?.initialFontFamily ?? defaultFontFamily;
+  // The native window stays hidden during its initial font load. App reports a
+  // resource failure and keeps a readable system fallback instead of blocking startup.
+  try {
+    await loadFont(font);
+    applyFont(font);
+  } catch {
+    applyFont("system");
+  }
   const demo =
     import.meta.env.DEV && new URLSearchParams(location.search).has("demo");
   const updateClient = demo

@@ -64,6 +64,8 @@ pub struct SettingsDto {
     pub taskbar: TaskbarSettingsDto,
     pub revision: String,
     pub theme: String,
+    #[serde(default = "pinmeter_core::domain::default_font_family")]
+    pub font_family: String,
     pub interval_ms: u32,
     pub release_network_on_exit: bool,
     pub network_id: Option<String>,

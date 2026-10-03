@@ -1,7 +1,7 @@
 /* Layout and business visuals only. Controls use @sakaniui/react/style.css unchanged. */
 :root {
   --font-sans:
-    "Geist Variable", "Geist", "Microsoft YaHei UI", system-ui, sans-serif;
+    "Pinmeter HarmonyOS Sans SC", "Microsoft YaHei UI", system-ui, sans-serif;
   color: var(--color-fg-default);
   background: var(--color-bg-canvas);
   font-synthesis: none;
@@ -541,6 +541,13 @@ dd {
   color: var(--color-fg-muted);
   font-size: 12px;
   margin-top: var(--space-16);
+}
+.font-settings {
+  margin-top: var(--space-16);
+}
+.font-preview {
+  margin-block: var(--space-12) var(--space-4);
+  font-variant-numeric: tabular-nums;
 }
 .settings-actions {
   display: flex;
