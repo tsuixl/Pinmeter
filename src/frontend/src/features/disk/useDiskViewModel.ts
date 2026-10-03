@@ -12,7 +12,7 @@ export function useDiskViewModel(client: MonitorClient) {
         : Promise.reject(new Error("当前客户端不支持磁盘采样")),
     [client, selectedId],
   );
-  const { data, error } = usePageQuery(load);
+  const { data, error } = usePageQuery(client, load);
   // Never show the old disk's numbers while the new selection is in flight.
   const matching = selectedId === null || data?.selected_id === selectedId;
   const current =

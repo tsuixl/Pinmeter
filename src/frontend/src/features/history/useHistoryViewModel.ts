@@ -10,7 +10,7 @@ export function useHistoryViewModel(client: MonitorClient) {
       ? client.getArchiveSnapshot(start.getTime())
       : Promise.reject(new Error("当前客户端不支持本地历史"));
   }, [client]);
-  const query = usePageQuery(load, 10_000);
+  const query = usePageQuery(client, load, 10_000);
   const [range, setRange] = useState("86400000");
   const [anchor, setAnchor] = useState<number | null>(null);
   const frames = useMemo(

@@ -634,17 +634,22 @@ export function App({
                   ? "查询服务已连接"
                   : "本机采集"
                 : "采集服务未连接"}
-            {vm.page !== "ip" && vm.frame && vm.connected
-              ? ` · ${["cpu", "memory", "download", "upload"].every((key) => vm.frame![key as MetricKey].status === "normal") ? "实时" : "部分指标未就绪"}`
-              : ""}
+            {vm.page === "history"
+              ? " · 本地记录"
+              : vm.page !== "ip" && vm.frame && vm.connected
+                ? ` · ${["cpu", "memory", "download", "upload"].every((key) => vm.frame![key as MetricKey].status === "normal") ? "实时" : "部分指标未就绪"}`
+                : ""}
           </span>
           <span>
             {vm.page === "ip"
               ? "按需查询 · 第三方来源"
-              : vm.page === "history" ? "分钟汇总 · 最近 24 小时"
-              : vm.page === "disk" ? "按需采样 · 2 秒 / 次 · 最近 5 分钟"
-              : vm.page === "processes" ? "按需采样 · 2 秒 / 次 · 只读 Top 10"
-              : `${(vm.state?.settings.interval_ms ?? 1000) / 1000} 秒 / 次 · 最近 5 分钟`}
+              : vm.page === "history"
+                ? "分钟汇总 · 最近 24 小时"
+                : vm.page === "disk"
+                  ? "按需采样 · 2 秒 / 次 · 最近 5 分钟"
+                  : vm.page === "processes"
+                    ? "按需采样 · 2 秒 / 次 · 只读 Top 10"
+                    : `${(vm.state?.settings.interval_ms ?? 1000) / 1000} 秒 / 次 · 最近 5 分钟`}
           </span>
         </footer>
       </div>

@@ -163,6 +163,8 @@ PDH 是 Windows 的性能数据查询接口。Pinmeter 只为所需指标建立�
 
 ### 3.4 GPU 和磁盘的后续扩展
 
+2026-10-03：P1 磁盘已采用 PDH PhysicalDisk 的读写字节速率与 `% Idle Time`，后者转换为活动时间。进程排行采用 Toolhelp 枚举、[GetProcessTimes](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-getprocesstimes) 和 [GetProcessMemoryInfo](https://learn.microsoft.com/en-us/windows/win32/api/psapi/nf-psapi-getprocessmemoryinfo)，按创建时间识别 PID 复用，CPU 时间按逻辑处理器数归一化；工作集不等于私有内存。只请求 `PROCESS_QUERY_LIMITED_INFORMATION`，不可读字段保留缺失。此为本次实际选型，覆盖早期按需 sysinfo 候选；探针与边界见 [disk-monitoring](../development/v0.1.3-disk-monitoring/execution.md) 和 [process-ranking](../development/v0.1.3-process-ranking/execution.md)。
+
 - GPU 利用率先评估 Windows `GPU Engine` counters；按 adapter LUID、物理适配器和 engine 保留身份，同引擎的进程占用按验证后的规则归并。
 - 每张 GPU 分别显示；卡级单值建议取该卡最忙引擎，不将不同引擎或多张卡直接相加。微软对任务管理器的说明采用最忙引擎表达总体负载，可作为对照依据。[微软 GPU 说明](https://devblogs.microsoft.com/directx/gpus-in-the-task-manager/)
 - GPU 利用率、显存和温度各有能力状态；某张卡缺温度不应导致负载读数一并消失。

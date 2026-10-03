@@ -97,6 +97,8 @@ export class TauriMonitorClient extends ObservableClient {
       })
       .catch((error) => console.error("Native theme unavailable", error));
     const visibility = () => {
+      if (this.snapshot.nativeVisible !== this.nativeVisible)
+        this.publish({ ...this.snapshot, nativeVisible: this.nativeVisible });
       if (document.hidden || !this.nativeVisible) {
         this.disconnect();
       } else void this.connect();

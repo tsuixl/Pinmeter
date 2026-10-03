@@ -10,7 +10,7 @@ export function useProcessViewModel(client: MonitorClient) {
         : Promise.reject(new Error("当前客户端不支持进程排行")),
     [client, sort],
   );
-  const query = usePageQuery(load);
+  const query = usePageQuery(client, load);
   return {
     ...query,
     sort,

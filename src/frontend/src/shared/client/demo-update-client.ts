@@ -8,7 +8,7 @@ export class DemoUpdateClient implements UpdateClient {
   private state: UpdateSnapshotDto;
   constructor(scenario: string | null = null) {
     const target = {
-      version: "0.1.3",
+      version: "0.1.4",
       date: "2026-10-03",
       summary: "演示：更方便地更新 Pinmeter",
       sections: [

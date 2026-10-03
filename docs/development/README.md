@@ -8,17 +8,17 @@ UI 开发与交接必须明确：[Sakani 官方 Storybook](https://main--6a5a658
 
 ## v0.1.0 首版计划
 
-当前工作版本为 **v0.1.2**，在线更新正在实现；最近已发布版本仍为 [v0.1.1 Windows x64 预览版](https://github.com/tsuixl/Pinmeter/releases/tag/v0.1.1)。Windows 预览发行沿用原 [desktop-runtime](v0.1.0-desktop-runtime/design.md) 功能目录，在线更新维护在 [app-update](v0.1.2-app-update/design.md)。下列 v0.1.0 表格和目录保留首版计划含义，发布与验收以各功能执行记录为准。
+当前工作版本为 **v0.1.3**，P1 六项已接入；最近已发布版本仍为 [v0.1.1 Windows x64 预览版](https://github.com/tsuixl/Pinmeter/releases/tag/v0.1.1)。本轮生成本地完整运行包，不自动发布。Windows 交付沿用 [desktop-runtime](v0.1.0-desktop-runtime/design.md)，在线更新维护在 [app-update](v0.1.2-app-update/design.md)。下列 v0.1.0 表格和目录保留首版计划含义，发布与验收以各功能执行记录为准。
 
 [preferences](v0.1.0-preferences/design.md) 包含默认关闭的开机自启；任务注册、即时保存和验证由原设置功能维护。
 
 [任务栏显示](v0.1.0-taskbar-display/design.md)采用双行紧凑默认布局，已接入原生显示、设置及常驻入口。关闭选择由 desktop-runtime 统一维护；管理员、兼容性及完整视觉验收按原功能记录。
 
-**当前实现**：主窗口包含总览、硬件信息、CPU、内存、GPU、网络、IP 与设置；基础指标保留最近五分钟趋势。已接入托盘、任务栏直显、开机自启和应用网络控制。关闭默认询问最小化或退出，最小化隐藏任务栏按钮并保留托盘。用户开启的应用流量监控在切页、托盘及界面重连期间连续累计；明确停止后再次开始建立新统计。完整发行验收尚未完成，各能力以原执行记录为准。
+**当前实现**：主窗口包含总览、硬件信息、CPU、内存、GPU、网络、磁盘、进程、历史、IP 与设置；基础指标保留最近五分钟趋势，另将分钟汇总保存 24 小时。P1 增加启动到托盘、诊断预览导出及任务栏六项独立开关、排序和显卡选择。已接入托盘、任务栏直显、开机自启和应用网络控制。关闭默认询问最小化或退出，最小化隐藏任务栏按钮并保留托盘。用户开启的应用流量监控在切页、托盘及界面重连期间连续累计；明确停止后再次开始建立新统计。完整发行验收尚未完成，各能力以原执行记录为准。
 
 已发布 [v0.1.0 Windows x64 预览版](https://github.com/tsuixl/Pinmeter/releases/tag/v0.1.0)。首发验证 Windows；当前参考环境为 Windows 11 专业版 `10.0.26200`、64 位，已实际运行桌面界面与生命周期测试。发布源码的 Windows、macOS 和 Linux [远端 CI](https://github.com/tsuixl/Pinmeter/actions/runs/36585620873) 已全部通过；通过构建不等于已完成对应平台发行验收。
 
-悬浮窗、磁盘实时读写、通用进程页、风扇、告警与长期历史仍后置；CPU 温度、[GPU 采集及详情页](v0.1.0-gpu-monitoring/design.md)、[应用网络排行](v0.1.0-app-network-ranking/design.md)与[应用网络控制](v0.1.0-app-network-control/design.md)已作为本版能力接入。基础下载限速与新连接禁用/恢复已实测；代理/VPN、多传输场景、升级卸载及长期验收仍按原功能逐项记录。
+悬浮窗、托盘面板、风扇、告警与超过 24 小时的历史仍后置；CPU 温度、[GPU 采集及详情页](v0.1.0-gpu-monitoring/design.md)、[应用网络排行](v0.1.0-app-network-ranking/design.md)与[应用网络控制](v0.1.0-app-network-control/design.md)已接入。基础下载限速与新连接禁用/恢复已实测；代理/VPN、多传输场景、升级卸载及长期验收仍按原功能逐项记录。
 
 [IP 检测与资料](v0.1.0-ip-inspection/design.md)采用本地源码移植和后端适配，不依赖原作者部署的服务，仍需访问上游数据源。来源、许可和修改告知随模块保留，界面遵循 Sakani；服务条件及发行状态见执行记录。
 

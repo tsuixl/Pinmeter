@@ -10,6 +10,7 @@ export interface ClientSnapshot {
   error: string | null;
   demo: boolean;
   nativeTheme?: "light" | "dark" | null;
+  nativeVisible?: boolean;
 }
 export interface NetworkControlChange {
   id: string;

@@ -1,10 +1,20 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import type { MonitorClient } from "../../shared/client/monitor-client";
 
 /** One in-flight request; unmounting and hidden documents stop renewing backend leases. */
-export function usePageQuery<T>(load: () => Promise<T>, interval = 2_000) {
+export function usePageQuery<T>(
+  client: MonitorClient,
+  load: () => Promise<T>,
+  interval = 2_000,
+) {
+  const visible = useSyncExternalStore(
+    client.subscribe,
+    () => client.getSnapshot().nativeVisible !== false,
+  );
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState("");
   useEffect(() => {
+    if (!visible) return;
     let disposed = false;
     let pending = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -13,7 +23,7 @@ export function usePageQuery<T>(load: () => Promise<T>, interval = 2_000) {
       pending = true;
       try {
         const value = await load();
-        if (!disposed) {
+        if (!disposed && !document.hidden) {
           setData(value);
           setError("");
         }
@@ -36,6 +46,6 @@ export function usePageQuery<T>(load: () => Promise<T>, interval = 2_000) {
       clearTimeout(timer);
       document.removeEventListener("visibilitychange", visibility);
     };
-  }, [load, interval]);
+  }, [load, interval, visible]);
   return { data, error };
 }

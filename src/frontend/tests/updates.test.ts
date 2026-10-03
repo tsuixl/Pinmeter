@@ -14,7 +14,9 @@ describe("更新状态", () => {
     const client = new DemoUpdateClient("notice");
     await client.preference("dismiss");
     expect(client.getSnapshot().unread).toHaveLength(1);
-    expect(client.getSnapshot().dismissed_version).toBe("0.1.3");
+    expect(client.getSnapshot().dismissed_version).toBe(
+      client.getSnapshot().target?.version,
+    );
     await client.preference("read");
     expect(client.getSnapshot().unread).toHaveLength(0);
   });
