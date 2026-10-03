@@ -38,6 +38,7 @@ sha2 = "=0.10.9"
 tokio = { version = "=1.53.1", features = ["sync", "time", "macros"] }
 
 [dev-dependencies]
+tempfile = "=3.27.0"
 tauri = { version = "=2.11.5", features = ["test"] }
 
 [target.'cfg(windows)'.dependencies]

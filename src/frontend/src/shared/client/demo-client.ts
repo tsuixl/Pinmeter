@@ -12,7 +12,11 @@ import { demoGpu } from "./demo-gpu";
 import { demoIp } from "./demo-ip";
 import { demoHardware } from "./demo-hardware";
 import { demoDisk } from "./demo-disk";
+import { demoArchive } from "./demo-history";
 export class DemoClient extends ObservableClient {
+  async getArchiveSnapshot(dayStartMs: number) {
+    return demoArchive(dayStartMs);
+  }
   async getProcessSnapshot(
     sort: string,
   ): Promise<import("../contracts/monitor").ProcessSnapshotDto> {

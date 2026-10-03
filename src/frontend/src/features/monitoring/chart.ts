@@ -7,6 +7,7 @@ export type ChartSeries = {
   color: string;
   temperature?: boolean;
   network?: boolean;
+  maxGapMs?: number;
   read: (frame: FrameDto) => ReadingDto;
 };
 export function temperatureDomain(values: number[]) {
@@ -50,7 +51,8 @@ export function chartPaths(
         (network &&
           (frame.network_generation !== previous.network_generation ||
             frame.network_id !== previous.network_id)) ||
-        frame.elapsed_ms - previous.elapsed_ms > 15_000);
+        frame.elapsed_ms - previous.elapsed_ms >
+          (typeof key === "string" ? 15_000 : (key.maxGapMs ?? 15_000)));
     if (interrupted || reading.status !== "normal" || reading.value === null) {
       if (path) paths.push(path);
       path = "";

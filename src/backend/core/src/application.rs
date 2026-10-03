@@ -58,6 +58,7 @@ impl SettingsChange {
 }
 
 pub struct Monitor {
+    pub archive_input: Option<crate::archive::ArchiveInput>,
     pub autostart: crate::autostart::AutostartStatus,
     pub desktop: crate::desktop::DesktopStatus,
     pub cpu_model: Option<String>,
@@ -79,6 +80,7 @@ pub struct Monitor {
 impl Monitor {
     pub fn new(settings: Settings, diagnostic: Option<String>) -> Self {
         Self {
+            archive_input: None,
             autostart: Default::default(),
             desktop: Default::default(),
             cpu_model: None,
@@ -356,6 +358,26 @@ impl Monitor {
             memory_used: memory_result.as_ref().ok().map(|m| m.used),
             memory_total: memory_result.ok().map(|m| m.total),
         };
+        self.archive_input = Some(crate::archive::ArchiveInput {
+            wall_ms: frame.at_ms,
+            elapsed_ms: prev
+                .filter(|f| f.generation == frame.generation)
+                .map_or(0, |f| now.saturating_sub(f.elapsed_ms)),
+            cpu: (frame.cpu.status == Status::Normal)
+                .then_some(frame.cpu.value)
+                .flatten(),
+            memory: (frame.memory.status == Status::Normal)
+                .then_some(frame.memory.value)
+                .flatten(),
+            traffic: self.baseline.delta.clone(),
+            network: self
+                .selected
+                .as_ref()
+                .map(|n| crate::archive::NetworkSource {
+                    id: n.id.clone(),
+                    name: n.name.clone(),
+                }),
+        });
         self.history.push_back(frame);
         self.applied_revision = revision;
         while self.history.len() > 301

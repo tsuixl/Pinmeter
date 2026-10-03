@@ -1,6 +1,7 @@
 pub mod app_network;
 pub mod app_network_control;
 pub mod application;
+pub mod archive;
 pub mod autostart;
 pub mod desktop;
 pub mod diagnostics;

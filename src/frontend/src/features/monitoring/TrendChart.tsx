@@ -28,6 +28,7 @@ export function TrendChart({
   label,
   seriesLabels,
   axis,
+  sampleSpacing = 1000,
 }: {
   history: FrameDto[];
   keys?: MetricKey[];
@@ -38,6 +39,7 @@ export function TrendChart({
   label: string;
   seriesLabels?: Partial<Record<MetricKey, string>>;
   axis?: { unit: string; divisor: number; step: number; minimum: number };
+  sampleSpacing?: number;
 }) {
   const items: ChartSeries[] =
     series ??
@@ -119,7 +121,7 @@ export function TrendChart({
   const hover =
     nearest &&
     hoverAt !== null &&
-    Math.abs(nearest.elapsed_ms - hoverAt) <= 5000
+    Math.abs(nearest.elapsed_ms - hoverAt) <= Math.max(5000, sampleSpacing / 2)
       ? nearest
       : null;
   const hoverX = hover ? (hover.elapsed_ms - start) / range : 0;
@@ -200,7 +202,9 @@ export function TrendChart({
                 e.key === "End"
                   ? null
                   : clampAnchor(
-                      end + (e.key === "ArrowLeft" ? -10000 : 10000),
+                      end +
+                        (e.key === "ArrowLeft" ? -1 : 1) *
+                          Math.max(10000, sampleSpacing * 10),
                       first,
                       last,
                       range,

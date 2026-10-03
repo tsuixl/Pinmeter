@@ -51,6 +51,32 @@ fn counters(id: &str, bytes: u64) -> NetworkCounters {
         transmitted: bytes,
     }
 }
+
+#[test]
+fn archive_receives_only_accepted_integer_network_deltas() {
+    let mut monitor = Monitor::new(Settings::default(), None);
+    monitor.accept(sample(1_000, 10), 0);
+    assert!(monitor.archive_input.as_ref().unwrap().traffic.is_none());
+    monitor.accept(sample(2_500, 111), 0);
+    let delta = monitor
+        .archive_input
+        .as_ref()
+        .unwrap()
+        .traffic
+        .as_ref()
+        .unwrap();
+    assert_eq!(
+        (delta.received, delta.transmitted, delta.elapsed_ms),
+        (101, 101, 1500)
+    );
+    monitor.accept(sample(3_000, 10), 0);
+    assert!(monitor.archive_input.as_ref().unwrap().traffic.is_none());
+    monitor.accept(sample(30_000, 10000), 0);
+    assert!(monitor.archive_input.as_ref().unwrap().traffic.is_none());
+    assert_eq!(monitor.archive_input.as_ref().unwrap().elapsed_ms, 0);
+    assert!(!monitor.accept(sample(31_000, 11000), 999));
+    assert_eq!(monitor.archive_input.as_ref().unwrap().wall_ms, 40000);
+}
 #[test]
 fn temperature_history_freezes_validity_and_keeps_gaps_bounded() {
     let mut monitor = Monitor::new(Settings::default(), None);

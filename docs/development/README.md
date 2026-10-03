@@ -128,6 +128,8 @@ docs: [v0.1.0] development-workflow - 建立项目文档与开发规则
 
 ## 功能索引
 
+- [local-history 设计](v0.1.3-local-history/design.md)与[执行记录](v0.1.3-local-history/execution.md)：本地 24 小时分钟趋势与今日有效流量。
+
 - [process-ranking 设计](v0.1.3-process-ranking/design.md)与[执行记录](v0.1.3-process-ranking/execution.md)：按需只读 CPU/工作集 Top 10。
 
 - [disk-monitoring 设计](v0.1.3-disk-monitoring/design.md)与[执行记录](v0.1.3-disk-monitoring/execution.md)：物理磁盘读写、活动时间和五分钟趋势。

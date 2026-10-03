@@ -1,3 +1,4 @@
+mod archive;
 mod bridges;
 mod commands;
 pub mod contracts;
@@ -83,6 +84,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             disk::get_disk_snapshot,
+            archive::get_archive_snapshot,
             processes::get_process_snapshot,
             diagnostics::prepare_diagnostics,
             diagnostics::export_diagnostics,

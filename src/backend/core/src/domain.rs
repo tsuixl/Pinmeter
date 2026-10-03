@@ -97,11 +97,13 @@ pub struct Frame {
 
 #[derive(Default)]
 pub struct RateBaseline {
+    pub delta: Option<TrafficDelta>,
     previous: Option<(String, u64, u64, u64)>,
     pub generation: u64,
 }
 impl RateBaseline {
     pub fn reset(&mut self) {
+        self.delta = None;
         self.previous = None;
         self.generation += 1;
     }
@@ -111,6 +113,7 @@ impl RateBaseline {
         now: u64,
         max_gap_ms: u64,
     ) -> Result<(f64, f64), Failure> {
+        self.delta = None;
         let next = (
             counters.interface.id.clone(),
             counters.received,
@@ -126,6 +129,11 @@ impl RateBaseline {
                 && counters.transmitted >= transmitted
             {
                 let seconds = (now - at) as f64 / 1000.0;
+                self.delta = Some(TrafficDelta {
+                    received: counters.received - received,
+                    transmitted: counters.transmitted - transmitted,
+                    elapsed_ms: now - at,
+                });
                 return Ok((
                     (counters.received - received) as f64 / seconds,
                     (counters.transmitted - transmitted) as f64 / seconds,
@@ -135,6 +143,13 @@ impl RateBaseline {
         }
         Err(Failure::new(Status::Warming, "正在建立网络速率基线"))
     }
+}
+
+#[derive(Clone, Debug)]
+pub struct TrafficDelta {
+    pub received: u64,
+    pub transmitted: u64,
+    pub elapsed_ms: u64,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]

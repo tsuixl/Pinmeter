@@ -17,11 +17,13 @@ import {
   Info,
   HardDrive,
   ListOrdered,
+  History,
 } from "lucide-react";
 export const icons = {
   info: Info,
   disk: HardDrive,
   processes: ListOrdered,
+  history: History,
   app: AppWindow,
   chevronDown: ChevronDown,
   chevronRight: ChevronRight,

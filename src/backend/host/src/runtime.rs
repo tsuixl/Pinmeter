@@ -34,6 +34,7 @@ pub struct RuntimeState {
 pub struct Runtime {
     pub visible: Arc<AtomicBool>,
     pub disks: Mutex<Option<Arc<crate::disk::Disks>>>,
+    pub archives: Mutex<Option<Arc<crate::archive::Archives>>>,
     pub processes: Mutex<Option<Arc<crate::processes::Processes>>>,
     pub startup_visibility: Mutex<pinmeter_core::desktop::StartupVisibility>,
     desktop_menu_registered: AtomicBool,
@@ -73,6 +74,7 @@ impl Runtime {
         Arc::new(Self {
             visible: Arc::new(AtomicBool::new(false)),
             disks: Mutex::new(None),
+            archives: Mutex::new(None),
             processes: Mutex::new(None),
             startup_visibility: Mutex::new(Default::default()),
             desktop_menu_registered: AtomicBool::new(false),
@@ -105,6 +107,10 @@ impl Runtime {
         })
     }
     pub fn start(self: &Arc<Self>, app: AppHandle) {
+        if let Ok(config) = app.path().app_config_dir() {
+            *self.archives.lock().unwrap() =
+                Some(crate::archive::Archives::start(config.join("history.json")));
+        }
         *self.disks.lock().unwrap() = Some(crate::disk::Disks::start(self.visible.clone()));
         *self.processes.lock().unwrap() =
             Some(crate::processes::Processes::start(self.visible.clone()));
@@ -282,7 +288,19 @@ impl Runtime {
                     previous = Instant::now();
                     previous_wall = wall;
                     let raw = provider.sample();
-                    runtime.inner.lock().unwrap().monitor.accept(raw, revision);
+                    let archive_input = {
+                        let mut state = runtime.inner.lock().unwrap();
+                        if state.monitor.accept(raw, revision) {
+                            state.monitor.archive_input.clone()
+                        } else {
+                            None
+                        }
+                    };
+                    if let Some(input) = archive_input
+                        && let Some(archive) = runtime.archives.lock().unwrap().as_ref()
+                    {
+                        archive.offer(input);
+                    }
                     next = Instant::now() + Duration::from_millis(interval);
                 }
                 desktop.tick(&runtime, &app);
@@ -357,6 +375,9 @@ impl Runtime {
         if let Some(worker) = self.worker.lock().unwrap().take() {
             worker.thread().unpark();
             let _ = worker.join();
+        }
+        if let Some(archive) = self.archives.lock().unwrap().take() {
+            archive.stop();
         }
         self.stopped.store(true, Ordering::Release);
         *self.desktop_actions.lock().unwrap() = None;

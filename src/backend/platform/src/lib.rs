@@ -16,6 +16,7 @@ pub fn cpu_model() -> Option<String> {
 }
 
 pub mod app_network;
+pub mod archive;
 pub mod diagnostics;
 pub mod disk;
 pub mod gpu;

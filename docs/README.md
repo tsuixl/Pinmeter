@@ -55,6 +55,8 @@ docs/
 
 ## 开发记录 · development
 
+- 本地历史：[设计](development/v0.1.3-local-history/design.md) · [执行](development/v0.1.3-local-history/execution.md)，24 小时趋势与今日流量。
+
 - 进程排行：[设计](development/v0.1.3-process-ranking/design.md) · [执行](development/v0.1.3-process-ranking/execution.md)，只读 CPU/工作集 Top 10。
 
 - 磁盘监控：[设计](development/v0.1.3-disk-monitoring/design.md) · [执行](development/v0.1.3-disk-monitoring/execution.md)，按需采样和短期趋势。

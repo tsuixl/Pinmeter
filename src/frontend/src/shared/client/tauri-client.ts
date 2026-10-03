@@ -10,6 +10,12 @@ import { type NetworkControlChange, ObservableClient } from "./monitor-client";
 import { acceptBatch, mergeHistory } from "../state/history";
 
 export class TauriMonitorClient extends ObservableClient {
+  getArchiveSnapshot(dayStartMs: number) {
+    return invoke<import("../contracts/monitor").ArchiveSnapshotDto>(
+      "get_archive_snapshot",
+      { dayStartMs },
+    );
+  }
   getProcessSnapshot(sort: string) {
     return invoke<import("../contracts/monitor").ProcessSnapshotDto>(
       "get_process_snapshot",

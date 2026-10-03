@@ -19,6 +19,9 @@ export interface NetworkControlChange {
   expectedRevision: string;
 }
 export interface MonitorClient {
+  getArchiveSnapshot?(
+    dayStartMs: number,
+  ): Promise<import("../contracts/monitor").ArchiveSnapshotDto>;
   getProcessSnapshot?(
     sort: string,
   ): Promise<import("../contracts/monitor").ProcessSnapshotDto>;

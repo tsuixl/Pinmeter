@@ -3,6 +3,7 @@ import { IpView } from "../features/ip/IpView";
 import { HardwareView } from "../features/hardware/HardwareView";
 import { DiskView } from "../features/disk/DiskView";
 import { ProcessView } from "../features/processes/ProcessView";
+import { HistoryView } from "../features/history/HistoryView";
 import { ipClient } from "../shared/client/ip-client";
 import type { MonitorClient } from "../shared/client/monitor-client";
 import {
@@ -277,6 +278,7 @@ export function App({
               "network",
               "disk",
               "processes",
+              "history",
               "ip",
             ] as Page[]
           ).map(nav)}
@@ -348,6 +350,7 @@ export function App({
             {vm.page !== "settings" &&
               vm.page !== "disk" &&
               vm.page !== "processes" &&
+              vm.page !== "history" &&
               vm.page !== "ip" &&
               vm.page !== "hardware" && (
                 <div aria-label="趋势时间范围">
@@ -374,8 +377,7 @@ export function App({
               <Badge variant="warning">演示数据 · 不代表系统实际读数</Badge>
               {vm.page !== "ip" &&
                 vm.page !== "hardware" &&
-                vm.page !== "disk" &&
-                vm.page !== "processes" && (
+                vm.page !== "history" && (
                   <Select
                     label="演示状态"
                     size="sm"
@@ -572,6 +574,7 @@ export function App({
           {vm.page === "gpu" && <GpuView vm={gpuVm} range={vm.range} />}
           {vm.page === "disk" && <DiskView client={client} />}
           {vm.page === "processes" && <ProcessView client={client} />}
+          {vm.page === "history" && <HistoryView client={client} />}
           {vm.page === "ip" && <IpView client={ip} />}
           {vm.page === "network" && (
             <>
@@ -638,6 +641,9 @@ export function App({
           <span>
             {vm.page === "ip"
               ? "按需查询 · 第三方来源"
+              : vm.page === "history" ? "分钟汇总 · 最近 24 小时"
+              : vm.page === "disk" ? "按需采样 · 2 秒 / 次 · 最近 5 分钟"
+              : vm.page === "processes" ? "按需采样 · 2 秒 / 次 · 只读 Top 10"
               : `${(vm.state?.settings.interval_ms ?? 1000) / 1000} 秒 / 次 · 最近 5 分钟`}
           </span>
         </footer>
