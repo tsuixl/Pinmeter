@@ -1,5 +1,6 @@
 use crate::{bridges, runtime::Runtime};
 use pinmeter_core::{desktop::*, domain::Status, ports::Clock};
+use pinmeter_platform::taskbar::RetrySchedule;
 use std::sync::{
     Arc,
     atomic::Ordering,
@@ -17,11 +18,13 @@ pub struct Desktop {
     tray: Option<TrayIcon>,
     tx: SyncSender<DesktopIntent>,
     rx: Receiver<DesktopIntent>,
-    attempted_revision: Option<u64>,
+    tray_retry: RetrySchedule,
     tray_error: Option<String>,
-    native_revision: Option<u64>,
+    native_retry: RetrySchedule,
+    native_error: Option<String>,
     next_tray_check: Instant,
     menu_registered: bool,
+    last_alert_revision: Option<u64>,
     gpu_id: Option<String>,
 }
 impl Desktop {
@@ -32,11 +35,13 @@ impl Desktop {
             tray: None,
             tx,
             rx,
-            attempted_revision: None,
+            tray_retry: RetrySchedule::new(Instant::now()),
             tray_error: None,
-            native_revision: None,
+            native_retry: RetrySchedule::new(Instant::now()),
+            native_error: None,
             next_tray_check: Instant::now(),
             menu_registered: false,
+            last_alert_revision: None,
             gpu_id: None,
         }
     }
@@ -79,51 +84,61 @@ impl Desktop {
                 state.monitor.settings.taskbar.enabled,
             )
         };
-        if Instant::now() >= self.next_tray_check {
-            self.next_tray_check = Instant::now() + Duration::from_secs(5);
-            if self.tray.as_ref().is_some_and(|tray| {
-                cfg!(target_os = "windows") && !matches!(tray.rect(), Ok(Some(_)))
-            }) {
-                runtime.tray_ready.store(false, Ordering::Release);
+        let now = Instant::now();
+        self.tray_retry.configure(true, revision, now);
+        if now >= self.next_tray_check && self.tray.is_some() {
+            self.next_tray_check = now + Duration::from_secs(5);
+            let result = ensure_tray(app);
+            let ready = result.is_ok();
+            self.record_tray_health(runtime, result, now);
+            if !ready {
                 app.remove_tray_by_id("pinmeter-resident");
                 self.tray = None;
-                self.attempted_revision = None;
-                if let Some(window) = app.get_webview_window("main") {
-                    let _ = window.show();
-                }
-            }
-            // A failed registration is retried slowly; the main window stays available.
-            if self.tray.is_none() {
-                self.attempted_revision = None;
+                recover_after_tray_loss(runtime, app);
             }
         }
-        if self.native.as_ref().is_some_and(|native| native.finished())
-            && self.native_revision != Some(revision)
-        {
-            self.native = None;
-        }
-        if self.tray.is_none() && self.attempted_revision != Some(revision) {
-            self.attempted_revision = Some(revision);
+        if self.tray.is_none() && self.tray_retry.due(now) {
             match build_tray(app, self.tx.clone()) {
                 Ok(tray) => {
                     self.tray = Some(tray);
-                    self.tray_error = None;
-                    let ready = !cfg!(target_os = "windows")
-                        || matches!(self.tray.as_ref().unwrap().rect(), Ok(Some(_)));
-                    runtime.tray_ready.store(ready, Ordering::Release);
+                    self.last_alert_revision = None;
+                    let result = ensure_tray(app);
+                    let ready = result.is_ok();
+                    self.record_tray_health(runtime, result, now);
+                    self.next_tray_check = now + Duration::from_secs(5);
                     if !ready {
-                        self.tray_error = Some("未能确认系统托盘入口".into());
+                        recover_after_tray_loss(runtime, app);
                     }
                 }
                 Err(error) => {
-                    self.tray_error = Some(error.to_string());
+                    self.record_tray_health(runtime, Err(error.to_string()), now);
+                    recover_after_tray_loss(runtime, app);
+                }
+            }
+        }
+        if let Some(tray) = &self.tray {
+            let (alert_revision, unread) = {
+                let alerts = runtime.alerts.lock().unwrap();
+                (alerts.revision(), alerts.unread_count())
+            };
+            if self.last_alert_revision != Some(alert_revision) {
+                // Framework dispatch only happens when event state changes, never per sample.
+                self.last_alert_revision = Some(alert_revision);
+                let text = if unread == 0 {
+                    "Pinmeter · 后台监控中".to_string()
+                } else {
+                    format!("Pinmeter · {unread} 条占用提醒待查看，点击打开")
+                };
+                if let Err(error) = tray.set_tooltip(Some(text)) {
+                    eprintln!("无法更新托盘提醒：{error}");
                 }
             }
         }
         if !enabled || !cfg!(target_os = "windows") {
             self.native = None;
-            self.native_revision = None;
-            runtime.inner.lock().unwrap().monitor.desktop = DesktopStatus {
+            self.native_retry.configure(false, revision, now);
+            self.native_error = None;
+            let mut status = DesktopStatus {
                 supported: cfg!(target_os = "windows"),
                 revision,
                 stage: "disabled".into(),
@@ -134,8 +149,25 @@ impl Desktop {
                 }
                 .into(),
             };
+            self.append_tray_error(&mut status);
+            runtime.inner.lock().unwrap().monitor.desktop = status;
             return;
         }
+        if let Some(native) = &self.native
+            && native.finished()
+        {
+            let status = native.status();
+            self.native_error = Some(if status.stage == "failed" {
+                status.detail
+            } else {
+                "任务栏线程意外停止".into()
+            });
+            self.native = None;
+            self.native_retry.failed(now);
+        }
+        // Configuration changes bypass the previous failure's delay, even if the
+        // old worker finished in this tick. The same revision still auto-recovers.
+        self.native_retry.configure(true, revision, now);
         let summary = summary_at(
             runtime,
             pinmeter_platform::shared::SystemClock::default().monotonic_ms(),
@@ -143,13 +175,23 @@ impl Desktop {
         );
         self.gpu_id.clone_from(&summary.gpu_id);
         let revision = summary.revision;
-        if self.native.is_none() {
-            self.native_revision = Some(summary.revision);
+        if self.native.is_none() && self.native_retry.due(now) {
             self.native = Some(pinmeter_platform::taskbar::Taskbar::start());
         }
-        let native = self.native.as_ref().unwrap();
-        native.submit(summary);
-        let mut status = native.status();
+        let mut status = if let Some(native) = self.native.as_ref() {
+            native.submit(summary);
+            native.status()
+        } else {
+            DesktopStatus {
+                supported: true,
+                stage: "recovering".into(),
+                detail: format!(
+                    "等待自动恢复任务栏：{}",
+                    self.native_error.as_deref().unwrap_or("连接暂不可用")
+                ),
+                revision,
+            }
+        };
         if status.revision != revision && !matches!(status.stage.as_str(), "failed" | "unsupported")
         {
             status = DesktopStatus {
@@ -159,13 +201,42 @@ impl Desktop {
                 revision,
             };
         }
+        if matches!(status.stage.as_str(), "visible" | "hidden" | "no_space") {
+            self.native_retry.succeeded(now);
+            self.native_error = None;
+        }
+        self.append_tray_error(&mut status);
+        runtime.inner.lock().unwrap().monitor.desktop = status;
+    }
+
+    fn record_tray_health(&mut self, runtime: &Runtime, result: Result<(), String>, now: Instant) {
+        runtime.tray_ready.store(result.is_ok(), Ordering::Release);
+        match result {
+            Ok(()) => {
+                self.tray_error = None;
+                self.tray_retry.succeeded(now);
+            }
+            Err(error) => {
+                self.tray_error = Some(error);
+                self.tray_retry.failed(now);
+            }
+        }
+    }
+
+    fn append_tray_error(&self, status: &mut DesktopStatus) {
         if let Some(error) = &self.tray_error {
             status.detail = format!(
                 "{}；托盘入口不可用，暂时无法收起窗口：{error}",
                 status.detail
             );
         }
-        runtime.inner.lock().unwrap().monitor.desktop = status;
+    }
+}
+
+fn recover_after_tray_loss(runtime: &Runtime, app: &AppHandle) {
+    runtime.startup_visibility.lock().unwrap().reveal();
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = bridges::recover_without_focus(&window);
     }
 }
 fn build_tray(app: &AppHandle, tx: SyncSender<DesktopIntent>) -> tauri::Result<TrayIcon> {
@@ -198,7 +269,7 @@ fn build_tray(app: &AppHandle, tx: SyncSender<DesktopIntent>) -> tauri::Result<T
                     ..
                 }
             ) {
-                let _ = click_tx.try_send(DesktopIntent::Open("overview"));
+                let _ = click_tx.try_send(DesktopIntent::Open("panel"));
             }
         });
     if let Some(icon) = app.default_window_icon() {
@@ -209,6 +280,14 @@ fn build_tray(app: &AppHandle, tx: SyncSender<DesktopIntent>) -> tauri::Result<T
 fn act(runtime: &Arc<Runtime>, app: &AppHandle, intent: DesktopIntent) {
     match intent {
         DesktopIntent::Open(page) => {
+            if page == "panel" {
+                if let Err(error) = crate::tray_panel::toggle(app, runtime) {
+                    runtime.inner.lock().unwrap().monitor.diagnostic =
+                        Some(format!("快捷面板暂不可用：{error}"));
+                    recover_after_tray_loss(runtime, app);
+                }
+                return;
+            }
             runtime.startup_visibility.lock().unwrap().reveal();
             if page == "updates" {
                 let updates = app.state::<Arc<crate::updates::Updates>>().inner().clone();
@@ -488,6 +567,39 @@ pub fn minimize_to_tray(app: &AppHandle) -> Result<(), String> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn tray_health_checks_clear_old_errors_and_cancel_the_failure_delay() {
+        let runtime = Runtime::new(Arc::new(Repository));
+        let mut desktop = Desktop::new();
+        let now = Instant::now();
+        desktop.tray_retry.configure(true, 1, now);
+        desktop.record_tray_health(&runtime, Err("Explorer 正在恢复".into()), now);
+        assert!(!runtime.tray_ready.load(Ordering::Acquire));
+        assert_eq!(desktop.tray_error.as_deref(), Some("Explorer 正在恢复"));
+        assert!(!desktop.tray_retry.due(now));
+        desktop.record_tray_health(&runtime, Ok(()), now);
+        assert!(runtime.tray_ready.load(Ordering::Acquire));
+        assert!(desktop.tray_error.is_none());
+        assert!(desktop.tray_retry.due(now));
+        desktop.record_tray_health(&runtime, Err("托盘丢失".into()), now);
+        assert!(!runtime.tray_ready.load(Ordering::Acquire));
+        assert!(desktop.tray_retry.due(now + Duration::from_secs(1)));
+    }
+
+    #[test]
+    fn a_disabled_taskbar_still_reports_a_missing_tray_recovery_entry() {
+        let mut desktop = Desktop::new();
+        desktop.tray_error = Some("托盘丢失".into());
+        let mut status = DesktopStatus {
+            stage: "disabled".into(),
+            detail: "任务栏显示已关闭".into(),
+            ..Default::default()
+        };
+        desktop.append_tray_error(&mut status);
+        assert_eq!(status.stage, "disabled");
+        assert!(status.detail.contains("托盘入口不可用"));
+    }
+
     #[test]
     fn temperature_only_and_missing_selected_gpu_do_not_show_other_readings() {
         let runtime = Runtime::new(Arc::new(Repository));

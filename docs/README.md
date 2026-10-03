@@ -55,6 +55,9 @@ docs/
 
 ## 开发记录 · development
 
+- 占用提醒：[设计](development/v0.1.3-alerts/design.md) · [执行](development/v0.1.3-alerts/execution.md)，默认关闭的应用内提醒、静默时段及有限事件记录，不发送系统弹窗。
+- 托盘快捷面板：[设计](development/v0.1.3-tray-panel/design.md) · [执行](development/v0.1.3-tray-panel/execution.md)，读取共享快照、短趋势与详情入口，原生位置和焦点验收单列。
+
 - 本地历史：[设计](development/v0.1.3-local-history/design.md) · [执行](development/v0.1.3-local-history/execution.md)，24 小时趋势与今日流量。
 
 - 进程排行：[设计](development/v0.1.3-process-ranking/design.md) · [执行](development/v0.1.3-process-ranking/execution.md)，只读 CPU/工作集 Top 10。

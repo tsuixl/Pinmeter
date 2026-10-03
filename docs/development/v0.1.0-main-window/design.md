@@ -10,6 +10,8 @@
 
 ## 方案
 
+- 2026-10-04 排查联动：CPU/内存详情提供“查看占用进程”，带入对应排序；独立返回入口恢复原页、趋势范围、时间锚点及滚动位置。进程页说明当前读数不能解释过去锚点，不产生历史归因。沿用 Sakani Button，HTML 仅供结构参考。
+
 - 系统字体与样式扩展：外观页组合 Sakani Input / Combobox / Select，按 [preferences](../v0.1.0-preferences/design.md) 搜索系统家族并选择实际字面。旧配置默认排版，新字面先加载后保存；字体选择区域保持可读以便恢复。
 
 - 2026-10-03 全局字体由 [preferences](../v0.1.0-preferences/design.md) 统一维护：默认 HarmonyOS Sans SC，保留 Geist 与系统默认选项，覆盖本文早期固定 Geist 的家族约束。前端入口加载字体，自绘界面消费同一字体变量；其余 Sakani 排版与控件规范保持，HTML 仅供布局。

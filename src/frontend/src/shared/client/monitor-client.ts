@@ -20,6 +20,27 @@ export interface NetworkControlChange {
   expectedRevision: string;
 }
 export interface MonitorClient {
+  getAlertsSnapshot?(): Promise<
+    import("../contracts/monitor").AlertsSnapshotDto
+  >;
+  updateAlerts?(
+    config: import("../contracts/monitor").AlertsConfigDto,
+    expectedRevision: string,
+  ): Promise<import("../contracts/monitor").AlertsSnapshotDto>;
+  acknowledgeAlert?(
+    id: string,
+  ): Promise<import("../contracts/monitor").AlertsSnapshotDto>;
+  clearAlertEvents?(
+    throughId: string,
+  ): Promise<import("../contracts/monitor").AlertsSnapshotDto>;
+  getTraceSnapshot?(): Promise<import("../contracts/monitor").TraceSnapshotDto>;
+  startTrace?(
+    seconds: number,
+  ): Promise<import("../contracts/monitor").TraceSnapshotDto>;
+  stopTrace?(): Promise<import("../contracts/monitor").TraceSnapshotDto>;
+  exportTrace?(
+    token: string,
+  ): Promise<import("../contracts/monitor").DiagnosticExportDto>;
   getAppHistory?(
     range: string,
     appId: string | null,
@@ -30,7 +51,18 @@ export interface MonitorClient {
   ): Promise<import("../contracts/monitor").FontCatalogDto>;
   getArchiveSnapshot?(
     dayStartMs: number,
+    rangeMs?: number,
   ): Promise<import("../contracts/monitor").ArchiveSnapshotDto>;
+  getHistoryStorage?(): Promise<
+    import("../contracts/monitor").HistoryStorageDto
+  >;
+  clearHistory?(scope: "basic" | "applications"): Promise<void>;
+  exportHistory?(
+    scope: "basic" | "applications",
+    fromMs: number,
+    throughMs: number,
+    includePaths: boolean,
+  ): Promise<import("../contracts/monitor").HistoryExportDto>;
   getProcessSnapshot?(
     sort: string,
   ): Promise<import("../contracts/monitor").ProcessSnapshotDto>;

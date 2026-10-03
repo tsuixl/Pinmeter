@@ -2,16 +2,13 @@ use crate::{
     contracts::{ReadingDto, ReadingStatus},
     presenters,
     runtime::Runtime,
+    sampling::{SamplingAction, SamplingWait},
 };
 use pinmeter_core::{disk::DiskMonitor, domain::Status, ports::Clock};
 use serde::Serialize;
 use std::{
-    sync::{
-        Arc, Mutex,
-        atomic::{AtomicBool, Ordering},
-    },
+    sync::{Arc, Mutex, atomic::Ordering},
     thread::{self, JoinHandle},
-    time::{Duration, Instant},
 };
 use ts_rs::TS;
 
@@ -39,84 +36,75 @@ pub struct DiskSnapshotDto {
 }
 struct Data {
     monitor: DiskMonitor,
-    requested: Option<Instant>,
 }
 pub struct Disks {
     data: Mutex<Data>,
-    stop: AtomicBool,
+    sampling: SamplingWait,
     worker: Mutex<Option<JoinHandle<()>>>,
 }
 impl Disks {
-    pub fn start(visible: Arc<AtomicBool>) -> Arc<Self> {
+    pub fn start(visible: bool) -> Arc<Self> {
         let service = Arc::new(Self {
             data: Mutex::new(Data {
                 monitor: DiskMonitor::default(),
-                requested: None,
             }),
-            stop: AtomicBool::new(false),
+            sampling: SamplingWait::new(visible),
             worker: Mutex::new(None),
         });
         let s = service.clone();
         *service.worker.lock().unwrap() = Some(thread::spawn(move || {
             let clock = pinmeter_platform::shared::SystemClock::default();
             let mut collector = None;
-            let mut active = false;
-            let mut next = Instant::now();
-            while !s.stop.load(Ordering::Acquire) {
-                let wanted = visible.load(Ordering::Acquire)
-                    && s.data
-                        .lock()
-                        .unwrap()
-                        .requested
-                        .is_some_and(|t| t.elapsed() < Duration::from_secs(5));
-                if !wanted {
-                    collector = None;
-                    if active {
-                        s.data.lock().unwrap().monitor.reset();
-                    }
-                    active = false;
-                    next = Instant::now();
-                } else if Instant::now() >= next {
-                    active = true;
-                    let result = if collector.is_none() {
-                        match pinmeter_platform::disk::DiskCollector::new() {
-                            Ok(c) => {
-                                collector = Some(c);
-                                Ok(())
-                            }
-                            Err(e) => Err(e),
-                        }
-                    } else {
-                        Ok(())
-                    }
-                    .and_then(|_| collector.as_mut().unwrap().sample());
-                    if result.as_ref().is_err_and(|e| e.status != Status::Warming) {
+            loop {
+                let generation = match s.sampling.wait() {
+                    SamplingAction::Stop => break,
+                    SamplingAction::Reset => {
                         collector = None;
+                        s.data.lock().unwrap().monitor.reset();
+                        continue;
                     }
+                    SamplingAction::Collect(generation) => generation,
+                };
+                let result = if collector.is_none() {
+                    match pinmeter_platform::disk::DiskCollector::new() {
+                        Ok(c) => {
+                            collector = Some(c);
+                            Ok(())
+                        }
+                        Err(e) => Err(e),
+                    }
+                } else {
+                    Ok(())
+                }
+                .and_then(|_| collector.as_mut().unwrap().sample());
+                if result.as_ref().is_err_and(|e| e.status != Status::Warming) {
+                    collector = None;
+                }
+                s.sampling.finish(generation, || {
                     s.data.lock().unwrap().monitor.accept(
                         result,
                         clock.monotonic_ms(),
                         clock.wall_ms(),
                     );
-                    next = Instant::now() + Duration::from_secs(2);
-                }
-                thread::park_timeout(Duration::from_millis(200));
+                });
             }
         }));
         service
     }
     pub fn stop(&self) {
-        self.stop.store(true, Ordering::Release);
+        self.sampling.stop();
         if let Some(w) = self.worker.lock().unwrap().take() {
-            w.thread().unpark();
             let _ = w.join();
         }
     }
+    pub fn set_visible(&self, visible: bool) {
+        self.sampling.set_visible(visible);
+    }
     fn snapshot(&self, id: Option<String>, visible: bool) -> DiskSnapshotDto {
-        let mut data = self.data.lock().unwrap();
         if visible {
-            data.requested = Some(Instant::now());
+            self.sampling.request();
         }
+        let data = self.data.lock().unwrap();
         let m = &data.monitor;
         let now = pinmeter_platform::shared::SystemClock::default().monotonic_ms();
         let stale = m

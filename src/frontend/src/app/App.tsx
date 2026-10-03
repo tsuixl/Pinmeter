@@ -4,6 +4,8 @@ import { HardwareView } from "../features/hardware/HardwareView";
 import { DiskView } from "../features/disk/DiskView";
 import { ProcessView } from "../features/processes/ProcessView";
 import { HistoryView } from "../features/history/HistoryView";
+import { AppHistoryView } from "../features/history/AppHistoryView";
+import { useAppNetworkViewModel } from "../features/app-network/useAppNetworkViewModel";
 import { ipClient } from "../shared/client/ip-client";
 import type { MonitorClient } from "../shared/client/monitor-client";
 import {
@@ -20,6 +22,9 @@ import { GpuView } from "../features/gpu/GpuView";
 import { AppNetworkRanking } from "../features/app-network/AppNetworkRanking";
 import type { MetricKey } from "../features/monitoring/chart";
 import { SettingsView } from "../features/settings/SettingsView";
+import { SetupCard } from "../features/settings/SetupCard";
+import type { SettingsSection } from "../features/settings/sections";
+import { AlertsBanner } from "../features/alerts/AlertsView";
 import {
   Alert,
   Badge,
@@ -70,11 +75,28 @@ export function App({
   updateClient: UpdateClient;
 }) {
   const vm = useMonitorViewModel(client);
+  const networkVm = useAppNetworkViewModel(client, vm.page === "network");
+  const [appHistoryTarget, setAppHistoryTarget] = useState<{
+    id: string;
+    name: string;
+    range: number;
+    anchor: number | null;
+    scroll: number;
+  } | null>(null);
   const health = monitorHealth(vm);
   const ip = useMemo(() => ipClient(client), [client]);
   const gpuVm = useGpuViewModel(vm.state?.gpu, vm.connected, vm.history);
   const windowVm = useWindowViewModel(windowClient);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [settingsSection, setSettingsSection] =
+    useState<SettingsSection>("appearance");
+  const [processSort, setProcessSort] = useState("cpu");
+  const [processOrigin, setProcessOrigin] = useState<{
+    page: "cpu" | "memory";
+    range: number;
+    anchor: number | null;
+    scroll: number;
+  } | null>(null);
   const [documentVisible, setDocumentVisible] = useState(!document.hidden);
   useEffect(() => {
     const changed = () => setDocumentVisible(!document.hidden);
@@ -147,11 +169,67 @@ export function App({
     return () => query.removeEventListener("change", update);
   }, []);
   const go = (page: Page) => {
+    setProcessOrigin(null);
+    setAppHistoryTarget(null);
     vm.setPage(page);
     vm.setAnchor(null);
     requestAnimationFrame(() =>
       document.querySelector<HTMLElement>("h1")?.focus(),
     );
+  };
+  const openSettings = (section: SettingsSection) => {
+    setSettingsSection(section);
+    go("settings");
+  };
+  const openAppHistory = (app?: { id: string; name: string }) => {
+    if (!app) {
+      go("history");
+      return;
+    }
+    setAppHistoryTarget({
+      ...app,
+      range: vm.range,
+      anchor: vm.anchor,
+      scroll: document.querySelector("main.content")?.scrollTop ?? 0,
+    });
+    vm.setPage("history");
+    vm.setAnchor(null);
+  };
+  const returnToNetwork = () => {
+    if (!appHistoryTarget) return;
+    vm.setPage("network");
+    vm.setRange(appHistoryTarget.range);
+    vm.setAnchor(appHistoryTarget.anchor);
+    requestAnimationFrame(() =>
+      document
+        .querySelector("main.content")
+        ?.scrollTo({ top: appHistoryTarget.scroll }),
+    );
+    setAppHistoryTarget(null);
+  };
+  const openProcesses = (page: "cpu" | "memory") => {
+    setProcessOrigin({
+      page,
+      range: vm.range,
+      anchor: vm.anchor,
+      scroll: document.querySelector("main.content")?.scrollTop ?? 0,
+    });
+    setProcessSort(page === "memory" ? "memory" : "cpu");
+    vm.setPage("processes");
+    vm.setAnchor(null);
+  };
+  const returnToMetric = () => {
+    if (!processOrigin) return;
+    vm.setPage(processOrigin.page);
+    vm.setRange(processOrigin.range);
+    vm.setAnchor(processOrigin.anchor);
+    requestAnimationFrame(() => {
+      document
+        .querySelector("main.content")
+        ?.scrollTo({ top: processOrigin.scroll });
+      document.querySelector<HTMLElement>("h1")?.focus({ preventScroll: true });
+    });
+    setProcessOrigin(null);
   };
   const chart = (keys: MetricKey[], label: string) => (
     <TrendChart
@@ -306,18 +384,27 @@ export function App({
         <nav aria-label="监控页面">
           {(
             [
-              "overview",
-              "hardware",
-              "cpu",
-              "memory",
-              "gpu",
-              "network",
-              "disk",
-              "processes",
-              "history",
-              "ip",
-            ] as Page[]
-          ).map(nav)}
+              {
+                label: "监控",
+                pages: ["overview", "cpu", "memory", "gpu", "network", "disk"],
+              },
+              { label: "排查", pages: ["processes", "history"] },
+              { label: "工具", pages: ["hardware", "ip"] },
+            ] as { label: string; pages: Page[] }[]
+          ).map((group) => (
+            <div key={group.label} role="group" aria-label={group.label}>
+              <div
+                className={
+                  collapsed
+                    ? "sr-only"
+                    : "processor-caption sidebar-group-label"
+                }
+              >
+                {group.label}
+              </div>
+              {group.pages.map(nav)}
+            </div>
+          ))}
         </nav>
         <div className="sidebar-bottom">
           <UpdateBanner vm={updateVm} collapsed={collapsed} />
@@ -367,6 +454,7 @@ export function App({
           </div>
         </header>
         <main className="content" key={vm.page}>
+          <AlertsBanner client={client} onNavigate={go} />
           <MonitorStatus
             client={client}
             suspended={windowVm.exit.stage !== "idle"}
@@ -439,7 +527,15 @@ export function App({
             </div>
           )}
           {vm.page === "overview" && (
-            <OverviewView monitor={vm} gpu={gpuVm} onNavigate={go} />
+            <>
+              <SetupCard
+                client={client}
+                state={vm.state}
+                onSettings={openSettings}
+                onHistory={() => go("history")}
+              />
+              <OverviewView monitor={vm} gpu={gpuVm} onNavigate={go} />
+            </>
           )}
           {vm.page === "hardware" && (
             <HardwareView
@@ -450,6 +546,18 @@ export function App({
           )}
           {(vm.page === "cpu" || vm.page === "memory") && (
             <>
+              <div className="section-heading">
+                <span className="processor-caption">
+                  查找当前资源占用较高的应用
+                </span>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => openProcesses(vm.page as "cpu" | "memory")}
+                >
+                  查看占用进程
+                </Button>
+              </div>
               {vm.page === "cpu" &&
                 (vm.driverMissing || vm.driverMessage || vm.driverError) && (
                   <div className="temperature-driver">
@@ -616,8 +724,40 @@ export function App({
           )}
           {vm.page === "gpu" && <GpuView vm={gpuVm} range={vm.range} />}
           {vm.page === "disk" && <DiskView client={client} />}
-          {vm.page === "processes" && <ProcessView client={client} />}
-          {vm.page === "history" && <HistoryView client={client} />}
+          {vm.page === "processes" && (
+            <>
+              {processOrigin && (
+                <div className="section-heading">
+                  <Button variant="ghost" size="sm" onClick={returnToMetric}>
+                    返回{pageLabels[processOrigin.page]}详情
+                  </Button>
+                  <span className="processor-caption">
+                    这里显示当前进程；不能据此判断过去时刻的占用原因。
+                  </span>
+                </div>
+              )}
+              <ProcessView client={client} initialSort={processSort} />
+            </>
+          )}
+          {vm.page === "history" &&
+            (appHistoryTarget ? (
+              <>
+                <div className="section-heading">
+                  <Button variant="ghost" size="sm" onClick={returnToNetwork}>
+                    返回应用网络排行
+                  </Button>
+                  <span className="processor-caption">
+                    {appHistoryTarget.name} · 已归档流量
+                  </span>
+                </div>
+                <AppHistoryView
+                  client={client}
+                  initialAppId={appHistoryTarget.id}
+                />
+              </>
+            ) : (
+              <HistoryView client={client} />
+            ))}
           {vm.page === "ip" && <IpView client={ip} />}
           {vm.page === "network" && (
             <>
@@ -632,7 +772,7 @@ export function App({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => go("settings")}
+                  onClick={() => openSettings("monitoring")}
                 >
                   切换网卡
                 </Button>
@@ -659,13 +799,21 @@ export function App({
               </div>
               <AppNetworkRanking
                 client={client}
-                onHistory={() => go("history")}
+                vm={networkVm}
+                onHistory={openAppHistory}
                 suspended={windowVm.exit.stage !== "idle"}
               />
             </>
           )}
           {vm.page === "settings" && (
-            <SettingsView client={client} state={vm.state} updates={updateVm} />
+            <SettingsView
+              client={client}
+              state={vm.state}
+              updates={updateVm}
+              section={settingsSection}
+              onNavigate={go}
+              onHistory={() => go("history")}
+            />
           )}
         </main>
         <footer className="footer">
@@ -688,11 +836,11 @@ export function App({
             {vm.page === "ip"
               ? "按需查询 · 第三方来源"
               : vm.page === "history"
-                ? "分钟汇总 · 最近 24 小时"
+                ? "分层汇总 · 最长 30 天"
                 : vm.page === "disk"
                   ? "按需采样 · 2 秒 / 次 · 最近 5 分钟"
                   : vm.page === "processes"
-                    ? "按需采样 · 2 秒 / 次 · 只读 Top 10"
+                    ? "按需采样 · 2 秒 / 次 · 只读排行"
                     : `${(vm.state?.settings.interval_ms ?? 1000) / 1000} 秒 / 次 · 最近 5 分钟`}
           </span>
         </footer>

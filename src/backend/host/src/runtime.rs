@@ -32,6 +32,7 @@ pub struct RuntimeState {
     pub next_subscription: u64,
 }
 pub struct Runtime {
+    pub alerts: Mutex<pinmeter_core::alerts::AlertEngine>,
     pub font_catalog: Mutex<Option<pinmeter_core::fonts::FontCatalog>>,
     pub visible: Arc<AtomicBool>,
     pub disks: Mutex<Option<Arc<crate::disk::Disks>>>,
@@ -80,6 +81,7 @@ impl Runtime {
                 .begin(pinmeter_platform::shared::SystemClock::default().monotonic_ms());
         }
         Arc::new(Self {
+            alerts: Mutex::new(Default::default()),
             font_catalog: Mutex::new(None),
             visible: Arc::new(AtomicBool::new(false)),
             disks: Mutex::new(None),
@@ -124,9 +126,12 @@ impl Runtime {
                 config.join("app-history.json"),
             ));
         }
-        *self.disks.lock().unwrap() = Some(crate::disk::Disks::start(self.visible.clone()));
-        *self.processes.lock().unwrap() =
-            Some(crate::processes::Processes::start(self.visible.clone()));
+        *self.disks.lock().unwrap() = Some(crate::disk::Disks::start(
+            self.visible.load(Ordering::Acquire),
+        ));
+        *self.processes.lock().unwrap() = Some(crate::processes::Processes::start(
+            self.visible.load(Ordering::Acquire),
+        ));
         let hardware_runtime = Arc::clone(self);
         *self.hardware_worker.lock().unwrap() = Some(thread::spawn(move || {
             let inventory = pinmeter_platform::hardware::collect(&hardware_runtime.stop);
@@ -159,6 +164,7 @@ impl Runtime {
                     .join("sensors/pinmeter-gpu.exe"),
             );
             let mut next = Instant::now();
+            let mut gpu_sampled_at = None;
             let mut previous = Instant::now();
             let mut previous_wall = SystemTime::now();
             let mut schedule: Option<(u64, Option<String>)> = None;
@@ -178,13 +184,9 @@ impl Runtime {
                     app.exit(0);
                     break;
                 }
-                runtime
-                    .inner
-                    .lock()
-                    .unwrap()
-                    .monitor
-                    .gpu
-                    .accept(gpu.latest());
+                if let Some(sample) = gpu.latest_if_new(&mut gpu_sampled_at) {
+                    runtime.inner.lock().unwrap().monitor.gpu.accept(sample);
+                }
                 runtime
                     .inner
                     .lock()
@@ -211,7 +213,14 @@ impl Runtime {
                     }
                     let current = !window.is_minimized().unwrap_or(false)
                         && window.is_visible().unwrap_or(true);
-                    runtime.visible.store(current, Ordering::Release);
+                    if runtime.visible.swap(current, Ordering::AcqRel) != current {
+                        if let Some(disks) = runtime.disks.lock().unwrap().as_ref() {
+                            disks.set_visible(current);
+                        }
+                        if let Some(processes) = runtime.processes.lock().unwrap().as_ref() {
+                            processes.set_visible(current);
+                        }
+                    }
                     if current != visible {
                         visible = current;
                         crate::bridges::set_webview_background(&window, !visible);
@@ -327,6 +336,7 @@ impl Runtime {
                             None
                         }
                     };
+                    runtime.accept_alert_frame();
                     if let Some(input) = archive_input
                         && let Some(archive) = runtime.archives.lock().unwrap().as_ref()
                     {

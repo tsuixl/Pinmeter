@@ -167,6 +167,10 @@ pub enum Status {
 #[serde(deny_unknown_fields)]
 pub struct Settings {
     #[serde(default)]
+    pub alerts: crate::alerts::AlertsConfig,
+    #[serde(default)]
+    pub onboarding_completed: bool,
+    #[serde(default)]
     pub record_app_traffic_on_start: bool,
     #[serde(default)]
     pub start_in_tray: bool,
@@ -201,7 +205,9 @@ fn release_network_by_default() -> bool {
 impl Default for Settings {
     fn default() -> Self {
         Self {
+            alerts: Default::default(),
             record_app_traffic_on_start: false,
+            onboarding_completed: false,
             autostart: false,
             start_in_tray: false,
             close_action: ask_on_close(),
@@ -220,6 +226,7 @@ impl Default for Settings {
 
 impl Settings {
     pub fn validate(&self) -> Result<(), String> {
+        self.alerts.validate()?;
         self.taskbar.validate()?;
         if !matches!(self.close_action.as_str(), "ask" | "minimize" | "exit") {
             return Err("无效的关闭行为".into());

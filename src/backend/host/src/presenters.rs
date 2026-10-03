@@ -92,6 +92,8 @@ pub fn interface(value: &NetworkInterface) -> InterfaceDto {
 }
 pub fn settings(value: &Settings) -> SettingsDto {
     SettingsDto {
+        alerts: value.alerts.clone().into(),
+        onboarding_completed: value.onboarding_completed,
         record_app_traffic_on_start: value.record_app_traffic_on_start,
         start_in_tray: value.start_in_tray,
         autostart: value.autostart,

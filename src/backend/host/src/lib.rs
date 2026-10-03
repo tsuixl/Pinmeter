@@ -1,3 +1,4 @@
+mod alerts;
 mod app_history;
 mod archive;
 mod bridges;
@@ -14,8 +15,11 @@ mod network_control;
 pub mod presenters;
 mod processes;
 mod runtime;
+mod sampling;
 mod settings;
 mod startup_window;
+mod trace;
+mod tray_panel;
 mod updates;
 
 pub fn run() {
@@ -34,7 +38,9 @@ pub fn run() {
         }
     }
     let app = tauri::Builder::default()
+        .manage(tray_panel::PanelState::default())
         .manage(diagnostics::Diagnostics::default())
+        .manage(std::sync::Arc::new(trace::Traces::default()))
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_single_instance::init(|app, _, _| {
             if let Some(runtime) = app.try_state::<std::sync::Arc<runtime::Runtime>>() {
@@ -85,6 +91,11 @@ pub fn run() {
             }
         })
         .invoke_handler(tauri::generate_handler![
+            tray_panel::get_tray_snapshot,
+            tray_panel::get_tray_font_catalog,
+            tray_panel::complete_tray_panel,
+            tray_panel::hide_tray_panel,
+            tray_panel::open_tray_detail,
             fonts::get_font_catalog,
             disk::get_disk_snapshot,
             archive::get_archive_snapshot,
@@ -92,6 +103,17 @@ pub fn run() {
             processes::get_process_snapshot,
             diagnostics::prepare_diagnostics,
             diagnostics::export_diagnostics,
+            trace::get_trace_snapshot,
+            trace::start_trace,
+            trace::stop_trace,
+            trace::export_trace,
+            archive::management::get_history_storage,
+            archive::management::clear_history,
+            archive::management::export_history,
+            alerts::get_alerts_snapshot,
+            alerts::update_alerts,
+            alerts::acknowledge_alert,
+            alerts::clear_alert_events,
             startup_window::complete_window_startup,
             updates::get_update_state,
             updates::check_app_update,

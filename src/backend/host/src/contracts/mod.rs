@@ -58,6 +58,10 @@ pub struct FrameDto {
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
 pub struct SettingsDto {
     #[serde(default)]
+    pub alerts: crate::alerts::AlertsConfigDto,
+    #[serde(default)]
+    pub onboarding_completed: bool,
+    #[serde(default)]
     pub record_app_traffic_on_start: bool,
     #[serde(default)]
     pub start_in_tray: bool,
@@ -222,12 +226,23 @@ pub struct HistoryDto {
 pub fn typescript() -> String {
     let config = ts_rs::Config::default();
     let declarations = [
+        crate::alerts::AlertRuleDto::decl(&config),
+        crate::alerts::QuietHoursDto::decl(&config),
+        crate::alerts::AlertsConfigDto::decl(&config),
+        crate::alerts::AlertEventDto::decl(&config),
+        crate::alerts::AlertsSnapshotDto::decl(&config),
+        crate::trace::TraceSnapshotDto::decl(&config),
         crate::app_history::AppHistoryRowDto::decl(&config),
         crate::app_history::AppHistoryPointDto::decl(&config),
         crate::app_history::AppHistorySnapshotDto::decl(&config),
         crate::archive::MinuteBucketDto::decl(&config),
+        crate::archive::PeriodSummaryDto::decl(&config),
+        crate::archive::HistoryStorageDto::decl(&config),
+        crate::archive::HistoryExportDto::decl(&config),
         crate::archive::ArchiveSnapshotDto::decl(&config),
         crate::processes::ProcessRowDto::decl(&config),
+        crate::processes::ProcessApplicationDto::decl(&config),
+        crate::tray_panel::TraySnapshotDto::decl(&config),
         crate::processes::ProcessSnapshotDto::decl(&config),
         crate::disk::DiskPointDto::decl(&config),
         crate::disk::DiskFrameDto::decl(&config),

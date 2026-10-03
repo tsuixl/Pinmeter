@@ -15,7 +15,120 @@ import { demoDisk } from "./demo-disk";
 import { demoArchive } from "./demo-history";
 import { demoAppHistory } from "./demo-app-history";
 import { builtinFontCatalog } from "../fonts";
+import { defaultAlertsConfig } from "./alert-defaults";
 export class DemoClient extends ObservableClient {
+  private alertEvents: import("../contracts/monitor").AlertEventDto[] =
+    typeof location !== "undefined" &&
+    new URLSearchParams(location.search).get("alerts") === "events"
+      ? [
+          {
+            id: "1",
+            metric: "cpu",
+            at_ms: Date.now() - 60000,
+            value: 96,
+            threshold_percent: 90,
+            duration_seconds: 30,
+            acknowledged: false,
+          },
+        ]
+      : [];
+  private alertRevision = 0;
+  async getAlertsSnapshot(): Promise<
+    import("../contracts/monitor").AlertsSnapshotDto
+  > {
+    return {
+      config: this.snapshot.state?.settings.alerts ?? defaultAlertsConfig(),
+      settings_revision: this.snapshot.state?.settings.revision ?? "0",
+      revision: String(this.alertRevision),
+      events: this.alertEvents,
+      unread_count: this.alertEvents.filter((e) => !e.acknowledged).length,
+      local_time_available: true,
+      quiet_now: false,
+      delivery_detail:
+        "演示提醒：未写入文件，不发送系统弹窗。事件退出后清空，最多 20 条。",
+    };
+  }
+  async updateAlerts(
+    config: import("../contracts/monitor").AlertsConfigDto,
+    expectedRevision: string,
+  ) {
+    if (
+      typeof location !== "undefined" &&
+      new URLSearchParams(location.search).get("alerts") === "failed"
+    )
+      throw new Error("演示：无法写入提醒设置，已确认规则保持不变");
+    const state = this.snapshot.state;
+    if (!state || state.settings.revision !== expectedRevision)
+      throw new Error("设置版本冲突，请重新载入后编辑");
+    await this.updateSettings({ ...state.settings, alerts: config });
+    return this.getAlertsSnapshot();
+  }
+  async acknowledgeAlert(id: string) {
+    this.alertEvents = this.alertEvents.map((event) =>
+      event.id === id ? { ...event, acknowledged: true } : event,
+    );
+    this.alertRevision++;
+    return this.getAlertsSnapshot();
+  }
+  async clearAlertEvents(throughId: string) {
+    this.alertEvents = this.alertEvents.filter(
+      (event) => BigInt(event.id) > BigInt(throughId),
+    );
+    this.alertRevision++;
+    return this.getAlertsSnapshot();
+  }
+  private traceStarted = 0;
+  private traceDuration = 60;
+  private traceStopped = 0;
+  async getTraceSnapshot(): Promise<
+    import("../contracts/monitor").TraceSnapshotDto
+  > {
+    const elapsed = this.traceStarted
+      ? Math.min(
+          this.traceDuration,
+          ((this.traceStopped || Date.now()) - this.traceStarted) / 1000,
+        )
+      : 0;
+    const samples = Math.floor(elapsed / 2);
+    const active =
+      !!this.traceStarted && !this.traceStopped && elapsed < this.traceDuration;
+    return {
+      token: String(this.traceStarted),
+      active,
+      remaining_seconds: active ? Math.ceil(this.traceDuration - elapsed) : 0,
+      samples,
+      content: this.traceStarted
+        ? JSON.stringify(
+            {
+              demo: true,
+              description: "演示记录，不代表本机实际读数",
+              duration_seconds: elapsed,
+              observations: Array.from({ length: samples }, (_, i) => ({
+                at_ms: this.traceStarted + i * 2000,
+                cpu: 22 + (i % 5),
+                memory: 45,
+                top_cpu_processes: [{ name: "浏览器.exe", pid: 2048, cpu: 12 }],
+              })),
+            },
+            null,
+            2,
+          )
+        : "",
+    };
+  }
+  async startTrace(seconds: number) {
+    this.traceStarted = Date.now();
+    this.traceStopped = 0;
+    this.traceDuration = seconds;
+    return this.getTraceSnapshot();
+  }
+  async stopTrace() {
+    this.traceStopped = Date.now();
+    return this.getTraceSnapshot();
+  }
+  async exportTrace(_token: string) {
+    return { saved: false, path: null };
+  }
   private appHistoryFrom: number | null =
     typeof location !== "undefined" &&
     new URLSearchParams(location.search).get("appHistory") === "empty"
@@ -29,51 +142,108 @@ export class DemoClient extends ObservableClient {
     )
       throw new Error("演示：本地应用历史暂不可用");
     if (this.networkEnabled) this.appHistoryThrough = Date.now();
-    return demoAppHistory(
+    // The older network demo uses short IDs; keep its fixtures compatible while
+    // resolving the same executable in the history demo for detail navigation.
+    const aliases: Record<string, string> = {
+      "app-0": "app:c:\\program files\\browser\\浏览器.exe",
+      "app-1": "app:c:\\tools\\下载器.exe",
+      "app-2": "app:c:\\program files\\drive\\云盘.exe",
+    };
+    const resolved = appId ? (aliases[appId] ?? appId) : null;
+    const result = demoAppHistory(
       range,
-      appId,
+      resolved,
       dayStartMs,
       this.appHistoryFrom,
       this.appHistoryThrough,
       this.status !== "normal",
     );
+    return {
+      ...result,
+      selected_id: appId,
+      rows: result.rows.map((row) =>
+        row.id === resolved && appId ? { ...row, id: appId } : row,
+      ),
+    };
   }
   async getFontCatalog() {
     return builtinFontCatalog;
   }
-  async getArchiveSnapshot(dayStartMs: number) {
-    return demoArchive(dayStartMs);
+  private basicHistoryClearedAt = 0;
+  async getArchiveSnapshot(dayStartMs: number, rangeMs = 86400000) {
+    return demoArchive(dayStartMs, rangeMs, this.basicHistoryClearedAt);
+  }
+  async getHistoryStorage() {
+    return {
+      basic_bytes: this.basicHistoryClearedAt ? "128" : "624384",
+      applications_bytes: this.appHistoryFrom ? "3124820" : "128",
+      basic_limit_bytes: "83886080",
+      applications_limit_bytes: "33554432",
+      detail: "演示数据，不读取本机文件。",
+    };
+  }
+  async clearHistory(scope: "basic" | "applications") {
+    if (scope === "basic") this.basicHistoryClearedAt = Date.now();
+    else this.appHistoryFrom = this.networkEnabled ? Date.now() : null;
+  }
+  async exportHistory(
+    _scope: "basic" | "applications",
+    _fromMs: number,
+    _throughMs: number,
+    _includePaths: boolean,
+  ): Promise<import("../contracts/monitor").HistoryExportDto> {
+    throw new Error("浏览器演示不生成本机历史文件；请在桌面应用确认导出。");
   }
   async getProcessSnapshot(
     sort: string,
   ): Promise<import("../contracts/monitor").ProcessSnapshotDto> {
     const status = this.getSnapshot().state?.frame?.cpu.status ?? "normal";
+    const rows: import("../contracts/monitor").ProcessRowDto[] =
+      status === "normal"
+        ? Array.from({ length: 16 }, (_, i) => ({
+            id: `demo-${i}`,
+            application_id: `demo-app-${i % 6}`,
+            pid: 2048 + i * 4,
+            name: [
+              "浏览器.exe",
+              "编辑器.exe",
+              "Pinmeter.exe",
+              "文件管理器.exe",
+              "终端.exe",
+              "浏览器.exe",
+            ][i % 6],
+            cpu: 12 / (i + 1),
+            cpu_status: "normal",
+            working_set: 500_000_000 / (i + 1),
+            memory_status: "normal",
+          }))
+        : [];
     return {
       sort,
       status,
       detail: "演示进程数据",
       sampled_at_ms: Date.now(),
-      total: 84,
+      total: rows.length,
       unreadable: 3,
       truncated: false,
-      rows:
-        status === "normal"
-          ? Array.from({ length: 10 }, (_, i) => ({
-              id: `demo-${i}`,
-              pid: 2048 + i * 4,
-              name: [
-                "浏览器.exe",
-                "编辑器.exe",
-                "Pinmeter.exe",
-                "文件管理器.exe",
-                "终端.exe",
-              ][i % 5],
-              cpu: 12 / (i + 1),
-              cpu_status: "normal",
-              working_set: 500_000_000 / (i + 1),
-              memory_status: "normal",
-            }))
-          : [],
+      rows,
+      applications: Array.from(new Set(rows.map((r) => r.application_id))).map(
+        (id) => {
+          const members = rows.filter((r) => r.application_id === id);
+          return {
+            id,
+            name: members[0].name,
+            cpu: members.reduce((sum, r) => sum + (r.cpu ?? 0), 0),
+            cpu_status: "normal",
+            working_set: members.reduce(
+              (sum, r) => sum + (r.working_set ?? 0),
+              0,
+            ),
+            memory_status: "normal",
+            process_count: members.length,
+          };
+        },
+      ),
     };
   }
   async getDiskSnapshot(id: string | null) {
@@ -162,6 +332,8 @@ export class DemoClient extends ObservableClient {
           autostart: false,
           start_in_tray: false,
           record_app_traffic_on_start: false,
+          alerts: defaultAlertsConfig(),
+          onboarding_completed: false,
           revision: "0",
           theme: "system",
           font_family: "harmonyos_sans_sc",

@@ -1,3 +1,4 @@
+pub mod alerts;
 pub mod app_history;
 pub mod app_network;
 pub mod app_network_control;
@@ -14,4 +15,5 @@ pub mod hardware;
 pub mod ip;
 pub mod ports;
 pub mod processes;
+pub mod trace;
 pub mod updates;

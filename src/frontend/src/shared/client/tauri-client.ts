@@ -10,6 +10,54 @@ import { type NetworkControlChange, ObservableClient } from "./monitor-client";
 import { acceptBatch, mergeHistory } from "../state/history";
 
 export class TauriMonitorClient extends ObservableClient {
+  getAlertsSnapshot() {
+    return invoke<import("../contracts/monitor").AlertsSnapshotDto>(
+      "get_alerts_snapshot",
+    );
+  }
+  updateAlerts(
+    config: import("../contracts/monitor").AlertsConfigDto,
+    expectedRevision: string,
+  ) {
+    return invoke<import("../contracts/monitor").AlertsSnapshotDto>(
+      "update_alerts",
+      { config, expectedRevision },
+    );
+  }
+  acknowledgeAlert(id: string) {
+    return invoke<import("../contracts/monitor").AlertsSnapshotDto>(
+      "acknowledge_alert",
+      { id },
+    );
+  }
+  clearAlertEvents(throughId: string) {
+    return invoke<import("../contracts/monitor").AlertsSnapshotDto>(
+      "clear_alert_events",
+      { throughId },
+    );
+  }
+  getTraceSnapshot() {
+    return invoke<import("../contracts/monitor").TraceSnapshotDto>(
+      "get_trace_snapshot",
+    );
+  }
+  startTrace(seconds: number) {
+    return invoke<import("../contracts/monitor").TraceSnapshotDto>(
+      "start_trace",
+      { seconds },
+    );
+  }
+  stopTrace() {
+    return invoke<import("../contracts/monitor").TraceSnapshotDto>(
+      "stop_trace",
+    );
+  }
+  exportTrace(token: string) {
+    return invoke<import("../contracts/monitor").DiagnosticExportDto>(
+      "export_trace",
+      { token },
+    );
+  }
   getAppHistory(range: string, appId: string | null, dayStartMs: number) {
     return invoke<import("../contracts/monitor").AppHistorySnapshotDto>(
       "get_app_history",
@@ -29,10 +77,29 @@ export class TauriMonitorClient extends ObservableClient {
     }
     return this.fontCatalog;
   }
-  getArchiveSnapshot(dayStartMs: number) {
+  getArchiveSnapshot(dayStartMs: number, rangeMs = 86400000) {
     return invoke<import("../contracts/monitor").ArchiveSnapshotDto>(
       "get_archive_snapshot",
-      { dayStartMs },
+      { dayStartMs, rangeMs },
+    );
+  }
+  getHistoryStorage() {
+    return invoke<import("../contracts/monitor").HistoryStorageDto>(
+      "get_history_storage",
+    );
+  }
+  clearHistory(scope: "basic" | "applications") {
+    return invoke<void>("clear_history", { scope });
+  }
+  exportHistory(
+    scope: "basic" | "applications",
+    fromMs: number,
+    throughMs: number,
+    includePaths: boolean,
+  ) {
+    return invoke<import("../contracts/monitor").HistoryExportDto>(
+      "export_history",
+      { scope, fromMs, throughMs, includePaths },
     );
   }
   getProcessSnapshot(sort: string) {

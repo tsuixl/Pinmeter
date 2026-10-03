@@ -286,7 +286,9 @@ fn save_settings(
         return Err("配置版本不一致".into());
     }
     let next = pinmeter_core::domain::Settings {
+        alerts: settings.alerts.into(),
         start_in_tray: settings.start_in_tray,
+        onboarding_completed: settings.onboarding_completed,
         record_app_traffic_on_start: settings.record_app_traffic_on_start,
         autostart: settings.autostart,
         close_action: settings.close_action,

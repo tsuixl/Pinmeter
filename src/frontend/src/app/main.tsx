@@ -15,6 +15,10 @@ import { applyFont, defaultFontFamily, loadFont } from "../shared/ui/fonts";
 import { builtinFontCatalog } from "../shared/fonts";
 
 async function bootstrap() {
+  if (new URLSearchParams(location.search).get("panel") === "1") {
+    await (await import("../features/tray-panel/TrayPanel")).startTrayPanel();
+    return;
+  }
   const windowClient = await createWindowClient();
   const font = windowClient?.initialFontFamily ?? defaultFontFamily;
   const fontStyle = windowClient?.initialFontStyle ?? "auto";

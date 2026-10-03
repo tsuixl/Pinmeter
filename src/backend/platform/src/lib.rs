@@ -45,5 +45,6 @@ pub fn provider() -> Box<dyn pinmeter_core::ports::MetricProvider> {
         Box::new(sysinfo_provider::SysinfoProvider::new())
     }
 }
+pub mod alerts;
 pub mod autostart;
 pub mod updates;
