@@ -52,6 +52,14 @@ impl GpuCollector {
     pub fn latest(&self) -> Observation<Vec<GpuSample>> {
         self.latest.lock().unwrap().clone()
     }
+    pub fn latest_if_new(&self, previous: &mut Option<u64>) -> Option<Observation<Vec<GpuSample>>> {
+        let latest = self.latest.lock().unwrap();
+        if previous.is_some_and(|at| latest.mono_ms <= at) {
+            return None;
+        }
+        *previous = Some(latest.mono_ms);
+        Some(latest.clone())
+    }
 }
 impl Drop for GpuCollector {
     fn drop(&mut self) {
@@ -228,6 +236,44 @@ fn run(helper: PathBuf, cache: Arc<Mutex<Observation<Vec<GpuSample>>>>, stop: Ar
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn unchanged_gpu_samples_are_not_delivered_again_and_failures_keep_their_time() {
+        let mut initial = observation(Err(Failure::new(Status::Warming, "warming")));
+        initial.mono_ms = 10;
+        let collector = GpuCollector {
+            latest: Arc::new(Mutex::new(initial)),
+            stop: Arc::new(AtomicBool::new(false)),
+            worker: None,
+        };
+        let mut previous = None;
+        assert_eq!(
+            collector
+                .latest_if_new(&mut previous)
+                .unwrap()
+                .result
+                .unwrap_err()
+                .status,
+            Status::Warming
+        );
+        assert!(collector.latest_if_new(&mut previous).is_none());
+        let mut failure = observation(Err(Failure::new(Status::Failed, "failed")));
+        failure.mono_ms = 20;
+        *collector.latest.lock().unwrap() = failure;
+        let delivered = collector.latest_if_new(&mut previous).unwrap();
+        assert_eq!(delivered.mono_ms, 20);
+        assert_eq!(delivered.result.unwrap_err().status, Status::Failed);
+        assert!(collector.latest_if_new(&mut previous).is_none());
+        let mut recovered = observation(Ok(vec![]));
+        recovered.mono_ms = 30;
+        *collector.latest.lock().unwrap() = recovered;
+        assert!(
+            collector
+                .latest_if_new(&mut previous)
+                .unwrap()
+                .result
+                .is_ok()
+        );
+    }
     #[test]
     fn malformed_success_does_not_become_zero_or_empty_devices() {
         assert!(decode("{}").is_err());
