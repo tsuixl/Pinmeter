@@ -549,6 +549,33 @@ dd {
   margin-block: var(--space-12) var(--space-4);
   font-variant-numeric: tabular-nums;
 }
+.font-pickers,
+[data-font-picker],
+#font-style-panel {
+  --font-sans: "Pinmeter HarmonyOS Sans SC", system-ui, sans-serif;
+  font-family: var(--font-sans);
+}
+.font-catalog-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  flex-wrap: wrap;
+  margin-top: var(--space-8);
+}
+.font-search-field {
+  display: grid;
+  gap: var(--space-12);
+}
+.font-settings > :last-child {
+  align-self: end;
+}
+.font-catalog-actions .settings-note {
+  margin: 0;
+  margin-right: auto;
+}
+.font-preview-digits {
+  display: inline-block;
+}
 .settings-actions {
   display: flex;
   align-items: center;

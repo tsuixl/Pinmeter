@@ -11,6 +11,7 @@ export interface WindowClient {
   platform: string;
   initialTheme: "light" | "dark";
   initialFontFamily?: string;
+  initialFontStyle?: string;
   readState(): Promise<WindowState>;
   onResize(listener: () => void): Promise<() => void>;
   minimize(): Promise<void>;
@@ -37,6 +38,7 @@ export async function createWindowClient(): Promise<WindowClient | undefined> {
   return {
     platform,
     initialFontFamily: state.settings.font_family,
+    initialFontStyle: state.settings.font_style,
     initialTheme:
       preference === "light" || preference === "dark"
         ? preference

@@ -5,7 +5,7 @@ import { useSettingsViewModel } from "./useSettingsViewModel";
 import { buildInfo } from "../../shared/client/build-info";
 import { UpdateSettings } from "../updates/UpdateViews";
 import { DiagnosticsCard } from "../diagnostics/DiagnosticsCard";
-import { fontOptions } from "../../shared/ui/fonts";
+import { FontCombobox } from "../../shared/ui/FontCombobox";
 import type { UpdateViewModel } from "../updates/useUpdateViewModel";
 import {
   Alert,
@@ -85,19 +85,52 @@ export function SettingsView({
             />
           ))}
         </fieldset>
-        <div className="settings-fields font-settings">
-          <Select
-            id="font-family"
+        <div className="settings-fields font-settings font-pickers">
+          <FontCombobox
             label="界面字体"
-            description="更改后立即保存，下次启动继续使用"
+            description="内置字体与本机已安装字体，支持搜索"
             value={vm.draft.font_family}
-            disabled={vm.pending}
-            options={fontOptions}
-            onChange={(font_family) => vm.change({ font_family })}
+            disabled={vm.pending || vm.fontLoading}
+            loading={vm.fontLoading}
+            options={vm.fontOptions}
+            onChange={(value) => {
+              if (typeof value === "string") vm.changeFont(value);
+            }}
+          />
+          <Select
+            id="font-style"
+            label="字体样式"
+            description="按所选字体提供实际可用的粗细与斜体"
+            value={vm.draft.font_style}
+            disabled={vm.pending || vm.fontLoading}
+            options={vm.styleOptions}
+            onChange={(font_style) => vm.change({ font_style })}
           />
         </div>
+        <div className="font-catalog-actions font-pickers">
+          <span className="settings-note" role="status">
+            {vm.fontNotice}
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={vm.pending || vm.fontLoading}
+            onClick={() => vm.refreshFonts()}
+          >
+            刷新字体列表
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={vm.pending}
+            onClick={() => vm.changeFont("harmonyos_sans_sc")}
+          >
+            恢复默认字体
+          </Button>
+        </div>
         <p className="font-preview" aria-label="字体预览">
-          内存与网络 CPU 0123456789 · 100% · 128 MB/s
+          内存与网络 CPU <span className="font-preview-digits">0123456789</span>{" "}
+          · 100% · 128 MB/s
         </p>
         <p className="settings-note">
           本软件使用 HarmonyOS Sans 字体，版权所有 © 2021 华为终端有限公司。

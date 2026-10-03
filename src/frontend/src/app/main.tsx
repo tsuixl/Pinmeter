@@ -12,18 +12,12 @@ import "@sakaniui/react/style.css";
 import "../shared/ui/fonts.css";
 import "./style.css";
 import { applyFont, defaultFontFamily, loadFont } from "../shared/ui/fonts";
+import { builtinFontCatalog } from "../shared/fonts";
 
 async function bootstrap() {
   const windowClient = await createWindowClient();
   const font = windowClient?.initialFontFamily ?? defaultFontFamily;
-  // The native window stays hidden during its initial font load. App reports a
-  // resource failure and keeps a readable system fallback instead of blocking startup.
-  try {
-    await loadFont(font);
-    applyFont(font);
-  } catch {
-    applyFont("system");
-  }
+  const fontStyle = windowClient?.initialFontStyle ?? "auto";
   const demo =
     import.meta.env.DEV && new URLSearchParams(location.search).has("demo");
   const updateClient = demo
@@ -35,6 +29,19 @@ async function bootstrap() {
     import.meta.env.DEV && new URLSearchParams(location.search).has("demo")
       ? new (await import("../shared/client/demo-client")).DemoClient()
       : new TauriMonitorClient();
+  // Preload the saved face before the hidden native window is revealed.
+  try {
+    const catalog = (await client.getFontCatalog?.()) ?? builtinFontCatalog;
+    await loadFont(font, fontStyle, catalog);
+    applyFont(font, fontStyle);
+  } catch {
+    try {
+      await loadFont(defaultFontFamily);
+    } catch {
+      /* readable CSS fallback */
+    }
+    applyFont(defaultFontFamily);
+  }
   createRoot(document.getElementById("root")!).render(
     <App
       client={client}

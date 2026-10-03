@@ -22,7 +22,36 @@
       import "../src/app/style.css";
 
       const mode = new URLSearchParams(location.search).get("save");
+      const directFont = new URLSearchParams(location.search).get("directFont");
+      if (directFont) {
+        const sample = document.createElement("span");
+        sample.id = "direct-font-probe";
+        sample.textContent = "0123456789";
+        sample.style.cssText =
+          "position:fixed;right:20px;bottom:40px;z-index:200;background:white;color:black;font-size:14px";
+        sample.style.fontFamily = `${JSON.stringify(directFont)}, "Pinmeter HarmonyOS Sans SC"`;
+        document.body.append(sample);
+      }
       class FontSettingsClient extends DemoClient {
+        catalog;
+        constructor() {
+          super();
+          if (new URLSearchParams(location.search).has("missing")) {
+            this.snapshot.state.settings.font_family =
+              "installed:Pinmeter Missing Font Test";
+            this.snapshot.state.settings.font_style = "500:0:5";
+          }
+        }
+        async getFontCatalog(refresh = false) {
+          if (!new URLSearchParams(location.search).has("systemFonts"))
+            return super.getFontCatalog();
+          if (refresh || !this.catalog) {
+            const response = await fetch("/__test_font_catalog");
+            if (!response.ok) throw new Error("本机字体探针读取失败");
+            this.catalog = await response.json();
+          }
+          return this.catalog;
+        }
         async updateSettings(settings) {
           await new Promise((resolve) =>
             setTimeout(resolve, mode === "slow" ? 5000 : 100),

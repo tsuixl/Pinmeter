@@ -39,6 +39,7 @@ fn main() {
             revision,
             settings: settings.clone(),
             font_family: pinmeter_core::domain::default_font_family(),
+            font_style: pinmeter_core::fonts::default_font_style(),
             network: "布局验证 · 示例数据，不是实际采样".into(),
             readings: [
                 ("network", "下载", "3.2", "MB/s"),

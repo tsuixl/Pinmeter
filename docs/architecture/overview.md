@@ -403,6 +403,8 @@ Sakani 样式与字体由前端入口统一加载，基础控件和必要的业�
 
 ### 7.3 文件归属与生成物
 
+系统字体目录与字面数据定义于 `core/src/fonts.rs`；Windows 枚举归属 `platform/src/fonts.rs`，只返回项目数据。host 的字体查询/缓存不持有监控锁，通过统一客户端供字体 ViewModel 使用；目录不进入高频采样 DTO。字体选择的结构校验属于 core，当前系统可用性由 platform/host 校验；Web 与原生各自渲染相同的已确认偏好。
+
 全局字体由 core Settings 持有，通过既有 DTO 和 DesktopSummary 投影交给 Web 与原生视图；字体加载和排版属于各视图。两端共用的鸿蒙字体原文件及许可归属 `src/shared/fonts/harmonyos-sans-sc/`，避免平台依赖前端资源目录；Web 构建与 DirectWrite 各自加载同源文件，核心不包含字体文件或 Windows 类型。默认及选项见 [preferences](../development/v0.1.0-preferences/design.md)。
 
 P1 诊断模型位于 `core/src/diagnostics.rs`，系统信息和导出文件位于 `platform/src/diagnostics.rs`，宿主薄桥接和有界预览缓存位于 `host/src/diagnostics.rs`，界面位于 `frontend/src/features/diagnostics/`。只投影白名单字段，不导出完整运行状态或配置文件；详见 [diagnostics](../development/v0.1.3-diagnostics/design.md)。启动窗口协调属于 `host/src/startup_window.rs`，启动可见性规则沿用核心 desktop 模块。

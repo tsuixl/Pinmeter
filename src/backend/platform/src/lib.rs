@@ -19,6 +19,7 @@ pub mod app_network;
 pub mod archive;
 pub mod diagnostics;
 pub mod disk;
+pub mod fonts;
 pub mod gpu;
 pub mod hardware;
 pub mod ip;

@@ -41,6 +41,7 @@ import type { WindowClient } from "../shared/client/window-client";
 import { useWindowViewModel } from "./useWindowViewModel";
 import { WindowControls } from "./WindowControls";
 import { applyFont, defaultFontFamily, loadFont } from "../shared/ui/fonts";
+import { builtinFontCatalog } from "../shared/fonts";
 import { MonitorStatus } from "../features/monitoring/MonitorStatus";
 import { buildInfo } from "../shared/client/build-info";
 import { monitorHealth } from "../features/monitoring/health";
@@ -92,27 +93,35 @@ export function App({
     windowClient?.initialFontFamily ??
     defaultFontFamily;
   const [fontError, setFontError] = useState<string | null>(null);
+  const fontStyle =
+    vm.state?.settings.font_style ?? windowClient?.initialFontStyle ?? "auto";
   useLayoutEffect(() => {
     let active = true;
-    void loadFont(fontFamily)
+    void (client.getFontCatalog?.() ?? Promise.resolve(builtinFontCatalog))
+      .then((catalog) => loadFont(fontFamily, fontStyle, catalog))
       .then(() => {
         if (active) {
-          applyFont(fontFamily);
+          applyFont(fontFamily, fontStyle);
           setFontError(null);
         }
       })
-      .catch(() => {
+      .catch(async () => {
+        try {
+          await loadFont(defaultFontFamily);
+        } catch {
+          /* CSS retains the system fallback. */
+        }
         if (active) {
-          applyFont("system");
+          applyFont(defaultFontFamily);
           setFontError(
-            "所选字体加载失败，暂用系统字体。请检查完整运行目录或在设置中重新选择。",
+            "所选字体或样式不可用，暂用内置鸿蒙字体。原选择已保留，可在设置中重新选择。",
           );
         }
       });
     return () => {
       active = false;
     };
-  }, [fontFamily]);
+  }, [fontFamily, fontStyle, client]);
   const [collapsed, setCollapsed] = useState(
     () => matchMedia("(max-width: 1023px)").matches,
   );

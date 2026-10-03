@@ -574,7 +574,11 @@ unsafe fn run_inner(
                     last_placement = None;
                     last_good = None;
                 } else {
-                    let config = (summary.settings.clone(), summary.font_family.clone());
+                    let config = (
+                        summary.settings.clone(),
+                        summary.font_family.clone(),
+                        summary.font_style.clone(),
+                    );
                     let changed = last_config.as_ref() != Some(&config);
                     let observation = observer.geometry.lock().unwrap().clone();
                     let observed_at = observation.as_ref().map(|(at, _)| *at);
@@ -702,10 +706,9 @@ unsafe fn run_inner(
                                     }
                                     let scale = state.dpi / 96.;
                                     if state.paint_failed
-                                        || state
-                                            .painter
-                                            .as_ref()
-                                            .is_some_and(|p| !p.uses_font(&summary.font_family))
+                                        || state.painter.as_ref().is_some_and(|p| {
+                                            !p.uses_font(&summary.font_family, &summary.font_style)
+                                        })
                                     {
                                         state.painter = None;
                                         state.tip_painter = None;
@@ -720,6 +723,7 @@ unsafe fn run_inner(
                                                 1,
                                                 state.dpi,
                                                 &summary.font_family,
+                                                &summary.font_style,
                                             )
                                             .map_err(|e| e.to_string())?,
                                         );
@@ -785,7 +789,9 @@ unsafe fn run_inner(
                                             out,
                                             revision,
                                             "visible",
-                                            if compact {
+                                            if painter.font_fallback {
+                                                "读数已显示；所选字体或样式不可用，暂用鸿蒙"
+                                            } else if compact {
                                                 "空间有限，当前仅显示上下行"
                                             } else {
                                                 "任务栏读数已显示"
@@ -880,6 +886,7 @@ unsafe fn run_inner(
                                     height as u32,
                                     state.dpi,
                                     &state.summary.font_family,
+                                    &state.summary.font_style,
                                 )
                                 .ok();
                             }
@@ -1338,6 +1345,7 @@ mod tests {
         use pinmeter_core::desktop::TaskbarSettings;
         let latest = Arc::new(Mutex::new(Some(DesktopSummary {
             font_family: pinmeter_core::domain::default_font_family(),
+            font_style: pinmeter_core::fonts::default_font_style(),
             session: "read-only-observer-probe".into(),
             cursor: 1,
             network_id: None,

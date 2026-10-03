@@ -80,7 +80,7 @@ pub async fn release_all_network_control(
         .await
         .map_err(|e| e.to_string())?
 }
-fn authorize(window: &WebviewWindow) -> Result<(), String> {
+pub(crate) fn authorize(window: &WebviewWindow) -> Result<(), String> {
     if window.label() == "main" {
         Ok(())
     } else {
@@ -306,10 +306,12 @@ fn save_settings(
         revision: expected,
         theme: settings.theme,
         font_family: settings.font_family,
+        font_style: settings.font_style,
         interval_ms: settings.interval_ms as u64,
         network_id: settings.network_id,
         release_network_on_exit: settings.release_network_on_exit,
     };
+    crate::fonts::validate_change(runtime, &next)?;
     let saved = runtime.save_settings("idle", |_| Ok((next, expected)))?;
     Ok(presenters::settings(&saved))
 }

@@ -10,6 +10,8 @@
 
 ## 方案
 
+- 系统字体与样式扩展：外观页组合 Sakani Input / Combobox / Select，按 [preferences](../v0.1.0-preferences/design.md) 搜索系统家族并选择实际字面。旧配置默认排版，新字面先加载后保存；字体选择区域保持可读以便恢复。
+
 - 2026-10-03 全局字体由 [preferences](../v0.1.0-preferences/design.md) 统一维护：默认 HarmonyOS Sans SC，保留 Geist 与系统默认选项，覆盖本文早期固定 Geist 的家族约束。前端入口加载字体，自绘界面消费同一字体变量；其余 Sakani 排版与控件规范保持，HTML 仅供布局。
 
 - 品牌标识：侧栏品牌区与 favicon 使用用户已选的橙色固定针/仪表图标，复用 desktop-runtime 导出的 PNG；保留品牌区原尺寸、拖动与布局，控件仍遵循 Sakani，HTML 仅用于布局。图标深浅背景和缩小效果随本次执行记录检查。

@@ -20,6 +20,9 @@ export interface NetworkControlChange {
   expectedRevision: string;
 }
 export interface MonitorClient {
+  getFontCatalog?(
+    refresh?: boolean,
+  ): Promise<import("../contracts/monitor").FontCatalogDto>;
   getArchiveSnapshot?(
     dayStartMs: number,
   ): Promise<import("../contracts/monitor").ArchiveSnapshotDto>;

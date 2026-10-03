@@ -372,6 +372,7 @@ fn summary_at(runtime: &Runtime, now: u64, preferred_gpu: Option<&str>) -> Deskt
         revision: monitor.settings.revision,
         settings: monitor.settings.taskbar.clone(),
         font_family: monitor.settings.font_family.clone(),
+        font_style: monitor.settings.font_style.clone(),
         network: monitor
             .selected
             .as_ref()

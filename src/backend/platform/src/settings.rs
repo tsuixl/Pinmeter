@@ -53,6 +53,16 @@ mod tests {
         let repository = FileSettings::new(path);
         let mut settings = repository.load().unwrap().unwrap();
         assert_eq!(settings.font_family, "harmonyos_sans_sc");
+        assert_eq!(settings.font_style, "auto");
+        settings.font_family = "installed:Example font no longer installed".into();
+        settings.font_style = "500:2:3".into();
+        repository.save(&settings).unwrap();
+        assert_eq!(repository.load().unwrap().unwrap().font_style, "500:2:3");
+        assert_eq!(
+            repository.load().unwrap().unwrap().font_family,
+            settings.font_family
+        );
+        settings.font_style = "auto".into();
         for font in ["geist", "system", "harmonyos_sans_sc"] {
             settings.font_family = font.into();
             repository.save(&settings).unwrap();

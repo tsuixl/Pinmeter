@@ -32,6 +32,7 @@ pub struct RuntimeState {
     pub next_subscription: u64,
 }
 pub struct Runtime {
+    pub font_catalog: Mutex<Option<pinmeter_core::fonts::FontCatalog>>,
     pub visible: Arc<AtomicBool>,
     pub disks: Mutex<Option<Arc<crate::disk::Disks>>>,
     pub archives: Mutex<Option<Arc<crate::archive::Archives>>>,
@@ -72,6 +73,7 @@ impl Runtime {
         monitor.app_network =
             pinmeter_core::app_network::AppNetwork::new(cfg!(target_os = "windows"));
         Arc::new(Self {
+            font_catalog: Mutex::new(None),
             visible: Arc::new(AtomicBool::new(false)),
             disks: Mutex::new(None),
             archives: Mutex::new(None),

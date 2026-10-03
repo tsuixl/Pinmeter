@@ -10,6 +10,19 @@ import { type NetworkControlChange, ObservableClient } from "./monitor-client";
 import { acceptBatch, mergeHistory } from "../state/history";
 
 export class TauriMonitorClient extends ObservableClient {
+  private fontCatalog?: Promise<import("../contracts/monitor").FontCatalogDto>;
+  getFontCatalog(refresh = false) {
+    if (refresh || !this.fontCatalog) {
+      this.fontCatalog = invoke<import("../contracts/monitor").FontCatalogDto>(
+        "get_font_catalog",
+        { refresh },
+      ).catch((error) => {
+        this.fontCatalog = undefined;
+        throw error;
+      });
+    }
+    return this.fontCatalog;
+  }
   getArchiveSnapshot(dayStartMs: number) {
     return invoke<import("../contracts/monitor").ArchiveSnapshotDto>(
       "get_archive_snapshot",

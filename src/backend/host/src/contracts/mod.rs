@@ -66,6 +66,8 @@ pub struct SettingsDto {
     pub theme: String,
     #[serde(default = "pinmeter_core::domain::default_font_family")]
     pub font_family: String,
+    #[serde(default = "pinmeter_core::fonts::default_font_style")]
+    pub font_style: String,
     pub interval_ms: u32,
     pub release_network_on_exit: bool,
     pub network_id: Option<String>,
@@ -250,6 +252,9 @@ pub fn typescript() -> String {
         CpuProcessorsDto::decl(&config),
         FrameDto::decl(&config),
         SettingsDto::decl(&config),
+        crate::fonts::FontStyleDto::decl(&config),
+        crate::fonts::FontFamilyDto::decl(&config),
+        crate::fonts::FontCatalogDto::decl(&config),
         crate::exit::ExitStatusDto::decl(&config),
         InterfaceDto::decl(&config),
         CapabilityDto::decl(&config),

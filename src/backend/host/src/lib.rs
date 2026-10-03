@@ -6,6 +6,7 @@ mod desktop;
 mod diagnostics;
 mod disk;
 mod exit;
+mod fonts;
 mod hardware;
 mod ip;
 mod network_control;
@@ -83,6 +84,7 @@ pub fn run() {
             }
         })
         .invoke_handler(tauri::generate_handler![
+            fonts::get_font_catalog,
             disk::get_disk_snapshot,
             archive::get_archive_snapshot,
             processes::get_process_snapshot,

@@ -228,6 +228,7 @@ mod display_settings_tests {
                 revision: 0,
                 settings: case.settings,
                 font_family: crate::domain::default_font_family(),
+                font_style: crate::fonts::default_font_style(),
                 network: String::new(),
                 readings: ["network", "network", "cpu", "memory", "gpu"]
                     .into_iter()
@@ -307,6 +308,7 @@ pub struct DesktopSummary {
     pub revision: u64,
     pub settings: TaskbarSettings,
     pub font_family: String,
+    pub font_style: String,
     pub network: String,
     pub readings: Vec<SummaryReading>,
 }

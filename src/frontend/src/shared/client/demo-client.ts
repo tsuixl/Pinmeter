@@ -13,7 +13,11 @@ import { demoIp } from "./demo-ip";
 import { demoHardware } from "./demo-hardware";
 import { demoDisk } from "./demo-disk";
 import { demoArchive } from "./demo-history";
+import { builtinFontCatalog } from "../fonts";
 export class DemoClient extends ObservableClient {
+  async getFontCatalog() {
+    return builtinFontCatalog;
+  }
   async getArchiveSnapshot(dayStartMs: number) {
     return demoArchive(dayStartMs);
   }
@@ -137,6 +141,7 @@ export class DemoClient extends ObservableClient {
           revision: "0",
           theme: "system",
           font_family: "harmonyos_sans_sc",
+          font_style: "auto",
           interval_ms: 1000,
           network_id: null,
           release_network_on_exit: true,

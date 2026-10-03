@@ -7,6 +7,7 @@ pub mod desktop;
 pub mod diagnostics;
 pub mod disk;
 pub mod domain;
+pub mod fonts;
 pub mod gpu;
 pub mod hardware;
 pub mod ip;

@@ -19,6 +19,8 @@
 
 ## 技术方案
 
+- 系统字体样式扩展：全局 `font_style` 与家族一起进入摘要和布局失效条件；DirectWrite 使用实际 weight/style/stretch，鸿蒙三份原字库内嵌。系统家族或显式样式失效时回退鸿蒙 Regular，保留请求并在状态说明；不产生伪粗体选项，字体目录由 [preferences](../v0.1.0-preferences/design.md) 按需读取。
+
 - 2026-10-03 全局字体沿用 [preferences](../v0.1.0-preferences/design.md)：HarmonyOS Sans SC 默认，Geist 与系统默认可选，覆盖下文早期固定 Geist 的说明。摘要携带已确认字体偏好；变化时重建读数和自绘提示字体、清除旧测量再布局。鸿蒙原始 Regular 内嵌，系统默认从 Windows 非客户区消息字体解析；其余 Sakani 样式和固定数值列规则不变。
 
 ### 现状与路线
