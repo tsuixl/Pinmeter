@@ -29,14 +29,26 @@ pub fn system() -> DiagnosticSystem {
     }
 }
 pub fn export(directory: &Path, content: &str, created_at: u64) -> Result<PathBuf, String> {
-    if content.len() > 65536 {
+    export_report(directory, content, created_at, "diagnostics", 65536)
+}
+pub fn export_trace(directory: &Path, content: &str, created_at: u64) -> Result<PathBuf, String> {
+    export_report(directory, content, created_at, "trace", 262144)
+}
+fn export_report(
+    directory: &Path,
+    content: &str,
+    created_at: u64,
+    kind: &str,
+    limit: usize,
+) -> Result<PathBuf, String> {
+    if content.len() > limit {
         return Err("诊断内容超出限制".into());
     }
     if !directory.is_dir() {
         return Err("下载目录不可用".into());
     }
     for suffix in 1..=100 {
-        let path = directory.join(format!("Pinmeter-diagnostics-{created_at}-{suffix}.json"));
+        let path = directory.join(format!("Pinmeter-{kind}-{created_at}-{suffix}.json"));
         let mut file = match OpenOptions::new().create_new(true).write(true).open(&path) {
             Ok(file) => file,
             Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => continue,
