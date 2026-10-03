@@ -1,0 +1,19 @@
+.diagnostic-modal {
+  max-height: calc(100dvh - 32px);
+}
+.diagnostic-preview {
+  max-height: 40dvh;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding: var(--space-12);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-muted);
+  color: var(--color-fg-default);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+.diagnostic-result {
+  overflow-wrap: anywhere;
+}

@@ -3,6 +3,7 @@ pub mod app_network_control;
 pub mod application;
 pub mod autostart;
 pub mod desktop;
+pub mod diagnostics;
 pub mod domain;
 pub mod gpu;
 pub mod hardware;

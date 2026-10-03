@@ -401,6 +401,8 @@ Sakani 样式与字体由前端入口统一加载，基础控件和必要的业�
 
 ### 7.3 文件归属与生成物
 
+P1 诊断模型位于 `core/src/diagnostics.rs`，系统信息和导出文件位于 `platform/src/diagnostics.rs`，宿主薄桥接和有界预览缓存位于 `host/src/diagnostics.rs`，界面位于 `frontend/src/features/diagnostics/`。只投影白名单字段，不导出完整运行状态或配置文件；详见 [diagnostics](../development/v0.1.3-diagnostics/design.md)。启动窗口协调属于 `host/src/startup_window.rs`，启动可见性规则沿用核心 desktop 模块。
+
 在线更新使用 `core/src/updates.rs` 管理纯状态与公告，`platform/src/updates.rs` 负责存储和安装形态，`host/src/updates/` 封装 Tauri 更新与命令，`frontend/src/features/updates/` 使用 ViewModel 呈现。受控公告和公开更新配置放 `src/shared/updates/`；签名私钥只在仓库外保存，待发布清单与签名包放忽略的构建目录。更新安装复用宿主退出准备，不绕过网络限制清理；详见 [app-update](../development/v0.1.2-app-update/design.md)。
 
 | 内容 | 放置约定 |

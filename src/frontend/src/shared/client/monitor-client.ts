@@ -19,6 +19,12 @@ export interface NetworkControlChange {
   expectedRevision: string;
 }
 export interface MonitorClient {
+  prepareDiagnostics?(): Promise<
+    import("../contracts/monitor").DiagnosticPreviewDto
+  >;
+  exportDiagnostics?(
+    token: string,
+  ): Promise<import("../contracts/monitor").DiagnosticExportDto>;
   reconnect?(): Promise<void>;
   getHardwareInfo?(): Promise<import("../contracts/monitor").HardwareInfoDto>;
   temperatureDriverMissing?(): Promise<boolean>;

@@ -10,6 +10,17 @@ import { type NetworkControlChange, ObservableClient } from "./monitor-client";
 import { acceptBatch, mergeHistory } from "../state/history";
 
 export class TauriMonitorClient extends ObservableClient {
+  prepareDiagnostics() {
+    return invoke<import("../contracts/monitor").DiagnosticPreviewDto>(
+      "prepare_diagnostics",
+    );
+  }
+  exportDiagnostics(token: string) {
+    return invoke<import("../contracts/monitor").DiagnosticExportDto>(
+      "export_diagnostics",
+      { token },
+    );
+  }
   async reconnect() {
     if (this.active && this.nativeVisible && !document.hidden)
       await this.connect();

@@ -2,6 +2,7 @@ mod bridges;
 mod commands;
 pub mod contracts;
 mod desktop;
+mod diagnostics;
 mod exit;
 mod hardware;
 mod ip;
@@ -28,6 +29,7 @@ pub fn run() {
         }
     }
     let app = tauri::Builder::default()
+        .manage(diagnostics::Diagnostics::default())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_single_instance::init(|app, _, _| {
             if let Some(runtime) = app.try_state::<std::sync::Arc<runtime::Runtime>>() {
@@ -78,6 +80,8 @@ pub fn run() {
             }
         })
         .invoke_handler(tauri::generate_handler![
+            diagnostics::prepare_diagnostics,
+            diagnostics::export_diagnostics,
             startup_window::complete_window_startup,
             updates::get_update_state,
             updates::check_app_update,

@@ -4,6 +4,7 @@ import { TaskbarPreview } from "./TaskbarPreview";
 import { useSettingsViewModel } from "./useSettingsViewModel";
 import { buildInfo } from "../../shared/client/build-info";
 import { UpdateSettings } from "../updates/UpdateViews";
+import { DiagnosticsCard } from "../diagnostics/DiagnosticsCard";
 import type { UpdateViewModel } from "../updates/useUpdateViewModel";
 import {
   Alert,
@@ -294,6 +295,7 @@ export function SettingsView({
         </p>
       </Card>
       <UpdateSettings vm={updates} />
+      <DiagnosticsCard client={client} />
       <div className="about">
         <div>
           <strong>

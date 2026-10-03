@@ -16,6 +16,7 @@ pub fn cpu_model() -> Option<String> {
 }
 
 pub mod app_network;
+pub mod diagnostics;
 pub mod gpu;
 pub mod hardware;
 pub mod ip;

@@ -12,6 +12,31 @@ import { demoGpu } from "./demo-gpu";
 import { demoIp } from "./demo-ip";
 import { demoHardware } from "./demo-hardware";
 export class DemoClient extends ObservableClient {
+  async prepareDiagnostics() {
+    const generated_at_ms = Date.now();
+    return {
+      token: String(generated_at_ms),
+      generated_at_ms,
+      content: JSON.stringify(
+        {
+          demo: true,
+          application_version: "0.1.3",
+          generated_at_ms,
+          system: { os: "windows", architecture: "x86_64" },
+          readings: [
+            { metric: "cpu", status: "normal" },
+            { metric: "cpu_temperature", status: "unsupported" },
+          ],
+          privacy: "演示快照，不包含路径、IP 或进程名单",
+        },
+        null,
+        2,
+      ),
+    };
+  }
+  async exportDiagnostics(_token: string) {
+    return { saved: false, path: null };
+  }
   private hardware = demoHardware();
   async getHardwareInfo() {
     return this.hardware;

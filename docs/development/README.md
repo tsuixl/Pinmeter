@@ -128,6 +128,8 @@ docs: [v0.1.0] development-workflow - 建立项目文档与开发规则
 
 ## 功能索引
 
+- [diagnostics 设计](v0.1.3-diagnostics/design.md)与[执行记录](v0.1.3-diagnostics/execution.md)：v0.1.3 本地诊断快照、预览与导出。
+
 - [app-update 设计](v0.1.2-app-update/design.md)与[执行记录](v0.1.2-app-update/execution.md)：v0.1.2 在线更新、轻提示与更新公告；实现中，线上发布和实机验证按执行记录。
 
 [hardware-info 设计](v0.1.0-hardware-info/design.md)与[执行记录](v0.1.0-hardware-info/execution.md)：先交付 Windows 硬件信息页，启动时异步查询一次并缓存，沿用现有 Sakani 样式。
