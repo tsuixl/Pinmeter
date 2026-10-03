@@ -15,9 +15,11 @@ import {
   Settings,
   Thermometer,
   Info,
+  HardDrive,
 } from "lucide-react";
 export const icons = {
   info: Info,
+  disk: HardDrive,
   app: AppWindow,
   chevronDown: ChevronDown,
   chevronRight: ChevronRight,

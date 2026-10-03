@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { IpView } from "../features/ip/IpView";
 import { HardwareView } from "../features/hardware/HardwareView";
+import { DiskView } from "../features/disk/DiskView";
 import { ipClient } from "../shared/client/ip-client";
 import type { MonitorClient } from "../shared/client/monitor-client";
 import {
@@ -273,6 +274,7 @@ export function App({
               "memory",
               "gpu",
               "network",
+              "disk",
               "ip",
             ] as Page[]
           ).map(nav)}
@@ -342,6 +344,7 @@ export function App({
               {vm.page === "overview" ? "系统总览" : pageLabels[vm.page]}
             </h1>
             {vm.page !== "settings" &&
+              vm.page !== "disk" &&
               vm.page !== "ip" &&
               vm.page !== "hardware" && (
                 <div aria-label="趋势时间范围">
@@ -366,22 +369,24 @@ export function App({
           {vm.demo && (
             <div className="demo-controls">
               <Badge variant="warning">演示数据 · 不代表系统实际读数</Badge>
-              {vm.page !== "ip" && vm.page !== "hardware" && (
-                <Select
-                  label="演示状态"
-                  size="sm"
-                  value={vm.frame?.cpu.status ?? "normal"}
-                  options={Object.entries(statusLabels).map(
-                    ([value, label]) => ({
-                      value,
-                      label,
-                    }),
-                  )}
-                  onChange={(status) =>
-                    client.setScenario?.(status as ReadingStatus)
-                  }
-                />
-              )}
+              {vm.page !== "ip" &&
+                vm.page !== "hardware" &&
+                vm.page !== "disk" && (
+                  <Select
+                    label="演示状态"
+                    size="sm"
+                    value={vm.frame?.cpu.status ?? "normal"}
+                    options={Object.entries(statusLabels).map(
+                      ([value, label]) => ({
+                        value,
+                        label,
+                      }),
+                    )}
+                    onChange={(status) =>
+                      client.setScenario?.(status as ReadingStatus)
+                    }
+                  />
+                )}
             </div>
           )}
           {vm.page === "overview" && (
@@ -561,6 +566,7 @@ export function App({
             </>
           )}
           {vm.page === "gpu" && <GpuView vm={gpuVm} range={vm.range} />}
+          {vm.page === "disk" && <DiskView client={client} />}
           {vm.page === "ip" && <IpView client={ip} />}
           {vm.page === "network" && (
             <>

@@ -304,6 +304,8 @@ SettingsView
 
 ## 7. 工程目录规范
 
+P1 扩展按功能归属：`core/src/disk.rs`、`processes.rs`、`archive.rs` 分别维护磁盘短历史、进程差值排行和分钟历史规则；同名 platform 模块封装 Windows API 或文件操作；同名 host 模块只管理工作线程、权限与 DTO。界面归属 `features/disk/`、`features/processes/`、`features/history/`，复用 `features/monitoring/` 的图表。磁盘和进程使用可见窗口的五秒轮询租约，切页后及时停止，不依赖浏览器退出清理成功；归档只消费现有基础帧及原始网络增量，不引入第二采样源。
+
 目标是让根目录只承担项目入口职责。以下为建工程时的基线，**按实际需要创建，本次不建立空工程或占位目录**。
 
 ### 7.1 根目录允许项

@@ -55,6 +55,8 @@ docs/
 
 ## 开发记录 · development
 
+- 磁盘监控：[设计](development/v0.1.3-disk-monitoring/design.md) · [执行](development/v0.1.3-disk-monitoring/execution.md)，按需采样和短期趋势。
+
 - 本地诊断：[设计](development/v0.1.3-diagnostics/design.md) · [执行](development/v0.1.3-diagnostics/execution.md)，字段白名单、预览及本地导出。
 
 - 在线更新：[设计](development/v0.1.2-app-update/design.md) · [任务计划与进度](development/v0.1.2-app-update/execution.md)。v0.1.2 实现中，包含安装版更新、提示及公告。

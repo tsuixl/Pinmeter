@@ -32,6 +32,8 @@ pub struct RuntimeState {
     pub next_subscription: u64,
 }
 pub struct Runtime {
+    pub visible: Arc<AtomicBool>,
+    pub disks: Mutex<Option<Arc<crate::disk::Disks>>>,
     pub startup_visibility: Mutex<pinmeter_core::desktop::StartupVisibility>,
     desktop_menu_registered: AtomicBool,
     desktop_actions:
@@ -68,6 +70,8 @@ impl Runtime {
         monitor.app_network =
             pinmeter_core::app_network::AppNetwork::new(cfg!(target_os = "windows"));
         Arc::new(Self {
+            visible: Arc::new(AtomicBool::new(false)),
+            disks: Mutex::new(None),
             startup_visibility: Mutex::new(Default::default()),
             desktop_menu_registered: AtomicBool::new(false),
             desktop_actions: Mutex::new(None),
@@ -99,6 +103,7 @@ impl Runtime {
         })
     }
     pub fn start(self: &Arc<Self>, app: AppHandle) {
+        *self.disks.lock().unwrap() = Some(crate::disk::Disks::start(self.visible.clone()));
         let hardware_runtime = Arc::clone(self);
         *self.hardware_worker.lock().unwrap() = Some(thread::spawn(move || {
             let inventory = pinmeter_platform::hardware::collect(&hardware_runtime.stop);
@@ -183,6 +188,7 @@ impl Runtime {
                     }
                     let current = !window.is_minimized().unwrap_or(false)
                         && window.is_visible().unwrap_or(true);
+                    runtime.visible.store(current, Ordering::Release);
                     if current != visible {
                         visible = current;
                         crate::bridges::set_webview_background(&window, !visible);
@@ -331,6 +337,9 @@ impl Runtime {
         self.stopped.load(Ordering::Acquire)
     }
     pub fn stop(&self) {
+        if let Some(disks) = self.disks.lock().unwrap().take() {
+            disks.stop();
+        }
         if let Some(control) = self.control.lock().unwrap().take() {
             control.stop();
         }

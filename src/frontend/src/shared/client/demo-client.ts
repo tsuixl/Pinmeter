@@ -11,7 +11,14 @@ import { mergeHistory } from "../state/history";
 import { demoGpu } from "./demo-gpu";
 import { demoIp } from "./demo-ip";
 import { demoHardware } from "./demo-hardware";
+import { demoDisk } from "./demo-disk";
 export class DemoClient extends ObservableClient {
+  async getDiskSnapshot(id: string | null) {
+    return demoDisk(
+      id,
+      this.getSnapshot().state?.frame?.cpu.status ?? "normal",
+    );
+  }
   async prepareDiagnostics() {
     const generated_at_ms = Date.now();
     return {

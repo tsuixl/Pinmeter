@@ -3,6 +3,7 @@ mod commands;
 pub mod contracts;
 mod desktop;
 mod diagnostics;
+mod disk;
 mod exit;
 mod hardware;
 mod ip;
@@ -80,6 +81,7 @@ pub fn run() {
             }
         })
         .invoke_handler(tauri::generate_handler![
+            disk::get_disk_snapshot,
             diagnostics::prepare_diagnostics,
             diagnostics::export_diagnostics,
             startup_window::complete_window_startup,

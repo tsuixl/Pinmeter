@@ -4,6 +4,7 @@ pub mod application;
 pub mod autostart;
 pub mod desktop;
 pub mod diagnostics;
+pub mod disk;
 pub mod domain;
 pub mod gpu;
 pub mod hardware;

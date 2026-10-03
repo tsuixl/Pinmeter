@@ -19,6 +19,9 @@ export interface NetworkControlChange {
   expectedRevision: string;
 }
 export interface MonitorClient {
+  getDiskSnapshot?(
+    diskId: string | null,
+  ): Promise<import("../contracts/monitor").DiskSnapshotDto>;
   prepareDiagnostics?(): Promise<
     import("../contracts/monitor").DiagnosticPreviewDto
   >;
