@@ -16,6 +16,35 @@ pub fn activate(window: &WebviewWindow) -> tauri::Result<()> {
     window.set_focus()
 }
 
+/// A lost tray must leave a reachable window without taking the user's focus.
+pub fn recover_without_focus(window: &WebviewWindow) -> tauri::Result<()> {
+    let window_to_recover = window.clone();
+    window.run_on_main_thread(move || {
+        let result = (|| -> Result<(), String> {
+            #[cfg(windows)]
+            {
+                let handle = window_to_recover
+                    .hwnd()
+                    .map_err(|error| error.to_string())?;
+                pinmeter_platform::taskbar::reveal_window_without_activation(handle.0 as usize)?;
+            }
+            #[cfg(not(windows))]
+            {
+                window_to_recover
+                    .unminimize()
+                    .map_err(|error| error.to_string())?;
+                window_to_recover
+                    .show()
+                    .map_err(|error| error.to_string())?;
+            }
+            ensure_visible(&window_to_recover, false).map_err(|error| error.to_string())
+        })();
+        if let Err(error) = result {
+            eprintln!("托盘故障后的窗口恢复失败：{error}");
+        }
+    })
+}
+
 /// Framework-specific resource hint; sampling and confirmed state stay in Rust.
 pub fn set_webview_background(window: &WebviewWindow, background: bool) {
     #[cfg(windows)]

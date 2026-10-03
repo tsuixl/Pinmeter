@@ -1,4 +1,7 @@
-use super::render::{Cell, Painter, layout, tooltip_lines};
+use super::{
+    RetrySchedule,
+    render::{Cell, Painter, layout, tooltip_lines},
+};
 use pinmeter_core::desktop::{DesktopIntent, DesktopStatus, DesktopSummary, rightmost_gap};
 use std::{
     sync::{
@@ -59,6 +62,28 @@ fn status(out: &Mutex<DesktopStatus>, revision: u64, stage: &str, detail: impl I
         detail: detail.into(),
         revision,
     };
+}
+
+pub(super) fn reveal_window_without_activation(handle: usize) -> Result<(), String> {
+    let window = HWND(handle as *mut _);
+    // SAFETY: the host supplies its live window handle on the owning UI thread.
+    unsafe {
+        if !IsWindow(Some(window)).as_bool() {
+            return Err("主窗口句柄已失效".into());
+        }
+        let _ = ShowWindow(
+            window,
+            if IsIconic(window).as_bool() {
+                SW_SHOWNOACTIVATE
+            } else {
+                SW_SHOWNA
+            },
+        );
+        if !IsWindowVisible(window).as_bool() || IsIconic(window).as_bool() {
+            return Err("无法恢复主窗口的可见状态".into());
+        }
+    }
+    Ok(())
 }
 struct Ui {
     hwnd: HWND,
@@ -263,7 +288,40 @@ fn transient(error: windows::core::Error) -> DetectionError {
     incomplete(error.to_string())
 }
 
-fn geometry(automation: &IUIAutomation) -> Result<Geometry, DetectionError> {
+const GEOMETRY_BUDGET: Duration = Duration::from_secs(1);
+
+struct DetectionBudget<'a> {
+    stop: &'a AtomicBool,
+    deadline: Instant,
+}
+impl<'a> DetectionBudget<'a> {
+    fn new(stop: &'a AtomicBool, now: Instant) -> Self {
+        Self {
+            stop,
+            deadline: now + GEOMETRY_BUDGET,
+        }
+    }
+
+    fn check(&self) -> Result<(), DetectionError> {
+        self.check_at(Instant::now())
+    }
+
+    fn check_at(&self, now: Instant) -> Result<(), DetectionError> {
+        if self.stop.load(Ordering::Acquire) {
+            return Err(incomplete("任务栏检测已停止"));
+        }
+        if now >= self.deadline {
+            return Err(incomplete("任务栏检测超出时间预算，稍后重新检测"));
+        }
+        Ok(())
+    }
+}
+
+fn geometry(automation: &IUIAutomation, stop: &AtomicBool) -> Result<Geometry, DetectionError> {
+    // Checks surround each COM call: the total traversal is bounded, but a
+    // single provider call still depends on UI Automation's configured timeout.
+    let budget = DetectionBudget::new(stop, Instant::now());
+    budget.check()?;
     unsafe {
         let parent =
             FindWindowW(w!("Shell_TrayWnd"), None).map_err(|_| "Explorer 任务栏暂不可用")?;
@@ -316,45 +374,53 @@ fn geometry(automation: &IUIAutomation) -> Result<Geometry, DetectionError> {
         if rect.right - rect.left < rect.bottom - rect.top {
             return Err("暂不支持竖向任务栏".into());
         }
+        budget.check()?;
         let root = automation.ElementFromHandle(parent).map_err(transient)?;
-        let frame = root
-            .FindFirst(
-                TreeScope_Descendants,
-                &automation
-                    .CreatePropertyCondition(
-                        UIA_AutomationIdPropertyId,
-                        &windows::Win32::System::Variant::VARIANT::from("TaskbarFrame"),
-                    )
-                    .map_err(transient)?,
+        budget.check()?;
+        let frame_condition = automation
+            .CreatePropertyCondition(
+                UIA_AutomationIdPropertyId,
+                &windows::Win32::System::Variant::VARIANT::from("TaskbarFrame"),
             )
             .map_err(transient)?;
+        budget.check()?;
+        let frame = root
+            .FindFirst(TreeScope_Descendants, &frame_condition)
+            .map_err(transient)?;
+        budget.check()?;
         if frame.CurrentClassName().map_err(transient)? != "Taskbar.TaskbarFrameAutomationPeer" {
             return Err(incomplete("任务栏结构尚未就绪，正在重新检测"));
         }
-        let nodes = frame
-            .FindAll(
-                TreeScope_Descendants,
-                &automation
-                    .CreatePropertyCondition(
-                        UIA_ControlTypePropertyId,
-                        &windows::Win32::System::Variant::VARIANT::from(UIA_ButtonControlTypeId.0),
-                    )
-                    .map_err(transient)?,
+        budget.check()?;
+        let button_condition = automation
+            .CreatePropertyCondition(
+                UIA_ControlTypePropertyId,
+                &windows::Win32::System::Variant::VARIANT::from(UIA_ButtonControlTypeId.0),
             )
             .map_err(transient)?;
+        budget.check()?;
+        let nodes = frame
+            .FindAll(TreeScope_Descendants, &button_condition)
+            .map_err(transient)?;
+        budget.check()?;
         let count = nodes.Length().map_err(transient)?;
+        budget.check()?;
         if count > 256 {
             return Err("任务栏元素过多，无法可靠定位".into());
         }
         let mut occupied = vec![];
         let mut buttons = 0;
         for i in 0..count {
+            budget.check()?;
             let node = nodes.GetElement(i).map_err(transient)?;
-
-            if node.CurrentControlType().map_err(transient)? == UIA_ButtonControlTypeId
-                && !node.CurrentIsOffscreen().map_err(transient)?.as_bool()
-            {
+            budget.check()?;
+            let button = node.CurrentControlType().map_err(transient)? == UIA_ButtonControlTypeId;
+            budget.check()?;
+            let offscreen = node.CurrentIsOffscreen().map_err(transient)?.as_bool();
+            budget.check()?;
+            if button && !offscreen {
                 let r = node.CurrentBoundingRectangle().map_err(transient)?;
+                budget.check()?;
                 if r.right > r.left && r.bottom > rect.top && r.top < rect.bottom {
                     occupied.push((r.left, r.right));
                     buttons += 1;
@@ -364,6 +430,7 @@ fn geometry(automation: &IUIAutomation) -> Result<Geometry, DetectionError> {
         if buttons == 0 {
             return Err(incomplete("任务栏按钮暂不可读，正在重新检测"));
         }
+        budget.check()?;
         // The notification container reserves all tray space, including blank areas.
         let notify_rect =
             if let Ok(notify) = FindWindowExW(Some(parent), None, w!("TrayNotifyWnd"), None) {
@@ -374,6 +441,7 @@ fn geometry(automation: &IUIAutomation) -> Result<Geometry, DetectionError> {
             } else {
                 return Err("无法确定系统通知区域".into());
             };
+        budget.check()?;
         Ok(Geometry {
             parent: parent.0 as usize,
             rect,
@@ -546,6 +614,9 @@ unsafe fn run_inner(
             while PeekMessageW(&mut message, None, 0, 0, PM_REMOVE).as_bool() {
                 let _ = TranslateMessage(&message);
                 DispatchMessageW(&message);
+            }
+            if let Some(error) = observer.failure() {
+                return Err(error);
             }
             let summary = latest.lock().unwrap().clone();
             if let Some(summary) = summary {
@@ -792,7 +863,7 @@ unsafe fn run_inner(
                                             if painter.font_fallback {
                                                 "读数已显示；所选字体或样式不可用，暂用鸿蒙"
                                             } else if compact {
-                                                "空间有限，当前仅显示上下行"
+                                                "空间有限，当前显示所选指标的精简布局"
                                             } else {
                                                 "任务栏读数已显示"
                                             },
@@ -945,6 +1016,7 @@ impl Drop for Registration {
 type Observation = Option<(Instant, Result<Geometry, DetectionError>)>;
 struct Observer {
     geometry: Arc<Mutex<Observation>>,
+    failure: Arc<Mutex<Option<String>>>,
     stop: Arc<AtomicBool>,
     worker: Option<std::thread::JoinHandle<()>>,
 }
@@ -952,63 +1024,97 @@ impl Observer {
     fn start(latest: Arc<Mutex<Option<DesktopSummary>>>) -> Self {
         let observed = Arc::new(Mutex::new(None));
         let result = observed.clone();
+        let failure = Arc::new(Mutex::new(None));
+        let failure_out = failure.clone();
         let stop = Arc::new(AtomicBool::new(false));
         let stopping = stop.clone();
-        let worker = std::thread::spawn(move || unsafe {
-            if CoInitializeEx(None, COINIT_MULTITHREADED).is_err() {
-                return;
-            }
-            let work = (|| -> windows::core::Result<()> {
-                let automation: IUIAutomation =
-                    CoCreateInstance(&CUIAutomation8, None, CLSCTX_INPROC_SERVER)?;
-                let timeouts: IUIAutomation2 = automation.cast()?;
-                timeouts.SetConnectionTimeout(200)?;
-                timeouts.SetTransactionTimeout(200)?;
-                SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
-                let mut next = Instant::now();
-                let mut next_event = Instant::now();
-                let mut failures = 0u32;
-                while !stopping.load(Ordering::Acquire) {
-                    let enabled = latest
-                        .lock()
-                        .unwrap()
-                        .as_ref()
-                        .is_some_and(|s| s.settings.enabled && !s.settings.hidden);
-                    if enabled
-                        && (Instant::now() >= next
-                            || (Instant::now() >= next_event
-                                && LAYOUT_DIRTY.swap(false, Ordering::Relaxed)))
-                    {
-                        let started = Instant::now();
-                        let g = geometry(&automation);
-                        failures = if g.is_ok() { 0 } else { (failures + 1).min(3) };
-                        *result.lock().unwrap() = Some((started, g));
-                        next = Instant::now()
-                            + if failures == 0 {
-                                Duration::from_secs(2)
-                            } else {
-                                Duration::from_millis(500 * (1 << (failures - 1)))
-                            };
-                        next_event = Instant::now() + Duration::from_millis(500);
-                    }
-                    std::thread::sleep(Duration::from_millis(100));
+        let worker = std::thread::Builder::new()
+            .name("pinmeter-taskbar-observer".into())
+            .spawn(move || unsafe {
+                if let Err(error) = CoInitializeEx(None, COINIT_MULTITHREADED).ok() {
+                    *failure_out.lock().unwrap() =
+                        Some(format!("任务栏检测线程初始化失败：{error}"));
+                    return;
                 }
-                Ok(())
-            })();
-            if let Err(error) = work {
-                *result.lock().unwrap() = Some((
-                    Instant::now(),
-                    Err(format!("任务栏检测失败：{error}").into()),
-                ));
+                let work = (|| -> windows::core::Result<()> {
+                    let automation: IUIAutomation =
+                        CoCreateInstance(&CUIAutomation8, None, CLSCTX_INPROC_SERVER)?;
+                    let timeouts: IUIAutomation2 = automation.cast()?;
+                    timeouts.SetConnectionTimeout(200)?;
+                    timeouts.SetTransactionTimeout(200)?;
+                    SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+                    let mut next = Instant::now();
+                    let mut next_event = Instant::now();
+                    let mut retry = RetrySchedule::new(Instant::now());
+                    while !stopping.load(Ordering::Acquire) {
+                        let (enabled, revision) =
+                            latest
+                                .lock()
+                                .unwrap()
+                                .as_ref()
+                                .map_or((false, 0), |summary| {
+                                    (
+                                        summary.settings.enabled && !summary.settings.hidden,
+                                        summary.revision,
+                                    )
+                                });
+                        let now = Instant::now();
+                        let changed = retry.configure(enabled, revision, now);
+                        if retry.due(now)
+                            && (changed
+                                || now >= next
+                                || (now >= next_event
+                                    && LAYOUT_DIRTY.swap(false, Ordering::Relaxed)))
+                        {
+                            let started = Instant::now();
+                            let g = geometry(&automation, &stopping);
+                            let completed = Instant::now();
+                            if g.is_ok() {
+                                retry.succeeded(completed);
+                                next = completed + Duration::from_secs(2);
+                            } else {
+                                retry.failed(completed);
+                                next = completed;
+                            }
+                            *result.lock().unwrap() = Some((started, g));
+                            next_event = completed + Duration::from_millis(500);
+                        }
+                        std::thread::sleep(Duration::from_millis(100));
+                    }
+                    Ok(())
+                })();
+                if let Err(error) = work {
+                    *failure_out.lock().unwrap() = Some(format!("任务栏检测失败：{error}"));
+                }
+                CoUninitialize();
+            });
+        let worker = match worker {
+            Ok(worker) => Some(worker),
+            Err(error) => {
+                *failure.lock().unwrap() = Some(format!("无法启动任务栏检测线程：{error}"));
+                None
             }
-            CoUninitialize();
-        });
+        };
         Self {
             geometry: observed,
+            failure,
             stop,
-            worker: Some(worker),
+            worker,
         }
     }
+
+    fn failure(&self) -> Option<String> {
+        observer_failure(
+            self.worker
+                .as_ref()
+                .is_none_or(|worker| worker.is_finished()),
+            self.failure.lock().unwrap().as_deref(),
+        )
+    }
+}
+
+fn observer_failure(finished: bool, detail: Option<&str>) -> Option<String> {
+    finished.then(|| detail.unwrap_or("任务栏检测线程意外停止").into())
 }
 impl Drop for Observer {
     fn drop(&mut self) {
@@ -1033,6 +1139,30 @@ impl Drop for Observer {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn detection_budget_limits_the_whole_traversal_and_honors_stop() {
+        let stop = AtomicBool::new(false);
+        let now = Instant::now();
+        let budget = DetectionBudget::new(&stop, now);
+        assert!(budget.check_at(now).is_ok());
+        assert!(budget.check_at(now + GEOMETRY_BUDGET).is_err());
+        stop.store(true, Ordering::Release);
+        assert!(budget.check_at(now).is_err());
+    }
+
+    #[test]
+    fn observer_exit_reaches_the_outer_recovery_with_its_cause() {
+        assert!(observer_failure(false, Some("初始化失败")).is_none());
+        assert_eq!(
+            observer_failure(true, Some("初始化失败")).as_deref(),
+            Some("初始化失败")
+        );
+        assert_eq!(
+            observer_failure(true, None).as_deref(),
+            Some("任务栏检测线程意外停止")
+        );
+    }
 
     fn sample() -> Geometry {
         Geometry {

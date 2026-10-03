@@ -6,10 +6,19 @@ use std::sync::{
     mpsc::{Receiver, SyncSender, sync_channel},
 };
 
+mod recovery;
 #[cfg(target_os = "windows")]
 mod render;
 #[cfg(target_os = "windows")]
 mod windows;
+pub use recovery::RetrySchedule;
+
+/// Recover the host's existing window after losing the tray, without activation.
+/// The caller retains ownership of the handle and dispatches on the UI thread.
+#[cfg(target_os = "windows")]
+pub fn reveal_window_without_activation(handle: usize) -> Result<(), String> {
+    windows::reveal_window_without_activation(handle)
+}
 
 pub struct Taskbar {
     latest: Arc<Mutex<Option<DesktopSummary>>>,
@@ -47,7 +56,7 @@ impl Taskbar {
         *self.latest.lock().unwrap() = Some(summary);
     }
     pub fn finished(&self) -> bool {
-        self.worker.as_ref().is_some_and(|w| w.is_finished())
+        self.worker.as_ref().is_none_or(|w| w.is_finished())
     }
     pub fn status(&self) -> DesktopStatus {
         self.status.lock().unwrap().clone()
@@ -68,9 +77,22 @@ fn spawn(
     stop: Arc<AtomicBool>,
     sender: SyncSender<DesktopIntent>,
 ) -> Option<std::thread::JoinHandle<()>> {
-    Some(std::thread::spawn(move || {
-        windows::run(latest, status, stop, sender)
-    }))
+    let output = status.clone();
+    match std::thread::Builder::new()
+        .name("pinmeter-taskbar".into())
+        .spawn(move || windows::run(latest, output, stop, sender))
+    {
+        Ok(worker) => Some(worker),
+        Err(error) => {
+            *status.lock().unwrap() = DesktopStatus {
+                supported: true,
+                stage: "failed".into(),
+                detail: format!("无法启动任务栏线程：{error}"),
+                revision: 0,
+            };
+            None
+        }
+    }
 }
 #[cfg(not(target_os = "windows"))]
 fn spawn(
