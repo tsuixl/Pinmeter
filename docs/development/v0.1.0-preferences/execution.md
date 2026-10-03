@@ -2,7 +2,7 @@
 
 - [x] 扩展可搜索 Windows 字体目录及真实字体样式，保留旧配置和默认鸿蒙。
 - [x] 接入前端与原生同一字面选择、缺失回退、刷新及保存验证。
-- [ ] 完成真实目录/字面探针、搜索与样式交互、相关回归、Windows 构建和本地提交。
+- [x] 完成真实目录/字面探针、搜索与样式交互、相关回归、Windows 构建和本地提交。
 
 - [x] 接入三项全局字体、默认鸿蒙、旧配置兼容、即时保存和前端加载失败处理。
 - [x] 同步原生任务栏字体与测量缓存，保留固定读数布局。
@@ -17,12 +17,15 @@
 
 ## 进度
 
-- 字体样式与系统目录扩展已实现，待本轮 release 交付：用户体验后要求取代原三项限制，增加搜索和真实样式。`font_family` 保留原三项标识并支持 `installed:` 家族名，`font_style` 缺字段默认 `auto`；设置保存前检查实际目录，原生摘要包含样式并同步重建读数与 Tooltip。缺失选择保持在配置中，Web 与原生显示回退并提示。
+- 字体样式与系统目录扩展已实现并交付：用户体验后要求取代原三项限制，增加搜索和真实样式。`font_family` 保留原三项标识并支持 `installed:` 家族名，`font_style` 缺字段默认 `auto`；设置保存前检查实际目录，原生摘要包含样式并同步重建读数与 Tooltip。缺失选择保持在配置中，Web 与原生显示回退并提示。
 - 本机只读探针通过：DirectWrite 枚举 **207 个系统字体家族**（另有三项内置/默认选项），包括用户安装的 HarmonyOS Sans SC 六字重与 0xProto、Arial 的常规/粗体/斜体/窄体；目录不进入采样流，不复制已安装字体到包。真实目录测试及原生字面/权重/缺失回退、六种字体/样式 × 100%/150%/200% 透明和数值对齐回归通过；原有三个管理员/Explorer 测试仍跳过。
 - 界面夹具通过 `PINMETER_FONT_PROBE=1` 显式启用只读开发端点，读取同一个已编译的 Windows 探针；`tests/font-settings.html?systemFonts=1` 使用真实目录与真实本机字体，保存仍隔离为演示。已验证[鸿蒙 Medium](assets/system-font-harmony-medium.jpg)、[系统鸿蒙六种样式](assets/system-font-harmony-styles.jpg)、[Arial Narrow Italic](assets/system-font-arial-italic.jpg)、Segoe UI 的搜索 Enter 选择和样式随家族重置。14px 数字预览从 Regular 79.802px 变为 Medium 81.208px，确认实际字面发生变化。
 - 已核对[深色搜索](assets/system-font-search-dark.jpg)、[搜索空结果](assets/system-font-search-empty.jpg)、[样式保存失败回滚](assets/system-font-save-failure.jpg)和[缺失选择保留/回退](assets/system-font-missing.jpg)。来源为官方 [Combobox](https://main--6a5a658b3681fcc010430db5.chromatic.com/?path=/docs/composite-combobox--docs)、[Input](https://main--6a5a658b3681fcc010430db5.chromatic.com/?path=/docs/forms-input--docs)、Select；Input 实际输入文字 14px、内容高 22px 与官方一致。固定包的 Combobox 没有搜索实现，按设计组合官方 Input 过滤，未改库样式。字体家族/字面是用户例外，其余 Sakani 规范继续生效，HTML 仅为布局参考。
 - 已知边界：[0xProto 预览加载拒绝](assets/system-font-load-rejected.jpg)。Windows 可枚举且本机字库可解析，但当前浏览器 `FontFace.local` 拒绝该字面，直接 CSS 家族匹配也回退；界面明确报错并保持旧偏好，不假报应用成功。正式 WebView2、管理员主窗口与任务栏切换仍待用户退出旧实例后实测；不宣称全部系统字库均已完成渲染验收。
 - 工程检查：`tools/dev.ps1 check` 完整通过 Rust 工作区测试/Clippy、helper/打包锁、契约、前端构建与格式；后续字体加载缓存和搜索封装的类型检查及 **38 项前端测试**通过，包含真实字面来源转义/粗斜宽度映射、无效样式拒绝和未成功保存时的缓存上限。下文保留上一批三项字体交付证据。
+- 本轮 Windows release 从干净实现提交 `e384ed2ff75a4fbfe43867a2fe3bbabc1448ac46` 执行 `PINMETER_HOLD_DELIVERY=1 node tools/desktop.mjs build --no-bundle -- --locked`。前端、全部 helper 与 Rust release 构建成功，入口为 `E:\dev\github\Pinmeter\src\backend\target\test4\Pinmeter.exe`，版本 0.1.3，56,507,392 字节。test1/test2 占用路径无法确认，test3 正在运行，入口均安全跳过；保留旧实例，本轮未启动新的管理员主程序，也未生成安装器。
+- 本轮交付核对：340 个源码指纹构建前后及交付前一致，42 个完整运行文件来源/复制件 SHA-256 一致；三份前端 TTF 与共享原文件及下载来源哈希一致。EXE SHA-256：`d502210ab422e7a97c57274425f5c25fcd09202af31f14c808fa0f8d364800d8`。最终实时探针为 207 个系统家族、476 个去重真实字面。证据在 test4 的 `build.log`、`build-source.json`、`source-manifest.json`、`package-hashes.json` 与 `delivery-verification.json`；构建及目录锁保留到核对结束。
+- 切换版本须完全退出旧版再运行 test4，保留整个目录及伴随资源。此功能与验收记录仅本地提交；未推送、上传或发布。正式 WebView2/管理员任务栏、跨平台与完整视觉验收仍受上述边界限制。
 
 - 全局字体已实现并交付：默认内置 HarmonyOS Sans SC，可切换 Geist / 系统默认；已确认配置贯通主窗口、原生读数与自绘提示。保存前加载目标字体，失败保留原值；旧配置缺字段与恢复默认使用鸿蒙。Windows 系统字体读取非客户区消息字体，字体变化重建绘制对象并失效旧测量。
 - 代码验证：`tools/dev.ps1 check` 通过 helper/打包锁回归、314 个本地文档链接及分层检查、Rust 格式/工作区测试/Clippy、契约一致性、前端 production 构建、35 项测试和格式检查。原有 3 项管理员 ETW/真实 Explorer 测试保持跳过。追加的设置间距与隔离 HTML 验证夹具已通过类型检查和格式化；release 会重新构建前端。
