@@ -1,9 +1,13 @@
-use crate::archive::{DAY, MAX_BUCKETS, MINUTE};
+use crate::archive::{
+    DAY, HOUR, MAX_BUCKETS, MAX_HOURS, MAX_QUARTERS, MINUTE, MONTH, QUARTER_HOUR, WEEK, prune_layer,
+};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 
 pub const MAX_APPS: usize = 128;
-pub const MAX_FILE_BYTES: usize = 16 * 1024 * 1024;
+// Three layers with 128 identities and u64::MAX byte counters require >16 MiB.
+// Keep a hard bound and verify the fully populated representation in tests.
+pub const MAX_FILE_BYTES: usize = 32 * 1024 * 1024;
 pub const UNKNOWN: &str = "unknown";
 pub const OTHER: &str = "other";
 
@@ -45,19 +49,28 @@ pub struct AppHistory {
     pub schema_version: u32,
     pub apps: BTreeMap<u16, Identity>,
     pub minutes: BTreeMap<u64, Minute>,
+    #[serde(default)]
+    pub quarters: BTreeMap<u64, Minute>,
+    #[serde(default)]
+    pub hours: BTreeMap<u64, Minute>,
     pub last_wall_ms: u64,
     pub clock_discontinuities: u64,
+    #[serde(default)]
+    pub cleared_before_ms: u64,
     #[serde(skip)]
     last_delivery: Option<(String, u64, u64)>,
 }
 impl Default for AppHistory {
     fn default() -> Self {
         Self {
-            schema_version: 1,
+            schema_version: 2,
             apps: BTreeMap::new(),
             minutes: BTreeMap::new(),
+            quarters: BTreeMap::new(),
+            hours: BTreeMap::new(),
             last_wall_ms: 0,
             clock_discontinuities: 0,
+            cleared_before_ms: 0,
             last_delivery: None,
         }
     }
@@ -85,10 +98,19 @@ pub struct Point {
     pub upload: Option<f64>,
 }
 impl AppHistory {
+    pub fn cleared(at_ms: u64) -> Self {
+        Self {
+            last_wall_ms: at_ms,
+            cleared_before_ms: at_ms,
+            ..Self::default()
+        }
+    }
     pub fn validate(&self) -> Result<(), String> {
-        if self.schema_version != 1
+        if !matches!(self.schema_version, 1 | 2)
             || self.apps.len() > MAX_APPS
             || self.minutes.len() > MAX_BUCKETS
+            || self.quarters.len() > MAX_QUARTERS
+            || self.hours.len() > MAX_HOURS
         {
             return Err("应用历史版本或数量无效".into());
         }
@@ -105,20 +127,28 @@ impl AppHistory {
         if unique.len() != self.apps.len() {
             return Err("应用历史身份重复".into());
         }
-        for (&at, m) in &self.minutes {
-            if at % MINUTE != 0
-                || at > self.last_wall_ms
-                || m.observed_ms > MINUTE
-                || m.covered_ms > m.observed_ms
-                || m.apps.len() > MAX_APPS
-                || m.apps.keys().any(|id| !self.apps.contains_key(id))
-            {
-                return Err("应用历史分钟数据无效".into());
+        for (layer, resolution_ms) in [
+            (&self.minutes, MINUTE),
+            (&self.quarters, QUARTER_HOUR),
+            (&self.hours, HOUR),
+        ] {
+            for (&at, m) in layer {
+                if at % resolution_ms != 0
+                    || at > self.last_wall_ms
+                    || m.observed_ms > resolution_ms
+                    || m.covered_ms > m.observed_ms
+                    || m.apps.len() > MAX_APPS
+                    || m.apps.keys().any(|id| !self.apps.contains_key(id))
+                {
+                    return Err("应用历史分钟数据无效".into());
+                }
             }
         }
         let used: BTreeSet<_> = self
             .minutes
             .values()
+            .chain(self.quarters.values())
+            .chain(self.hours.values())
             .flat_map(|m| m.apps.keys().copied())
             .collect();
         if self.apps.keys().any(|id| !used.contains(id)) {
@@ -127,21 +157,58 @@ impl AppHistory {
         Ok(())
     }
     pub fn prune(&mut self, now: u64) -> bool {
-        let before = (self.minutes.len(), self.apps.len());
-        let cutoff = now.saturating_sub(DAY) / MINUTE * MINUTE;
-        self.minutes.retain(|at, _| *at >= cutoff);
-        while self.minutes.len() > MAX_BUCKETS {
-            self.minutes.pop_first();
-        }
-        if self.minutes.len() != before.0 {
+        let before = (
+            self.minutes.len(),
+            self.quarters.len(),
+            self.hours.len(),
+            self.apps.len(),
+        );
+        prune_layer(&mut self.minutes, now, DAY, MINUTE, MAX_BUCKETS);
+        prune_layer(&mut self.quarters, now, WEEK, QUARTER_HOUR, MAX_QUARTERS);
+        prune_layer(&mut self.hours, now, MONTH, HOUR, MAX_HOURS);
+        if before.0 != self.minutes.len()
+            || before.1 != self.quarters.len()
+            || before.2 != self.hours.len()
+        {
             let used: BTreeSet<_> = self
                 .minutes
                 .values()
+                .chain(self.quarters.values())
+                .chain(self.hours.values())
                 .flat_map(|m| m.apps.keys().copied())
                 .collect();
             self.apps.retain(|id, _| used.contains(id));
         }
-        before != (self.minutes.len(), self.apps.len())
+        before
+            != (
+                self.minutes.len(),
+                self.quarters.len(),
+                self.hours.len(),
+                self.apps.len(),
+            )
+    }
+    pub fn migrate(&mut self) {
+        if self.schema_version == 1 {
+            self.quarters.clear();
+            self.hours.clear();
+            for (&at, minute) in &self.minutes {
+                merge_minute(
+                    self.quarters
+                        .entry(at / QUARTER_HOUR * QUARTER_HOUR)
+                        .or_default(),
+                    minute,
+                );
+                merge_minute(self.hours.entry(at / HOUR * HOUR).or_default(), minute);
+            }
+            self.schema_version = 2;
+        }
+    }
+    pub fn layer(&self, resolution_ms: u64) -> &BTreeMap<u64, Minute> {
+        match resolution_ms {
+            QUARTER_HOUR => &self.quarters,
+            HOUR => &self.hours,
+            _ => &self.minutes,
+        }
     }
     fn slot(&mut self, path: &str) -> Option<u16> {
         if path.is_empty() || path.len() > 4096 || path.contains('\0') {
@@ -167,6 +234,11 @@ impl AppHistory {
         Some(id)
     }
     pub fn accept(&mut self, input: AppHistoryInput) -> bool {
+        if input.wall_ms <= self.cleared_before_ms
+            || input.wall_ms.saturating_sub(input.window.elapsed_ms) < self.cleared_before_ms
+        {
+            return false;
+        }
         let mut w = input.window;
         if self
             .last_delivery
@@ -200,12 +272,12 @@ impl AppHistory {
         self.last_wall_ms = input.wall_ms;
         // Do not invent a date allocation for a suspended or unbounded collection window.
         if duration == 0 || w.elapsed_ms > 15_000 || w.apps.len() > MAX_APPS {
-            let minute = self
-                .minutes
-                .entry(input.wall_ms / MINUTE * MINUTE)
-                .or_default();
-            minute.incomplete = true;
-            minute.skipped = minute.skipped.saturating_add(1);
+            let skipped = Minute {
+                incomplete: true,
+                skipped: 1,
+                ..Default::default()
+            };
+            self.append_minute(input.wall_ms / MINUTE * MINUTE, &skipped);
             return true;
         }
         let mut rows = BTreeMap::new();
@@ -234,7 +306,7 @@ impl AppHistory {
         };
         for (index, (at, ms)) in parts.iter().enumerate() {
             let take = |bytes: [u64; 2]| split(bytes, parts[0].1, duration, index);
-            let m = self.minutes.entry(*at).or_default();
+            let mut m = Minute::default();
             m.observed_ms = (m.observed_ms + ms).min(MINUTE);
             if w.complete {
                 m.covered_ms = (m.covered_ms + ms).min(MINUTE);
@@ -246,15 +318,29 @@ impl AppHistory {
             for (&id, &bytes) in &rows {
                 m.incomplete |= add(m.apps.entry(id).or_default(), take(bytes));
             }
+            self.append_minute(*at, &m);
         }
         true
     }
+    fn append_minute(&mut self, at: u64, minute: &Minute) {
+        merge_minute(self.minutes.entry(at).or_default(), minute);
+        merge_minute(
+            self.quarters
+                .entry(at / QUARTER_HOUR * QUARTER_HOUR)
+                .or_default(),
+            minute,
+        );
+        merge_minute(self.hours.entry(at / HOUR * HOUR).or_default(), minute);
+    }
     pub fn summarize(&self, start: u64, end: u64) -> Summary {
+        self.summarize_at(start, end, MINUTE)
+    }
+    pub fn summarize_at(&self, start: u64, end: u64, resolution_ms: u64) -> Summary {
         let mut result = Summary::default();
         let mut apps = BTreeMap::<u16, [u128; 2]>::new();
         let mut unknown = [0u128; 2];
         let mut other = [0u128; 2];
-        for (_, m) in self.minutes.range(start..end) {
+        for (_, m) in self.layer(resolution_ms).range(start..end) {
             result.covered_ms += m.covered_ms;
             result.observed_ms += m.observed_ms;
             result.incomplete |= m.incomplete;
@@ -324,16 +410,19 @@ impl AppHistory {
         }
     }
     pub fn series(&self, id: &str, start: u64, end: u64) -> Vec<Point> {
+        self.series_at(id, start, end, MINUTE)
+    }
+    pub fn series_at(&self, id: &str, start: u64, end: u64, resolution_ms: u64) -> Vec<Point> {
         let slot = self
             .apps
             .iter()
             .find(|(_, a)| Some(a.path.as_str()) == id.strip_prefix("app:"))
             .map(|(id, _)| *id);
-        (start / MINUTE..=end / MINUTE)
+        (start / resolution_ms..=end / resolution_ms)
             .take(MAX_BUCKETS)
             .map(|minute| {
-                let at = minute * MINUTE;
-                let m = self.minutes.get(&at);
+                let at = minute * resolution_ms;
+                let m = self.layer(resolution_ms).get(&at);
                 let values = m
                     .and_then(|m| {
                         if m.covered_ms == 0 || m.incomplete {
@@ -359,12 +448,24 @@ impl AppHistory {
                     })
                     .unwrap_or([None, None]);
                 Point {
-                    at_ms: (at + MINUTE).min(end),
+                    at_ms: (at + resolution_ms).min(end),
                     download: values[0],
                     upload: values[1],
                 }
             })
             .collect()
+    }
+}
+fn merge_minute(target: &mut Minute, source: &Minute) {
+    target.observed_ms += source.observed_ms;
+    target.covered_ms += source.covered_ms;
+    target.incomplete |= source.incomplete;
+    target.limited |= source.limited;
+    target.skipped = target.skipped.saturating_add(source.skipped);
+    target.incomplete |= add(&mut target.unknown, source.unknown);
+    target.incomplete |= add(&mut target.other, source.other);
+    for (&id, &bytes) in &source.apps {
+        target.incomplete |= add(target.apps.entry(id).or_default(), bytes);
     }
 }
 fn add(target: &mut [u64; 2], bytes: [u64; 2]) -> bool {
@@ -385,6 +486,46 @@ fn split(bytes: [u64; 2], first_ms: u64, total_ms: u64, index: usize) -> [u64; 2
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn coarse_layers_preserve_totals_and_identity_until_the_last_layer_expires() {
+        let mut history = AppHistory::default();
+        history.accept(input(1, HOUR + 1000, &[("c:\\a.exe", 11, 7)]));
+        history.accept(input(2, HOUR + 2000, &[("c:\\a.exe", 5, 3)]));
+        for resolution_ms in [MINUTE, QUARTER_HOUR, HOUR] {
+            let summary = history.summarize_at(HOUR, 2 * HOUR, resolution_ms);
+            assert_eq!(summary.bytes, [16, 10]);
+            assert_eq!(summary.covered_ms, 2000);
+        }
+        history.prune(2 * DAY);
+        assert!(history.minutes.is_empty());
+        assert!(history.identity("app:c:\\a.exe").is_some());
+        history.prune(8 * DAY);
+        assert!(history.quarters.is_empty());
+        assert_eq!(history.summarize_at(0, 2 * HOUR, HOUR).bytes, [16, 10]);
+        history.validate().unwrap();
+        history.prune(31 * DAY);
+        assert!(history.apps.is_empty());
+    }
+    #[test]
+    fn app_clear_rejects_late_or_crossing_windows_and_keeps_only_new_bytes() {
+        let mut history = AppHistory::cleared(DAY + 1000);
+        assert!(!history.accept(input(1, DAY + 500, &[("c:\\a.exe", 50, 0)])));
+        assert!(!history.accept(input(2, DAY + 1500, &[("c:\\a.exe", 50, 0)])));
+        assert!(history.accept(input(3, DAY + 2500, &[("c:\\a.exe", 7, 0)])));
+        assert_eq!(history.summarize(DAY, DAY + MINUTE).bytes, [7, 0]);
+    }
+    #[test]
+    fn old_app_minutes_migrate_once_without_duplicating_bytes() {
+        let mut history = AppHistory::default();
+        history.accept(input(1, HOUR + 1000, &[("c:\\a.exe", 11, 7)]));
+        history.schema_version = 1;
+        history.quarters.clear();
+        history.hours.clear();
+        history.migrate();
+        history.migrate();
+        assert_eq!(history.summarize_at(HOUR, 2 * HOUR, HOUR).bytes, [11, 7]);
+        history.validate().unwrap();
+    }
     fn input(seq: u64, wall: u64, apps: &[(&str, u64, u64)]) -> AppHistoryInput {
         AppHistoryInput {
             session: "run1".into(),
@@ -463,7 +604,13 @@ mod tests {
             [(MAX_APPS as u128 + 1) * 10, MAX_APPS as u128 + 1]
         );
         assert!(total.rows.iter().any(|r| r.id == OTHER));
-        h.accept(input(1000, DAY + MINUTE * 10, &[("d:\\new.exe", 1, 0)]));
+        h.prune(DAY + MINUTE * 10);
+        assert_eq!(
+            h.apps.len(),
+            MAX_APPS,
+            "hourly data still owns these identities"
+        );
+        h.accept(input(1000, MONTH + HOUR * 2, &[("d:\\new.exe", 1, 0)]));
         assert_eq!(h.apps.len(), 1);
         assert!(h.identity("app:c:\\0.exe").is_none());
         h.validate().unwrap();
@@ -471,7 +618,7 @@ mod tests {
     #[test]
     fn maximum_valid_file_stays_inside_budget() {
         let mut h = AppHistory {
-            last_wall_ms: DAY,
+            last_wall_ms: MONTH,
             ..Default::default()
         };
         for id in 0..MAX_APPS as u16 {
@@ -496,8 +643,37 @@ mod tests {
                 },
             );
         }
+        let sample = h.minutes.values().next().unwrap().clone();
+        for n in 0..MAX_QUARTERS as u64 {
+            h.quarters.insert(
+                n * QUARTER_HOUR,
+                Minute {
+                    observed_ms: QUARTER_HOUR,
+                    covered_ms: QUARTER_HOUR,
+                    ..sample.clone()
+                },
+            );
+        }
+        for n in 0..MAX_HOURS as u64 {
+            h.hours.insert(
+                n * HOUR,
+                Minute {
+                    observed_ms: HOUR,
+                    covered_ms: HOUR,
+                    ..sample.clone()
+                },
+            );
+        }
         h.validate().unwrap();
-        assert!(serde_json::to_vec(&h).unwrap().len() < MAX_FILE_BYTES);
+        let bytes = serde_json::to_vec(&h).unwrap().len();
+        assert!(
+            bytes > 16 * 1024 * 1024,
+            "old budget must not silently reject a full archive"
+        );
+        assert!(
+            bytes < MAX_FILE_BYTES,
+            "three-layer archive uses {bytes} bytes"
+        );
     }
 
     #[test]

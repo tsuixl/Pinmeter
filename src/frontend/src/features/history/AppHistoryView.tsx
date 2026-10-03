@@ -37,8 +37,14 @@ const series: ChartSeries[] = [
     read: (f) => f.upload,
   },
 ];
-export function AppHistoryView({ client }: { client: MonitorClient }) {
-  const vm = useAppHistoryViewModel(client);
+export function AppHistoryView({
+  client,
+  initialAppId = null,
+}: {
+  client: MonitorClient;
+  initialAppId?: string | null;
+}) {
+  const vm = useAppHistoryViewModel(client, initialAppId);
   const columns: TableColumn<AppHistoryRowDto>[] = [
     {
       key: "name",
@@ -74,7 +80,7 @@ export function AppHistoryView({ client }: { client: MonitorClient }) {
           <div>
             <h2>应用流量明细</h2>
             <p className="processor-caption">
-              全机可观测 TCP/UDP · 最近 24 小时保留在本机
+              全机可观测 TCP/UDP · 最近 30 天保留在本机
             </p>
           </div>
           <div className="app-history-actions">
@@ -164,6 +170,8 @@ export function AppHistoryView({ client }: { client: MonitorClient }) {
               { value: "1h", label: "最近 1 小时" },
               { value: "6h", label: "最近 6 小时" },
               { value: "24h", label: "最近 24 小时" },
+              { value: "7d", label: "最近 7 天" },
+              { value: "30d", label: "最近 30 天" },
             ]}
           />
           <Input
@@ -225,7 +233,15 @@ export function AppHistoryView({ client }: { client: MonitorClient }) {
         {vm.selectedId && (
           <div className="app-history-trend">
             <div className="section-heading">
-              <h3>{vm.selected?.selected_name ?? "应用"} · 分钟平均网速</h3>
+              <h3>
+                {vm.selected?.selected_name ?? "应用"} ·{" "}
+                {vm.selected?.resolution_ms === 3600000
+                  ? "小时"
+                  : vm.selected?.resolution_ms === 900000
+                    ? "15 分钟"
+                    : "分钟"}
+                平均网速
+              </h3>
               <Button variant="ghost" size="sm" onClick={() => vm.select(null)}>
                 收起趋势
               </Button>
@@ -244,14 +260,17 @@ export function AppHistoryView({ client }: { client: MonitorClient }) {
                 </div>
                 <TrendChart
                   history={vm.frames}
-                  series={series}
+                  series={series.map((item) => ({
+                    ...item,
+                    maxGapMs: (vm.selected?.resolution_ms ?? 60000) * 1.5,
+                  }))}
                   range={Math.max(
                     60_000,
                     vm.selected.through_ms - vm.selected.from_ms,
                   )}
                   anchor={vm.anchor}
                   onAnchor={vm.setAnchor}
-                  sampleSpacing={60_000}
+                  sampleSpacing={vm.selected.resolution_ms}
                   emptyState={{
                     title: "此时段没有有效应用样本",
                     detail: "未记录和采集缺失保留空白，不补算为零",
@@ -270,7 +289,9 @@ export function AppHistoryView({ client }: { client: MonitorClient }) {
         )}
         <p className="processor-caption">
           按可执行文件路径合并多进程，同名应用可悬停查看路径。应用统计包含可观测的局域网和回环流量，代理/VPN
-          可能显示为代理进程；不与上方所选网卡总量直接对账。未归属表示无法确认应用，采样时间按分钟汇总。
+          可能显示为代理进程；不与所选网卡总量直接对账。未归属表示无法确认应用；24
+          小时内按分钟、7 天按 15 分钟、30
+          天按小时汇总。旧版本未保存的时段无法补录。
         </p>
         <p className="processor-caption">
           {vm.data?.saved_at_ms

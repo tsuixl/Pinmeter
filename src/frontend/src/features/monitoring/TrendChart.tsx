@@ -11,6 +11,18 @@ import {
 } from "./chart";
 import { Button } from "../../shared/ui/sakani";
 import { statusLabels } from "./useMonitorViewModel";
+export function chartTimeLabel(atMs: number, rangeMs: number) {
+  const time = new Date(atMs);
+  return rangeMs >= 86_400_000
+    ? time.toLocaleString([], {
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      })
+    : time.toLocaleTimeString([], { hour12: false });
+}
 const labels: Record<MetricKey, string> = {
   cpu: "CPU",
   cpu_temperature: "CPU 温度",
@@ -128,9 +140,10 @@ export function TrendChart({
       : null;
   const hoverX = hover ? (hover.elapsed_ms - start) / range : 0;
   const wall = (elapsed: number) =>
-    new Date(
+    chartTimeLabel(
       (history.at(-1)?.at_ms ?? Date.now()) - (last - elapsed),
-    ).toLocaleTimeString([], { hour12: false });
+      range,
+    );
   const emptyStatus = items
     .map(
       (item) =>

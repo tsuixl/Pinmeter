@@ -7,6 +7,8 @@ import { useHistoryViewModel } from "./useHistoryViewModel";
 import { bytes, coverage } from "./history-model";
 import "./history.css";
 import { AppHistoryView } from "./AppHistoryView";
+import { HistoryInsights } from "./HistoryInsights";
+import { HistoryDataCard } from "./HistoryDataCard";
 const usage: ChartSeries[] = [
   {
     id: "cpu",
@@ -44,6 +46,9 @@ const network: ChartSeries[] = [
 export function HistoryView({ client }: { client: MonitorClient }) {
   const vm = useHistoryViewModel(client);
   const recorded = vm.data && vm.data.network_coverage_ms > 0;
+  const spacing = vm.data?.resolution_ms ?? 60000;
+  const resolutionLabel =
+    spacing === 60000 ? "分钟" : spacing === 900000 ? "15分钟" : "小时";
   return (
     <section className="history-page" aria-label="本地历史">
       <div className="section-heading">
@@ -54,13 +59,15 @@ export function HistoryView({ client }: { client: MonitorClient }) {
             { value: "3600000", label: "最近 1 小时" },
             { value: "21600000", label: "最近 6 小时" },
             { value: "86400000", label: "最近 24 小时" },
+            { value: "604800000", label: "最近 7 天" },
+            { value: "2592000000", label: "最近 30 天" },
           ]}
           onChange={(value) => {
             vm.setRange(value);
             vm.setAnchor(null);
           }}
         />
-        <Badge variant="neutral">本地保存 · 分钟平均值</Badge>
+        <Badge variant="neutral">本地保存 · {resolutionLabel}平均值</Badge>
       </div>
       {vm.error && (
         <Alert color="danger" title="无法读取本地历史" description={vm.error} />
@@ -114,10 +121,11 @@ export function HistoryView({ client }: { client: MonitorClient }) {
           icon={icons.history}
         />
       </div>
-      <AppHistoryView client={client} />
+      {vm.data && <HistoryInsights data={vm.data} />}
+      <AppHistoryView key={vm.revision} client={client} />
       <Card className="trend-card">
         <div className="section-heading">
-          <h2>CPU 与内存 · 分钟平均</h2>
+          <h2>CPU 与内存 · {resolutionLabel}平均</h2>
           <div className="legend">
             <span>
               <i />
@@ -131,17 +139,20 @@ export function HistoryView({ client }: { client: MonitorClient }) {
         </div>
         <TrendChart
           history={vm.frames}
-          series={usage}
+          series={usage.map((series) => ({
+            ...series,
+            maxGapMs: spacing * 1.5,
+          }))}
           range={Number(vm.range)}
           anchor={vm.anchor}
           onAnchor={vm.setAnchor}
-          sampleSpacing={60_000}
-          label="CPU 与内存分钟历史"
+          sampleSpacing={spacing}
+          label={`CPU 与内存${resolutionLabel}历史`}
         />
       </Card>
       <Card className="trend-card">
         <div className="section-heading">
-          <h2>网速 · 分钟平均</h2>
+          <h2>网速 · {resolutionLabel}平均</h2>
           <div className="legend">
             <span>
               <i />
@@ -155,12 +166,15 @@ export function HistoryView({ client }: { client: MonitorClient }) {
         </div>
         <TrendChart
           history={vm.frames}
-          series={network}
+          series={network.map((series) => ({
+            ...series,
+            maxGapMs: spacing * 1.5,
+          }))}
           range={Number(vm.range)}
           anchor={vm.anchor}
           onAnchor={vm.setAnchor}
-          sampleSpacing={60_000}
-          label="下载与上传分钟历史"
+          sampleSpacing={spacing}
+          label={`下载与上传${resolutionLabel}历史`}
         />
       </Card>
       <div className="history-notes muted">
@@ -176,9 +190,15 @@ export function HistoryView({ client }: { client: MonitorClient }) {
           {vm.data?.saved_at_ms
             ? `最近保存：${new Date(vm.data.saved_at_ms).toLocaleString()}`
             : "等待首次保存"}{" "}
-          · 保留最近 24 小时 · 全部存储在本机
+          · 分层保留最近 30 天 · 全部存储在本机
         </p>
       </div>
+      <HistoryDataCard
+        client={client}
+        from={vm.data?.from_ms ?? Date.now() - Number(vm.range)}
+        through={vm.data?.now_ms ?? Date.now()}
+        onChanged={vm.refresh}
+      />
     </section>
   );
 }

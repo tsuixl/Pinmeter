@@ -1,6 +1,6 @@
 use pinmeter_core::{
     app_history::{AppHistory, AppHistoryInput},
-    archive::{DAY, MINUTE},
+    archive::{DAY, MINUTE, MONTH, WEEK, resolution},
     ports::Clock,
 };
 use serde::Serialize;
@@ -42,6 +42,7 @@ pub struct AppHistorySnapshotDto {
     pub range: String,
     pub from_ms: f64,
     pub through_ms: f64,
+    pub resolution_ms: f64,
     pub received: String,
     pub transmitted: String,
     pub covered_ms: f64,
@@ -61,9 +62,17 @@ struct Data {
     error: String,
     saved: Option<u64>,
 }
+enum AppHistoryCommand {
+    Sample(AppHistoryInput),
+    Clear {
+        cutoff: u64,
+        reply: mpsc::Sender<Result<(), String>>,
+    },
+}
 pub struct AppHistories {
     data: Mutex<Data>,
-    tx: SyncSender<AppHistoryInput>,
+    tx: SyncSender<AppHistoryCommand>,
+    path: PathBuf,
     stop: AtomicBool,
     lost: AtomicU64,
     worker: Mutex<Option<JoinHandle<()>>>,
@@ -80,6 +89,7 @@ impl AppHistories {
                 saved: None,
             }),
             tx,
+            path: path.clone(),
             stop: AtomicBool::new(false),
             lost: AtomicU64::new(0),
             worker: Mutex::new(None),
@@ -111,11 +121,11 @@ impl AppHistories {
             let mut next = Instant::now() + Duration::from_secs(60);
             let mut dirty = s.data.lock().unwrap().history.prune(clock.wall_ms());
             loop {
-                if let Ok(input) = rx.recv_timeout(Duration::from_millis(250)) {
-                    dirty |= s.data.lock().unwrap().history.accept(input);
+                if let Ok(command) = rx.recv_timeout(Duration::from_millis(250)) {
+                    s.apply_command(command, &file, &mut writable, &mut dirty);
                 }
-                for input in rx.try_iter() {
-                    dirty |= s.data.lock().unwrap().history.accept(input);
+                for command in rx.try_iter() {
+                    s.apply_command(command, &file, &mut writable, &mut dirty);
                 }
                 let stopping = s.stop.load(Ordering::Acquire);
                 if stopping || Instant::now() >= next {
@@ -143,9 +153,126 @@ impl AppHistories {
         service
     }
     pub fn offer(&self, input: AppHistoryInput) {
-        if self.tx.try_send(input).is_err() {
+        if self.tx.try_send(AppHistoryCommand::Sample(input)).is_err() {
             self.lost.fetch_add(1, Ordering::Relaxed);
         }
+    }
+    fn apply_command(
+        &self,
+        command: AppHistoryCommand,
+        file: &pinmeter_platform::archive::AppHistoryFile,
+        writable: &mut bool,
+        dirty: &mut bool,
+    ) {
+        match command {
+            AppHistoryCommand::Sample(input) => {
+                *dirty |= self.data.lock().unwrap().history.accept(input)
+            }
+            AppHistoryCommand::Clear { cutoff, reply } => {
+                let empty = AppHistory::cleared(cutoff);
+                let result = file.clear(&empty);
+                let mut data = self.data.lock().unwrap();
+                if result.is_ok() {
+                    data.history = empty;
+                    data.error.clear();
+                    data.notice = "应用历史已清除；开启记录时会产生新的记录。".into();
+                    data.saved = Some(cutoff);
+                    self.lost.store(0, Ordering::Relaxed);
+                    *writable = true;
+                    *dirty = false;
+                } else if let Err(error) = &result {
+                    data.error = error.clone();
+                }
+                let _ = reply.send(result);
+            }
+        }
+    }
+    pub fn clear(&self, cutoff: u64) -> Result<(), String> {
+        if self.stop.load(Ordering::Acquire) {
+            return Err("应用历史服务正在退出".into());
+        }
+        let (reply, result) = mpsc::channel();
+        self.tx
+            .send(AppHistoryCommand::Clear { cutoff, reply })
+            .map_err(|_| "应用历史服务已停止")?;
+        result
+            .recv()
+            .map_err(|_| "应用历史清除未完成".to_string())?
+    }
+    pub fn storage_bytes(&self) -> Result<u64, String> {
+        pinmeter_platform::archive::AppHistoryFile::new(self.path.clone()).storage_bytes()
+    }
+    pub(crate) fn export_rows(
+        &self,
+        from: u64,
+        through: u64,
+        resolution_ms: u64,
+        include_paths: bool,
+    ) -> Result<String, String> {
+        let data = self.data.lock().map_err(|e| e.to_string())?;
+        let history = &data.history;
+        let mut csv = "bucket_start_unix_ms,resolution_ms,application,path,received_bytes,transmitted_bytes,observed_ms,covered_ms,incomplete\r\n".to_string();
+        for (&at, bucket) in history
+            .layer(resolution_ms)
+            .range(from / resolution_ms * resolution_ms..through)
+        {
+            let mut rows: Vec<(String, String, [u64; 2])> = bucket
+                .apps
+                .iter()
+                .filter_map(|(id, bytes)| {
+                    history.apps.get(id).map(|app| {
+                        (
+                            app.name.clone(),
+                            if include_paths {
+                                app.path.clone()
+                            } else {
+                                String::new()
+                            },
+                            *bytes,
+                        )
+                    })
+                })
+                .collect();
+            for (label, bytes) in [("未归属", bucket.unknown), ("其他已归属", bucket.other)]
+            {
+                if bytes != [0, 0] {
+                    rows.push((label.into(), String::new(), bytes));
+                }
+            }
+            if rows.is_empty() {
+                rows.push(("无已记录流量".into(), String::new(), [0, 0]));
+            }
+            for (name, path, bytes) in rows {
+                let observed = bucket.observed_ms > 0;
+                csv.push_str(
+                    &[
+                        at.to_string(),
+                        resolution_ms.to_string(),
+                        crate::archive::csv_cell(&name),
+                        crate::archive::csv_cell(&path),
+                        if observed {
+                            bytes[0].to_string()
+                        } else {
+                            String::new()
+                        },
+                        if observed {
+                            bytes[1].to_string()
+                        } else {
+                            String::new()
+                        },
+                        bucket.observed_ms.to_string(),
+                        bucket.covered_ms.to_string(),
+                        bucket.incomplete.to_string(),
+                    ]
+                    .join(","),
+                );
+                csv.push_str("\r\n");
+                if csv.len() > 32 * 1024 * 1024 {
+                    return Err("导出超过32 MiB，请缩短时间范围或关闭完整路径".into());
+                }
+            }
+        }
+        Ok(csv)
     }
     pub fn stop(&self) {
         self.stop.store(true, Ordering::Release);
@@ -162,10 +289,15 @@ impl AppHistories {
     ) -> AppHistorySnapshotDto {
         let data = self.data.lock().unwrap();
         let h = &data.history;
-        let summary = h.summarize(start, end.max(start));
+        let resolution_ms = match range.as_str() {
+            "7d" => resolution(WEEK),
+            "30d" => resolution(MONTH),
+            _ => MINUTE,
+        };
+        let summary = h.summarize_at(start, end.max(start), resolution_ms);
         let identity = selected.as_deref().and_then(|id| h.identity(id));
         let points = if identity.is_some() {
-            h.series(selected.as_deref().unwrap(), start, end)
+            h.series_at(selected.as_deref().unwrap(), start, end, resolution_ms)
                 .into_iter()
                 .map(|p| AppHistoryPointDto {
                     at_ms: p.at_ms as f64,
@@ -186,6 +318,7 @@ impl AppHistories {
             range,
             from_ms: start as f64,
             through_ms: end as f64,
+            resolution_ms: resolution_ms as f64,
             received: summary.bytes[0].to_string(),
             transmitted: summary.bytes[1].to_string(),
             covered_ms: summary.covered_ms as f64,
@@ -238,11 +371,17 @@ pub async fn get_app_history(
         "1h" => now.saturating_sub(60 * MINUTE),
         "6h" => now.saturating_sub(6 * 60 * MINUTE),
         "24h" => now.saturating_sub(DAY),
+        "7d" => now.saturating_sub(WEEK),
+        "30d" => now.saturating_sub(MONTH),
         _ => return Err("未知应用历史范围".into()),
     }
-    .max(now.saturating_sub(DAY))
-        / MINUTE
-        * MINUTE;
+    .max(now.saturating_sub(MONTH));
+    let resolution_ms = match range.as_str() {
+        "7d" => resolution(WEEK),
+        "30d" => resolution(MONTH),
+        _ => MINUTE,
+    };
+    let start = start / resolution_ms * resolution_ms;
     let service = runtime
         .app_history
         .lock()
@@ -258,6 +397,49 @@ pub async fn get_app_history(
 mod tests {
     use super::*;
     use pinmeter_core::app_history::AppWindow;
+    #[test]
+    fn clearing_app_history_is_persisted_before_ack_and_late_windows_stay_cleared() {
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().join("app-history.json");
+        let now = pinmeter_platform::shared::SystemClock::default().wall_ms();
+        let input = |sequence, at, amount| AppHistoryInput {
+            session: "clear-test".into(),
+            wall_ms: at,
+            window: AppWindow {
+                generation: 1,
+                sequence,
+                elapsed_ms: 1000,
+                complete: true,
+                apps: std::collections::BTreeMap::from([("c:\\app.exe".into(), [amount, 0])]),
+                unknown: [0, 0],
+                other: [0, 0],
+            },
+        };
+        let service = AppHistories::start(path.clone());
+        service.offer(input(1, now, 50));
+        service.clear(now + 1000).unwrap();
+        assert!(
+            pinmeter_platform::archive::AppHistoryFile::new(path.clone())
+                .load()
+                .unwrap()
+                .apps
+                .is_empty()
+        );
+        service.offer(input(2, now + 500, 50));
+        service.offer(input(3, now + 1500, 50));
+        service.offer(input(4, now + 2500, 7));
+        service.stop();
+        let restored = pinmeter_platform::archive::AppHistoryFile::new(path)
+            .load()
+            .unwrap();
+        assert_eq!(
+            restored
+                .summarize(now.saturating_sub(MINUTE), now + MINUTE)
+                .bytes,
+            [7, 0]
+        );
+        assert_eq!(restored.cleared_before_ms, now + 1000);
+    }
     #[test]
     fn final_queue_is_saved_and_next_session_adds_only_new_bytes() {
         let temp = tempfile::tempdir().unwrap();

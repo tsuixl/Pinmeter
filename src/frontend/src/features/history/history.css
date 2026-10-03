@@ -18,6 +18,23 @@
 .history-notes p + p {
   margin-top: var(--space-8);
 }
+.history-table-scroll {
+  overflow-x: auto;
+  max-width: 100%;
+}
+.history-data-content {
+  display: grid;
+  gap: var(--space-16);
+}
+.history-data-actions {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: var(--space-12);
+}
+.history-data-result {
+  overflow-wrap: anywhere;
+}
 @media (max-width: 800px) {
   .history-stats {
     grid-template-columns: 1fr;

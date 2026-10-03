@@ -19,15 +19,25 @@ export function demoAppHistory(
   incomplete = false,
 ): AppHistorySnapshotDto {
   const now = Date.now();
+  const rangeHours =
+    range === "1h"
+      ? 1
+      : range === "6h"
+        ? 6
+        : range === "7d"
+          ? 168
+          : range === "30d"
+            ? 720
+            : 24;
+  const resolution =
+    range === "7d" ? 900000 : range === "30d" ? 3600000 : 60000;
   const from =
     Math.floor(
       Math.max(
-        now - 24 * hour,
-        range === "today"
-          ? dayStart
-          : now - (range === "1h" ? 1 : range === "6h" ? 6 : 24) * hour,
-      ) / 60_000,
-    ) * 60_000;
+        now - 720 * hour,
+        range === "today" ? dayStart : now - rangeHours * hour,
+      ) / resolution,
+    ) * resolution;
   const observed =
     recordedFrom === null
       ? 0
@@ -69,6 +79,7 @@ export function demoAppHistory(
     lost_windows: "0",
     clock_discontinuities: "0",
     range,
+    resolution_ms: resolution,
     from_ms: from,
     through_ms: now,
     received: String(rows.reduce((n, row) => n + BigInt(row.received), 0n)),
@@ -85,9 +96,9 @@ export function demoAppHistory(
     selected_name: recordedFrom === null ? null : selectedName,
     points: selectedName
       ? Array.from(
-          { length: Math.min(1441, Math.floor((now - from) / 60_000) + 1) },
+          { length: Math.min(1441, Math.floor((now - from) / resolution) + 1) },
           (_, i) => {
-            const at = Math.min(now, from + (i + 1) * 60_000);
+            const at = Math.min(now, from + (i + 1) * resolution);
             const valid =
               recordedFrom !== null &&
               at >= recordedFrom &&

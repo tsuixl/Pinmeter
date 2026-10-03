@@ -12,10 +12,13 @@ import {
   historyRows,
   type HistorySort,
 } from "./app-history-model";
-export function useAppHistoryViewModel(client: MonitorClient) {
+export function useAppHistoryViewModel(
+  client: MonitorClient,
+  initialAppId: string | null = null,
+) {
   const snapshot = useSyncExternalStore(client.subscribe, client.getSnapshot);
-  const [range, setRange] = useState("today");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [range, setRange] = useState(initialAppId ? "24h" : "today");
+  const [selectedId, setSelectedId] = useState<string | null>(initialAppId);
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<HistorySort>("total");
   const [limit, setLimit] = useState(10);

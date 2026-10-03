@@ -51,8 +51,8 @@ export function appHistoryFrames(data: AppHistorySnapshotDto) {
           unit: "",
           valid_at_ms: at,
           source: "应用流量历史",
-          semantic: "app_network.observed_minute_rate",
-          detail: "分钟内有效采集区间的平均速率",
+          semantic: "app_network.observed_interval_rate",
+          detail: `${data.resolution_ms / 60000} 分钟内有效采集区间的平均速率`,
         };
   return data.points.map((p) =>
     plotFrame(p.at_ms, p.at_ms, "app-history", {
