@@ -1,0 +1,50 @@
+.tray-panel {
+  display: grid;
+  gap: var(--space-12);
+  padding: var(--space-16);
+  background: var(--color-bg-surface);
+  min-height: 100vh;
+}
+.tray-panel header,
+.tray-panel footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+}
+.tray-panel-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-12);
+}
+.tray-panel-stat {
+  padding: var(--space-8);
+  min-width: 0;
+}
+.tray-panel-reading {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+.tray-panel-stat button {
+  width: 100%;
+  justify-content: space-between;
+}
+.tray-panel-stat strong {
+  font-variant-numeric: tabular-nums;
+}
+.tray-panel-stat svg {
+  display: block;
+  width: 100%;
+  height: 28px;
+  margin: var(--space-8) 0;
+}
+.tray-panel footer > span {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+body[data-panel-hidden="true"] .tray-panel {
+  visibility: hidden;
+}

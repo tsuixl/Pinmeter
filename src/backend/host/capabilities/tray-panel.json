@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "tray-panel-window",
+  "description": "Tray panel visibility events only; dedicated commands check the calling window",
+  "windows": ["tray-panel"],
+  "permissions": ["core:event:allow-listen", "core:event:allow-unlisten"]
+}
