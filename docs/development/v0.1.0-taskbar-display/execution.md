@@ -13,6 +13,8 @@
 
 ## 进度
 
+- P1 浏览器：核对 Sakani Checkbox/Select/Icon Button（受控 0.3.1），[浅色排序与温度独显](assets/p1-custom-light.jpg)、[深色显卡选单](assets/p1-custom-dark.jpg)、[窄窗](assets/p1-narrow-dark.jpg)及[最后一项禁用保护](assets/p1-last-metric-disabled.jpg)均可复核。GPU 排到 CPU 前、CPU 仅保留温度、显卡指定和最后一项不能取消均已操作检查；窄窗仅预览区域横向滚动，页面无溢出。HTML 只提供结构。真实 Explorer 绘制、混合 DPI 和权限边界保持未完成；统一交付见 [desktop-runtime](../v0.1.0-desktop-runtime/execution.md)。
+
 - v0.1.3 P1：新增网络、CPU/GPU 使用率与温度、内存六项独立开关，支持组排序和指定 GPU；显卡失联保留身份，不静默切换。旧配置的温度开关跟随原 CPU/GPU 开关，启用时至少保留一项读数。原生布局与前端预览使用同一组五种排列夹具；新增迁移、温度独显及多卡缺失回归。前端类型检查和 31 项测试、Rust 工作区测试与全目标 Clippy 通过。浏览器深浅主题截图、本次完整发行构建和原生 Explorer/DPI 场景仍待本轮最终核对。
 
 - v0.1.2 P0：关闭任务栏时不再每 100 ms 格式化读数或复制 GPU 快照；开启路径移交摘要所有权，避免再克隆。全局菜单回调通过弱引用绑定单一 Runtime，重启后切换队列，停止后清空。宿主 14 项测试与 Clippy 通过；新增回归确认重复绑定不重复注册、仅新队列收到操作、队列有界且停止后不接收。实际资源降幅、管理员 Explorer/休眠/多屏和长时表现尚未实测，不把静态减少工作量等同资源预算达标。
