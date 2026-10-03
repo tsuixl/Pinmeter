@@ -144,6 +144,21 @@ impl AppNetwork {
         self.detail = "本次监控已停止；再次开始将重新累计".into();
         self.clear_rates();
     }
+    /// Recreating the collector resets its sequence. Keep observed totals but reject its old replies.
+    pub fn resume_after_restart(&mut self, now: u64) {
+        if !self.requested {
+            return;
+        }
+        self.generation = self.generation.wrapping_add(1);
+        self.revision = self.revision.wrapping_add(1);
+        self.sequence = 0;
+        self.lost = 0;
+        self.sampled_at = now;
+        self.incomplete = true;
+        self.status = "authorizing";
+        self.detail = "正在恢复应用采集，间断期间不补计".into();
+        self.clear_rates();
+    }
     fn clear_rates(&mut self) {
         for app in self.apps.values_mut() {
             app.traffic.clear_rates();
@@ -182,9 +197,15 @@ impl AppNetwork {
         self.revision = self.revision.wrapping_add(1);
         self.clear_rates();
     }
-    pub fn accept(&mut self, generation: u64, window: &NetworkWindow, now: u64, interval: u64) {
+    pub fn accept(
+        &mut self,
+        generation: u64,
+        window: &NetworkWindow,
+        now: u64,
+        interval: u64,
+    ) -> Option<crate::app_history::AppWindow> {
         if generation != self.generation || !self.requested || window.sequence <= self.sequence {
-            return;
+            return None;
         }
         let first = self.sequence == 0;
         let gap = !first
@@ -218,10 +239,21 @@ impl AppNetwork {
         self.other
             .add(window.other_download, window.other_upload, seconds);
         self.limited |= window.other_download > 0 || window.other_upload > 0;
+        let mut observed = crate::app_history::AppWindow {
+            generation,
+            sequence: window.sequence,
+            elapsed_ms: window.elapsed_ms,
+            complete: !gap && !lost && window.elapsed_ms >= 100,
+            apps: BTreeMap::new(),
+            unknown: [window.unknown_download, window.unknown_upload],
+            other: [window.other_download, window.other_upload],
+        };
         for row in &window.rows {
             let key = row.path.replace('/', "\\").to_lowercase();
             if !self.apps.contains_key(&key) && self.apps.len() >= MAX_APPS {
                 self.other.add(row.download, row.upload, seconds);
+                observed.other[0] = observed.other[0].saturating_add(row.download);
+                observed.other[1] = observed.other[1].saturating_add(row.upload);
                 self.limited = true;
                 continue;
             }
@@ -242,6 +274,9 @@ impl AppNetwork {
                 app.icon.clone_from(&row.icon);
             }
             app.traffic.add(row.download, row.upload, seconds);
+            let bytes = observed.apps.entry(app.id.clone()).or_default();
+            bytes[0] = bytes[0].saturating_add(row.download);
+            bytes[1] = bytes[1].saturating_add(row.upload);
             let id = format!("{}:{}", row.pid, row.started);
             if !app.processes.contains_key(&id) && self.process_count >= MAX_PROCESSES {
                 self.limited = true;
@@ -261,7 +296,7 @@ impl AppNetwork {
         }
         if !valid {
             self.clear_rates();
-            return;
+            return Some(observed);
         }
         let download =
             self.apps.values().map(|a| a.traffic.download).sum::<f64>() + self.other.download;
@@ -275,6 +310,7 @@ impl AppNetwork {
             traffic.download_share = (download > 0.0).then(|| traffic.download / download * 100.0);
             traffic.upload_share = (upload > 0.0).then(|| traffic.upload / upload * 100.0);
         }
+        Some(observed)
     }
 }
 
@@ -378,5 +414,55 @@ mod tests {
         assert_eq!(state.apps.len(), MAX_APPS);
         assert_eq!(state.other.download, 200.0);
         assert!((state.apps["0"].traffic.download_share.unwrap() - 100.0 / 130.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn archival_output_is_one_delta_per_accepted_window() {
+        let mut state = AppNetwork::new(true);
+        let generation = state.begin(0).unwrap();
+        let first = sample(
+            1,
+            vec![row(1, "1", "C:\\a.exe", 100), row(2, "2", "c:\\A.exe", 200)],
+        );
+        let observed = state.accept(generation, &first, 1000, 1000).unwrap();
+        assert_eq!(observed.apps["c:\\a.exe"], [300, 0]);
+        assert!(state.accept(generation, &first, 2000, 1000).is_none());
+        let second = state
+            .accept(
+                generation,
+                &sample(2, vec![row(1, "1", "C:\\a.exe", 25)]),
+                2000,
+                1000,
+            )
+            .unwrap();
+        assert_eq!(second.apps["c:\\a.exe"], [25, 0]);
+        state.stop();
+        let next = state.begin(3000).unwrap();
+        assert!(
+            state
+                .accept(generation, &sample(3, vec![]), 4000, 1000)
+                .is_none()
+        );
+        assert!(state.accept(next, &sample(1, vec![]), 4000, 1000).is_some());
+    }
+    #[test]
+    fn restarted_collector_keeps_totals_and_accepts_its_new_sequence() {
+        let mut state = AppNetwork::new(true);
+        let old = state.begin(0).unwrap();
+        state.accept(old, &sample(10, vec![row(1, "1", "a", 100)]), 1000, 1000);
+        state.resume_after_restart(5000);
+        let next = state.generation;
+        assert_ne!(old, next);
+        assert!(state.incomplete);
+        assert!(
+            state
+                .accept(old, &sample(11, vec![row(1, "1", "a", 99)]), 6000, 1000)
+                .is_none()
+        );
+        let observed = state
+            .accept(next, &sample(1, vec![row(1, "1", "a", 7)]), 6000, 1000)
+            .unwrap();
+        assert_eq!(observed.apps["a"], [7, 0]);
+        assert_eq!(state.apps["a"].traffic.received, 107);
     }
 }

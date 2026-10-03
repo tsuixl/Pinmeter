@@ -659,6 +659,7 @@ export function App({
               </div>
               <AppNetworkRanking
                 client={client}
+                onHistory={() => go("history")}
                 suspended={windowVm.exit.stage !== "idle"}
               />
             </>

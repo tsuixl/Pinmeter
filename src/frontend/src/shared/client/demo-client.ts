@@ -13,8 +13,31 @@ import { demoIp } from "./demo-ip";
 import { demoHardware } from "./demo-hardware";
 import { demoDisk } from "./demo-disk";
 import { demoArchive } from "./demo-history";
+import { demoAppHistory } from "./demo-app-history";
 import { builtinFontCatalog } from "../fonts";
 export class DemoClient extends ObservableClient {
+  private appHistoryFrom: number | null =
+    typeof location !== "undefined" &&
+    new URLSearchParams(location.search).get("appHistory") === "empty"
+      ? null
+      : Date.now() - 86400_000;
+  private appHistoryThrough = Date.now() - 60_000;
+  async getAppHistory(range: string, appId: string | null, dayStartMs: number) {
+    if (
+      typeof location !== "undefined" &&
+      new URLSearchParams(location.search).get("appHistory") === "failed"
+    )
+      throw new Error("演示：本地应用历史暂不可用");
+    if (this.networkEnabled) this.appHistoryThrough = Date.now();
+    return demoAppHistory(
+      range,
+      appId,
+      dayStartMs,
+      this.appHistoryFrom,
+      this.appHistoryThrough,
+      this.status !== "normal",
+    );
+  }
   async getFontCatalog() {
     return builtinFontCatalog;
   }
@@ -138,6 +161,7 @@ export class DemoClient extends ObservableClient {
           close_action: "ask",
           autostart: false,
           start_in_tray: false,
+          record_app_traffic_on_start: false,
           revision: "0",
           theme: "system",
           font_family: "harmonyos_sans_sc",
@@ -331,6 +355,8 @@ export class DemoClient extends ObservableClient {
     };
   }
   async setAppNetworkMonitoring(enabled: boolean) {
+    if (enabled && this.appHistoryFrom === null)
+      this.appHistoryFrom = Date.now();
     this.networkEnabled = enabled;
     this.publish({
       ...this.snapshot,

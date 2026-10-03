@@ -79,6 +79,16 @@ mod tests {
         );
         settings.font_family = pinmeter_core::domain::default_font_family();
         assert!(!settings.start_in_tray);
+        assert!(!settings.record_app_traffic_on_start);
+        settings.record_app_traffic_on_start = true;
+        repository.save(&settings).unwrap();
+        assert!(
+            repository
+                .load()
+                .unwrap()
+                .unwrap()
+                .record_app_traffic_on_start
+        );
         settings.start_in_tray = true;
         repository.save(&settings).unwrap();
         assert!(repository.load().unwrap().unwrap().start_in_tray);

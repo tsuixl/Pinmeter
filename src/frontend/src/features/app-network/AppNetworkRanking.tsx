@@ -20,9 +20,11 @@ import {
 export function AppNetworkRanking({
   client,
   suspended = false,
+  onHistory,
 }: {
   client: MonitorClient;
   suspended?: boolean;
+  onHistory?: () => void;
 }) {
   const vm = useAppNetworkViewModel(client);
   const control = useNetworkControlViewModel(client, suspended);
@@ -50,7 +52,16 @@ export function AppNetworkRanking({
         <span className="processor-caption">
           点击列标题排序 · 占比仅在已归属应用中计算
         </span>
+        {onHistory && (
+          <Button variant="ghost" size="sm" onClick={onHistory}>
+            查看应用历史
+          </Button>
+        )}
       </div>
+      <p className="processor-caption">
+        应用收发量同时保留最近 24
+        小时历史；重新开始只重置本次累计，已保存历史仍可查看。
+      </p>
       {(vm.detail || vm.error) && (
         <p className="processor-caption" role="status">
           {vm.error ?? vm.detail}

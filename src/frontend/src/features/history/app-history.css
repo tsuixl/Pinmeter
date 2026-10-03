@@ -1,0 +1,60 @@
+.app-history-card {
+  min-width: 0;
+}
+.app-history-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-width: 0;
+}
+.app-history-actions {
+  display: flex;
+  gap: var(--space-8);
+  align-items: center;
+  flex-wrap: wrap;
+}
+.app-history-toolbar {
+  display: grid;
+  grid-template-columns: minmax(140px, 1fr) minmax(180px, 2fr) minmax(
+      160px,
+      1fr
+    );
+  gap: var(--space-16);
+  align-items: end;
+}
+.app-history-toolbar > * {
+  min-width: 0;
+}
+.app-history-summary,
+.app-history-card td {
+  font-variant-numeric: tabular-nums;
+}
+.app-history-summary {
+  color: var(--color-fg-muted);
+  font-size: 14px;
+}
+.app-history-name {
+  max-width: 100%;
+}
+.app-history-name span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 260px;
+}
+.app-history-trend {
+  border-top: 1px solid var(--color-border-subtle);
+  padding-top: var(--space-16);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+@media (max-width: 760px) {
+  .app-history-toolbar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .app-history-name span {
+    max-width: 180px;
+  }
+}

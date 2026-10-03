@@ -33,16 +33,27 @@ export function RankingTable({
   onContextMenu?: (row: DisplayRow, event: MouseEvent) => void;
 }) {
   const root = useRef<HTMLDivElement>(null);
-  const [headers, setHeaders] = useState<HTMLTableCellElement[]>([]);
+  const [headers, setHeaders] = useState<
+    Array<{ cell: HTMLTableCellElement; slot: HTMLSpanElement | null }>
+  >([]);
   useLayoutEffect(() => {
-    setHeaders(
-      Array.from(
-        root.current!.querySelectorAll<HTMLTableCellElement>("thead th"),
-      ),
+    const cells = Array.from(
+      root.current!.querySelectorAll<HTMLTableCellElement>("thead th"),
     );
+    // React owns the table cell's header text, even when it is an empty string.
+    // Mount each portal into its own leaf rather than competing for the cell's children.
+    const slots = cells.map((cell, index) => {
+      const slot = sortable(columns[index]?.key ?? "")
+        ? document.createElement("span")
+        : null;
+      if (slot) cell.append(slot);
+      return { cell, slot };
+    });
+    setHeaders(slots);
+    return () => slots.forEach(({ slot }) => slot?.remove());
   }, []);
   useLayoutEffect(() => {
-    headers.forEach((header, index) => {
+    headers.forEach(({ cell: header }, index) => {
       header.scope = "col";
       if (columns[index].key === sort.key)
         header.setAttribute(
@@ -72,9 +83,9 @@ export function RankingTable({
           sortable(column.key) ? { ...column, header: "" } : column,
         )}
       />
-      {headers.map((header, index) => {
+      {headers.map(({ slot }, index) => {
         const key = columns[index].key;
-        if (!sortable(key)) return null;
+        if (!sortable(key) || !slot) return null;
         const active = sort.key === key;
         const Icon = active
           ? sort.order === "asc"
@@ -100,7 +111,7 @@ export function RankingTable({
           >
             {labels[key]}
           </Button>,
-          header,
+          slot,
           key,
         );
       })}

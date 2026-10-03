@@ -287,6 +287,7 @@ fn save_settings(
     }
     let next = pinmeter_core::domain::Settings {
         start_in_tray: settings.start_in_tray,
+        record_app_traffic_on_start: settings.record_app_traffic_on_start,
         autostart: settings.autostart,
         close_action: settings.close_action,
         taskbar: pinmeter_core::desktop::TaskbarSettings {

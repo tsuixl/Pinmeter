@@ -20,6 +20,11 @@ export interface NetworkControlChange {
   expectedRevision: string;
 }
 export interface MonitorClient {
+  getAppHistory?(
+    range: string,
+    appId: string | null,
+    dayStartMs: number,
+  ): Promise<import("../contracts/monitor").AppHistorySnapshotDto>;
   getFontCatalog?(
     refresh?: boolean,
   ): Promise<import("../contracts/monitor").FontCatalogDto>;

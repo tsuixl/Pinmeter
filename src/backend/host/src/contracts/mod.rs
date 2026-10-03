@@ -58,6 +58,8 @@ pub struct FrameDto {
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
 pub struct SettingsDto {
     #[serde(default)]
+    pub record_app_traffic_on_start: bool,
+    #[serde(default)]
     pub start_in_tray: bool,
     pub autostart: bool,
     pub close_action: String,
@@ -220,6 +222,9 @@ pub struct HistoryDto {
 pub fn typescript() -> String {
     let config = ts_rs::Config::default();
     let declarations = [
+        crate::app_history::AppHistoryRowDto::decl(&config),
+        crate::app_history::AppHistoryPointDto::decl(&config),
+        crate::app_history::AppHistorySnapshotDto::decl(&config),
         crate::archive::MinuteBucketDto::decl(&config),
         crate::archive::ArchiveSnapshotDto::decl(&config),
         crate::processes::ProcessRowDto::decl(&config),

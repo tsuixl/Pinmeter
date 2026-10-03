@@ -6,6 +6,7 @@ import type { ChartSeries } from "../monitoring/chart";
 import { useHistoryViewModel } from "./useHistoryViewModel";
 import { bytes, coverage } from "./history-model";
 import "./history.css";
+import { AppHistoryView } from "./AppHistoryView";
 const usage: ChartSeries[] = [
   {
     id: "cpu",
@@ -113,6 +114,7 @@ export function HistoryView({ client }: { client: MonitorClient }) {
           icon={icons.history}
         />
       </div>
+      <AppHistoryView client={client} />
       <Card className="trend-card">
         <div className="section-heading">
           <h2>CPU 与内存 · 分钟平均</h2>

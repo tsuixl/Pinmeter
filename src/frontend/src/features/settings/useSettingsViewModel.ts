@@ -9,6 +9,7 @@ import {
   fontStyleOptions,
 } from "../../shared/fonts";
 const defaults: SettingsDto = {
+  record_app_traffic_on_start: false,
   start_in_tray: false,
   autostart: false,
   close_action: "ask",

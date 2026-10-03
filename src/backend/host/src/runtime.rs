@@ -36,6 +36,7 @@ pub struct Runtime {
     pub visible: Arc<AtomicBool>,
     pub disks: Mutex<Option<Arc<crate::disk::Disks>>>,
     pub archives: Mutex<Option<Arc<crate::archive::Archives>>>,
+    pub app_history: Mutex<Option<Arc<crate::app_history::AppHistories>>>,
     pub processes: Mutex<Option<Arc<crate::processes::Processes>>>,
     pub startup_visibility: Mutex<pinmeter_core::desktop::StartupVisibility>,
     desktop_menu_registered: AtomicBool,
@@ -72,11 +73,18 @@ impl Runtime {
         monitor.cpu_model = pinmeter_platform::cpu_model();
         monitor.app_network =
             pinmeter_core::app_network::AppNetwork::new(cfg!(target_os = "windows"));
+        if monitor.settings.record_app_traffic_on_start && cfg!(target_os = "windows") {
+            use pinmeter_core::ports::Clock;
+            let _ = monitor
+                .app_network
+                .begin(pinmeter_platform::shared::SystemClock::default().monotonic_ms());
+        }
         Arc::new(Self {
             font_catalog: Mutex::new(None),
             visible: Arc::new(AtomicBool::new(false)),
             disks: Mutex::new(None),
             archives: Mutex::new(None),
+            app_history: Mutex::new(None),
             processes: Mutex::new(None),
             startup_visibility: Mutex::new(Default::default()),
             desktop_menu_registered: AtomicBool::new(false),
@@ -112,6 +120,9 @@ impl Runtime {
         if let Ok(config) = app.path().app_config_dir() {
             *self.archives.lock().unwrap() =
                 Some(crate::archive::Archives::start(config.join("history.json")));
+            *self.app_history.lock().unwrap() = Some(crate::app_history::AppHistories::start(
+                config.join("app-history.json"),
+            ));
         }
         *self.disks.lock().unwrap() = Some(crate::disk::Disks::start(self.visible.clone()));
         *self.processes.lock().unwrap() =
@@ -224,15 +235,33 @@ impl Runtime {
                     use pinmeter_core::ports::Clock;
                     collector.interval.store(interval, Ordering::Relaxed);
                     if let Some((generation, result)) = collector.latest() {
-                        let mut state = runtime.inner.lock().unwrap();
-                        match result {
-                            Ok(sample) => state.monitor.app_network.accept(
+                        let clock = pinmeter_platform::shared::SystemClock::default();
+                        let observed = match result {
+                            Ok(sample) => runtime.inner.lock().unwrap().monitor.app_network.accept(
                                 generation,
                                 &sample,
-                                pinmeter_platform::shared::SystemClock::default().monotonic_ms(),
+                                clock.monotonic_ms(),
                                 interval,
                             ),
-                            Err(error) => state.monitor.app_network.fail(generation, &error),
+                            Err(error) => {
+                                runtime
+                                    .inner
+                                    .lock()
+                                    .unwrap()
+                                    .monitor
+                                    .app_network
+                                    .fail(generation, &error);
+                                None
+                            }
+                        };
+                        if let Some(window) = observed
+                            && let Some(history) = runtime.app_history.lock().unwrap().as_ref()
+                        {
+                            history.offer(pinmeter_core::app_history::AppHistoryInput {
+                                session: runtime.session.clone(),
+                                wall_ms: clock.wall_ms(),
+                                window,
+                            });
                         }
                     }
                 }
@@ -381,6 +410,9 @@ impl Runtime {
         if let Some(archive) = self.archives.lock().unwrap().take() {
             archive.stop();
         }
+        if let Some(history) = self.app_history.lock().unwrap().take() {
+            history.stop();
+        }
         self.stopped.store(true, Ordering::Release);
         *self.desktop_actions.lock().unwrap() = None;
     }
@@ -390,6 +422,17 @@ impl Runtime {
         self.stop.store(false, Ordering::Release);
         self.stopped.store(false, Ordering::Release);
         self.inner.lock().unwrap().monitor.reset_baseline();
+        {
+            use pinmeter_core::ports::Clock;
+            self.inner
+                .lock()
+                .unwrap()
+                .monitor
+                .app_network
+                .resume_after_restart(
+                    pinmeter_platform::shared::SystemClock::default().monotonic_ms(),
+                );
+        }
         *self.exit.lock().unwrap() = Default::default();
         self.start(app.clone());
         let _ = app.emit("pinmeter-exit", self.exit_status());
@@ -492,6 +535,38 @@ impl Runtime {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn automatic_app_recording_is_opt_in_and_uses_the_existing_session() {
+        struct Repository(bool);
+        impl pinmeter_core::ports::SettingsRepository for Repository {
+            fn load(&self) -> Result<Option<pinmeter_core::domain::Settings>, String> {
+                Ok(Some(pinmeter_core::domain::Settings {
+                    record_app_traffic_on_start: self.0,
+                    ..Default::default()
+                }))
+            }
+            fn save(&self, _: &pinmeter_core::domain::Settings) -> Result<(), String> {
+                Ok(())
+            }
+        }
+        let idle = super::Runtime::new(std::sync::Arc::new(Repository(false)));
+        assert!(!idle.inner.lock().unwrap().monitor.app_network.requested);
+        let enabled = super::Runtime::new(std::sync::Arc::new(Repository(true)));
+        assert_eq!(
+            enabled.inner.lock().unwrap().monitor.app_network.requested,
+            cfg!(target_os = "windows")
+        );
+        if cfg!(target_os = "windows") {
+            let first = enabled.inner.lock().unwrap().monitor.app_network.generation;
+            enabled.set_app_network(true).unwrap();
+            assert_eq!(
+                enabled.inner.lock().unwrap().monitor.app_network.generation,
+                first
+            );
+            enabled.set_app_network(false).unwrap();
+            assert!(!enabled.inner.lock().unwrap().monitor.app_network.requested);
+        }
+    }
     use super::*;
     #[test]
     fn ip_projection_uses_existing_backpressure_and_stops_when_view_disconnects() {

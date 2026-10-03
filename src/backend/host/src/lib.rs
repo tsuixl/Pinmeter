@@ -1,3 +1,4 @@
+mod app_history;
 mod archive;
 mod bridges;
 mod commands;
@@ -87,6 +88,7 @@ pub fn run() {
             fonts::get_font_catalog,
             disk::get_disk_snapshot,
             archive::get_archive_snapshot,
+            app_history::get_app_history,
             processes::get_process_snapshot,
             diagnostics::prepare_diagnostics,
             diagnostics::export_diagnostics,

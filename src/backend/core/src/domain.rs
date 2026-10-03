@@ -167,6 +167,8 @@ pub enum Status {
 #[serde(deny_unknown_fields)]
 pub struct Settings {
     #[serde(default)]
+    pub record_app_traffic_on_start: bool,
+    #[serde(default)]
     pub start_in_tray: bool,
     #[serde(default)]
     pub autostart: bool,
@@ -199,6 +201,7 @@ fn release_network_by_default() -> bool {
 impl Default for Settings {
     fn default() -> Self {
         Self {
+            record_app_traffic_on_start: false,
             autostart: false,
             start_in_tray: false,
             close_action: ask_on_close(),

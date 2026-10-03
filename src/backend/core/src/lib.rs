@@ -1,3 +1,4 @@
+pub mod app_history;
 pub mod app_network;
 pub mod app_network_control;
 pub mod application;

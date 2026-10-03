@@ -29,6 +29,7 @@ export function TrendChart({
   seriesLabels,
   axis,
   sampleSpacing = 1000,
+  emptyState,
 }: {
   history: FrameDto[];
   keys?: MetricKey[];
@@ -40,6 +41,7 @@ export function TrendChart({
   seriesLabels?: Partial<Record<MetricKey, string>>;
   axis?: { unit: string; divisor: number; step: number; minimum: number };
   sampleSpacing?: number;
+  emptyState?: { title: string; detail: string };
 }) {
   const items: ChartSeries[] =
     series ??
@@ -323,9 +325,15 @@ export function TrendChart({
         {!values.length && (
           <div className="chart-empty">
             <strong>
-              {items.length ? "等待有效采样" : "选择图例以显示趋势"}
+              {items.length
+                ? (emptyState?.title ?? "等待有效采样")
+                : "选择图例以显示趋势"}
             </strong>
-            {items.length > 0 && <span>{emptyStatus} · 不显示为零值</span>}
+            {items.length > 0 && (
+              <span>
+                {emptyState?.detail ?? `${emptyStatus} · 不显示为零值`}
+              </span>
+            )}
           </div>
         )}
         <div className="chart-times">
