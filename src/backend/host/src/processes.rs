@@ -1,24 +1,40 @@
-use crate::{contracts::ReadingStatus, presenters, runtime::Runtime};
+use crate::{
+    contracts::ReadingStatus,
+    presenters,
+    runtime::Runtime,
+    sampling::{SamplingAction, SamplingWait},
+};
 use pinmeter_core::{domain::Status, ports::Clock, processes::ProcessRanking};
 use serde::Serialize;
 use std::{
     sync::{
         Arc, Mutex,
-        atomic::{AtomicBool, Ordering},
+        atomic::{AtomicU64, Ordering},
     },
     thread::{self, JoinHandle},
-    time::{Duration, Instant},
 };
 use ts_rs::TS;
+static NEXT_SERVICE_ID: AtomicU64 = AtomicU64::new(1);
 #[derive(Clone, Serialize, TS)]
 pub struct ProcessRowDto {
     pub id: String,
     pub pid: u32,
     pub name: String,
+    pub application_id: String,
     pub cpu: Option<f64>,
     pub cpu_status: ReadingStatus,
     pub working_set: Option<f64>,
     pub memory_status: ReadingStatus,
+}
+#[derive(Clone, Serialize, TS)]
+pub struct ProcessApplicationDto {
+    pub id: String,
+    pub name: String,
+    pub cpu: Option<f64>,
+    pub cpu_status: ReadingStatus,
+    pub working_set: Option<f64>,
+    pub memory_status: ReadingStatus,
+    pub process_count: u32,
 }
 #[derive(Clone, Serialize, TS)]
 pub struct ProcessSnapshotDto {
@@ -30,57 +46,51 @@ pub struct ProcessSnapshotDto {
     pub unreadable: u32,
     pub truncated: bool,
     pub rows: Vec<ProcessRowDto>,
+    pub applications: Vec<ProcessApplicationDto>,
 }
 struct Data {
     ranking: ProcessRanking,
-    requested: Option<Instant>,
     status: Status,
     detail: String,
     wall: Option<u64>,
 }
 pub struct Processes {
+    service_id: u64,
     data: Mutex<Data>,
-    stop: AtomicBool,
+    sampling: SamplingWait,
     worker: Mutex<Option<JoinHandle<()>>>,
 }
 impl Processes {
-    pub fn start(visible: Arc<AtomicBool>) -> Arc<Self> {
+    pub fn start(visible: bool) -> Arc<Self> {
         let service = Arc::new(Self {
+            service_id: NEXT_SERVICE_ID.fetch_add(1, Ordering::Relaxed),
             data: Mutex::new(Data {
                 ranking: ProcessRanking::default(),
-                requested: None,
                 status: Status::Warming,
                 detail: "正在建立进程 CPU 基线".into(),
                 wall: None,
             }),
-            stop: AtomicBool::new(false),
+            sampling: SamplingWait::new(visible),
             worker: Mutex::new(None),
         });
         let s = service.clone();
         *service.worker.lock().unwrap() = Some(thread::spawn(move || {
             let clock = pinmeter_platform::shared::SystemClock::default();
-            let mut next = Instant::now();
-            let mut active = false;
-            while !s.stop.load(Ordering::Acquire) {
-                let wanted = visible.load(Ordering::Acquire)
-                    && s.data
-                        .lock()
-                        .unwrap()
-                        .requested
-                        .is_some_and(|t| t.elapsed() < Duration::from_secs(5));
-                if !wanted {
-                    if active {
+            loop {
+                let generation = match s.sampling.wait() {
+                    SamplingAction::Stop => break,
+                    SamplingAction::Reset => {
                         let mut data = s.data.lock().unwrap();
                         data.ranking.reset();
                         data.status = Status::Warming;
                         data.detail = "进程采集已暂停，打开页面后重新采样".into();
                         data.wall = None;
+                        continue;
                     }
-                    active = false;
-                    next = Instant::now();
-                } else if Instant::now() >= next {
-                    active = true;
-                    let result = pinmeter_platform::processes::collect();
+                    SamplingAction::Collect(generation) => generation,
+                };
+                let result = pinmeter_platform::processes::collect();
+                s.sampling.finish(generation, || {
                     let mut data = s.data.lock().unwrap();
                     match result {
                         Ok(batch) => {
@@ -96,25 +106,31 @@ impl Processes {
                             data.wall = None;
                         }
                     }
-                    next = Instant::now() + Duration::from_secs(2);
-                }
-                thread::park_timeout(Duration::from_millis(200));
+                });
             }
         }));
         service
     }
     pub fn stop(&self) {
-        self.stop.store(true, Ordering::Release);
+        self.sampling.stop();
         if let Some(worker) = self.worker.lock().unwrap().take() {
-            worker.thread().unpark();
             let _ = worker.join();
         }
     }
+    pub fn set_visible(&self, visible: bool) {
+        self.sampling.set_visible(visible);
+    }
+    pub fn diagnostic_snapshot(&self) -> ProcessSnapshotDto {
+        self.snapshot(false, false)
+    }
+    pub fn diagnostic_until(&self, until: Option<std::time::Instant>) {
+        self.sampling.diagnostic_until(until);
+    }
     fn snapshot(&self, memory: bool, visible: bool) -> ProcessSnapshotDto {
-        let mut data = self.data.lock().unwrap();
         if visible {
-            data.requested = Some(Instant::now());
+            self.sampling.request();
         }
+        let data = self.data.lock().unwrap();
         let now = pinmeter_platform::shared::SystemClock::default().monotonic_ms();
         let stale = data
             .ranking
@@ -124,12 +140,13 @@ impl Processes {
             vec![]
         } else {
             data.ranking
-                .top(memory)
-                .into_iter()
+                .rows
+                .iter()
                 .map(|r| ProcessRowDto {
-                    id: r.identity.clone(),
+                    id: format!("{}:{}", self.service_id, r.identity),
                     pid: r.pid,
                     name: r.name.clone(),
+                    application_id: format!("{}:{}", self.service_id, r.application_id),
                     cpu: r.cpu,
                     cpu_status: presenters::status(r.cpu_status),
                     working_set: r.working_set.map(|v| v as f64),
@@ -139,7 +156,7 @@ impl Processes {
         };
         let warming = stale
             || (!memory
-                && rows.is_empty()
+                && !rows.iter().any(|r| r.cpu.is_some())
                 && data
                     .ranking
                     .rows
@@ -161,6 +178,23 @@ impl Processes {
             total: data.ranking.rows.len() as u32,
             unreadable: data.ranking.unreadable as u32,
             truncated: data.ranking.truncated,
+            applications: if stale {
+                vec![]
+            } else {
+                data.ranking
+                    .applications()
+                    .into_iter()
+                    .map(|a| ProcessApplicationDto {
+                        id: format!("{}:{}", self.service_id, a.id),
+                        name: a.name,
+                        cpu: a.cpu,
+                        cpu_status: presenters::status(a.cpu_status),
+                        working_set: a.working_set.map(|v| v as f64),
+                        memory_status: presenters::status(a.memory_status),
+                        process_count: a.process_count as u32,
+                    })
+                    .collect()
+            },
             rows,
         }
     }
@@ -184,4 +218,41 @@ pub fn get_process_snapshot(
         .as_ref()
         .map(|s| s.snapshot(sort == "memory", runtime.visible.load(Ordering::Acquire)))
         .ok_or_else(|| "进程服务正在启动".into())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use pinmeter_core::processes::{ProcessBatch, ProcessSample};
+    #[test]
+    fn restarted_service_cannot_reuse_a_previously_pinned_identity() {
+        let first = Processes::start(false);
+        let second = Processes::start(false);
+        for service in [&first, &second] {
+            service.data.lock().unwrap().ranking.accept(
+                ProcessBatch {
+                    rows: vec![ProcessSample {
+                        pid: 42,
+                        name: "same.exe".into(),
+                        executable: Some("C:\\same.exe".into()),
+                        times: Ok((10, 0)),
+                        working_set: Ok(100),
+                    }],
+                    logical_cpus: 1,
+                    truncated: false,
+                },
+                pinmeter_platform::shared::SystemClock::default().monotonic_ms(),
+            );
+        }
+        let previous = first.snapshot(true, false);
+        let restarted = second.snapshot(true, false);
+        first.stop();
+        second.stop();
+        assert_ne!(previous.rows[0].id, restarted.rows[0].id);
+        assert_ne!(previous.applications[0].id, restarted.applications[0].id);
+        assert_eq!(
+            restarted.rows[0].application_id,
+            restarted.applications[0].id
+        );
+    }
 }

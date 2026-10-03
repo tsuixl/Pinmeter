@@ -21,3 +21,20 @@
   white-space: nowrap;
   vertical-align: middle;
 }
+.process-toolbar,
+.process-actions,
+.process-identity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-8);
+}
+.process-toolbar {
+  gap: var(--space-16);
+}
+.process-identity .processor-caption {
+  display: block;
+}
+.process-child {
+  padding-left: var(--space-24);
+}

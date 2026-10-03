@@ -6,6 +6,7 @@ export function usePageQuery<T>(
   client: MonitorClient,
   load: () => Promise<T>,
   interval = 2_000,
+  enabled = true,
 ) {
   const visible = useSyncExternalStore(
     client.subscribe,
@@ -14,7 +15,7 @@ export function usePageQuery<T>(
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState("");
   useEffect(() => {
-    if (!visible) return;
+    if (!visible || !enabled) return;
     let disposed = false;
     let pending = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -46,6 +47,6 @@ export function usePageQuery<T>(
       clearTimeout(timer);
       document.removeEventListener("visibilitychange", visibility);
     };
-  }, [load, interval, visible]);
+  }, [load, interval, visible, enabled]);
   return { data, error };
 }

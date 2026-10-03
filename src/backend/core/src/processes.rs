@@ -1,10 +1,12 @@
 use crate::domain::{Failure, Status};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 pub const MAX_PROCESSES: usize = 4096;
 #[derive(Clone, Debug)]
 pub struct ProcessSample {
     pub pid: u32,
     pub name: String,
+    /// Exact executable identity from the platform; never exported or persisted.
+    pub executable: Option<String>,
     pub times: Result<(u64, u64), Failure>,
     pub working_set: Result<u64, Failure>,
 }
@@ -19,10 +21,21 @@ pub struct ProcessRow {
     pub pid: u32,
     pub identity: String,
     pub name: String,
+    pub application_id: String,
     pub cpu: Option<f64>,
     pub cpu_status: Status,
     pub working_set: Option<u64>,
     pub memory_status: Status,
+}
+#[derive(Clone, Debug)]
+pub struct ProcessApplication {
+    pub id: String,
+    pub name: String,
+    pub cpu: Option<f64>,
+    pub cpu_status: Status,
+    pub working_set: Option<u64>,
+    pub memory_status: Status,
+    pub process_count: usize,
 }
 #[derive(Default)]
 pub struct ProcessRanking {
@@ -31,6 +44,8 @@ pub struct ProcessRanking {
     pub unreadable: usize,
     pub truncated: bool,
     pub sampled_at: Option<u64>,
+    identities: HashMap<String, u64>,
+    next_identity: u64,
 }
 impl ProcessRanking {
     pub fn reset(&mut self) {
@@ -40,6 +55,7 @@ impl ProcessRanking {
     }
     pub fn accept(&mut self, batch: ProcessBatch, now: u64) {
         let mut next = HashMap::new();
+        let mut live_executables = HashSet::new();
         self.unreadable = 0;
         self.truncated = batch.truncated || batch.rows.len() > MAX_PROCESSES;
         self.rows = batch
@@ -88,10 +104,29 @@ impl ProcessRanking {
                 {
                     self.unreadable += 1;
                 }
+                let identity = if birth == 0 {
+                    format!("{}:unknown:{now}", sample.pid)
+                } else {
+                    format!("{}:{birth}", sample.pid)
+                };
+                let application_id = if let Some(path) = sample
+                    .executable
+                    .filter(|p| !p.is_empty() && p.len() <= 32768)
+                {
+                    live_executables.insert(path.clone());
+                    let id = *self.identities.entry(path).or_insert_with(|| {
+                        self.next_identity += 1;
+                        self.next_identity
+                    });
+                    format!("app:{id}")
+                } else {
+                    format!("process:{identity}")
+                };
                 ProcessRow {
                     pid: sample.pid,
-                    identity: format!("{}:{birth}", sample.pid),
+                    identity,
                     name: sample.name,
+                    application_id,
                     cpu,
                     cpu_status,
                     working_set,
@@ -100,7 +135,54 @@ impl ProcessRanking {
             })
             .collect();
         self.baseline = next;
+        self.identities
+            .retain(|path, _| live_executables.contains(path));
         self.sampled_at = Some(now);
+    }
+    pub fn applications(&self) -> Vec<ProcessApplication> {
+        let mut groups: HashMap<&str, ProcessApplication> = HashMap::new();
+        for row in &self.rows {
+            let group = groups
+                .entry(&row.application_id)
+                .or_insert_with(|| ProcessApplication {
+                    id: row.application_id.clone(),
+                    name: row.name.clone(),
+                    cpu: Some(0.),
+                    cpu_status: Status::Normal,
+                    working_set: Some(0),
+                    memory_status: Status::Normal,
+                    process_count: 0,
+                });
+            group.process_count += 1;
+            match (group.cpu, row.cpu) {
+                (Some(total), Some(value)) if total + value <= 100. => {
+                    group.cpu = Some(total + value)
+                }
+                _ => {
+                    group.cpu = None;
+                    if group.cpu_status == Status::Normal {
+                        group.cpu_status = if row.cpu_status == Status::Normal {
+                            Status::Failed
+                        } else {
+                            row.cpu_status
+                        };
+                    }
+                }
+            }
+            group.working_set = group
+                .working_set
+                .and_then(|sum| row.working_set.and_then(|value| sum.checked_add(value)));
+            if group.working_set.is_none() && group.memory_status == Status::Normal {
+                group.memory_status = if row.memory_status == Status::Normal {
+                    Status::Failed
+                } else {
+                    row.memory_status
+                };
+            }
+        }
+        let mut groups: Vec<_> = groups.into_values().collect();
+        groups.sort_by(|a, b| a.id.cmp(&b.id));
+        groups
     }
     pub fn top(&self, memory: bool) -> Vec<&ProcessRow> {
         let mut rows: Vec<_> = self
@@ -135,6 +217,7 @@ mod tests {
                 .map(|pid| ProcessSample {
                     pid,
                     name: "test".into(),
+                    executable: None,
                     times: Ok((birth, total)),
                     working_set: Ok(pid as u64),
                 })
@@ -142,6 +225,40 @@ mod tests {
             logical_cpus: 4,
             truncated: false,
         }
+    }
+    #[test]
+    fn executable_identity_groups_only_confirmed_paths_and_retains_invalid_metrics() {
+        let mut ranking = ProcessRanking::default();
+        let mut sample = batch(10, 0);
+        sample.rows.truncate(4);
+        sample.rows[0].executable = Some("C:\\a\\same.exe".into());
+        sample.rows[1].executable = Some("C:\\a\\same.exe".into());
+        sample.rows[2].executable = Some("C:\\b\\same.exe".into());
+        ranking.accept(sample.clone(), 0);
+        let first_id = ranking.rows[0].application_id.clone();
+        assert_eq!(ranking.applications().len(), 3);
+        sample.rows[1].working_set = Err(Failure::new(Status::PermissionDenied, "denied"));
+        ranking.accept(sample.clone(), 2000);
+        let groups = ranking.applications();
+        let group = groups.iter().find(|g| g.id == first_id).unwrap();
+        assert_eq!(group.process_count, 2);
+        assert_eq!(group.working_set, None);
+        assert_eq!(group.memory_status, Status::PermissionDenied);
+        assert_eq!(group.cpu, Some(0.));
+        assert_ne!(ranking.rows[2].application_id, first_id);
+        assert_ne!(ranking.rows[3].application_id, first_id);
+        ranking.reset();
+        ranking.accept(sample, 4000);
+        assert_eq!(ranking.rows[0].application_id, first_id);
+        assert_eq!(
+            ranking
+                .applications()
+                .iter()
+                .find(|g| g.id == first_id)
+                .unwrap()
+                .cpu_status,
+            Status::Warming
+        );
     }
     #[test]
     fn cpu_normalizes_reuse_reset_gaps_and_top_ties() {

@@ -71,6 +71,7 @@ mod native {
                     .position(|v| *v == 0)
                     .unwrap_or(entry.szExeFile.len());
                 let mut name = String::from_utf16_lossy(&entry.szExeFile[..length]);
+                let mut executable = None;
                 let (times, working_set) = match unsafe {
                     OpenProcess(
                         PROCESS_QUERY_LIMITED_INFORMATION,
@@ -92,13 +93,12 @@ mod native {
                         }
                         .is_ok()
                         {
-                            // Keep only the file name, never its path or command line.
-                            if let Some(file) = String::from_utf16_lossy(&path[..len as usize])
-                                .rsplit('\\')
-                                .next()
-                            {
+                            // Exact path is used only for in-memory identity. No command line is read.
+                            let full_path = String::from_utf16_lossy(&path[..len as usize]);
+                            if let Some(file) = full_path.rsplit('\\').next() {
                                 name = file.into();
                             }
+                            executable = Some(full_path);
                         }
                         let (mut birth, mut exit, mut kernel, mut user) = (
                             FILETIME::default(),
@@ -139,6 +139,7 @@ mod native {
                 rows.push(ProcessSample {
                     pid: entry.th32ProcessID,
                     name,
+                    executable,
                     times,
                     working_set,
                 });
