@@ -65,6 +65,7 @@ export class DemoClient extends ObservableClient {
         settings: {
           close_action: "ask",
           autostart: false,
+          start_in_tray: false,
           revision: "0",
           theme: "system",
           interval_ms: 1000,

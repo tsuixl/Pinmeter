@@ -57,6 +57,8 @@ pub struct FrameDto {
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
 pub struct SettingsDto {
+    #[serde(default)]
+    pub start_in_tray: bool,
     pub autostart: bool,
     pub close_action: String,
     pub taskbar: TaskbarSettingsDto,

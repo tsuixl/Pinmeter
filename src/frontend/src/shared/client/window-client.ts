@@ -16,6 +16,7 @@ export interface WindowClient {
   toggleMaximize(): Promise<void>;
   close(): Promise<void>;
   show(): Promise<void>;
+  finishStartup?(): Promise<void>;
   readExitState(): Promise<ExitStatusDto>;
   onExitState(listener: (state: ExitStatusDto) => void): Promise<() => void>;
   confirmExit(): Promise<void>;
@@ -59,6 +60,7 @@ export async function createWindowClient(): Promise<WindowClient | undefined> {
     resolveClose: (action, remember) =>
       invoke("resolve_app_close", { action, remember }),
     show: () => window.show(),
+    finishStartup: () => invoke("complete_window_startup"),
   };
 }
 

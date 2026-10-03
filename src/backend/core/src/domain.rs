@@ -152,6 +152,8 @@ pub enum Status {
 #[serde(deny_unknown_fields)]
 pub struct Settings {
     #[serde(default)]
+    pub start_in_tray: bool,
+    #[serde(default)]
     pub autostart: bool,
     #[serde(default = "ask_on_close")]
     pub close_action: String,
@@ -176,6 +178,7 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             autostart: false,
+            start_in_tray: false,
             close_action: ask_on_close(),
             schema_version: 1,
             taskbar: Default::default(),

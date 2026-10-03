@@ -2723,7 +2723,7 @@ checksum = "a89322df9ebe1c1578d689c92318e070967d1042b512afbe49518723f4e6d5cd"
 
 [[package]]
 name = "pinmeter-core"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "semver",
  "serde",
@@ -2731,7 +2731,7 @@ dependencies = [
 
 [[package]]
 name = "pinmeter-host"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "pinmeter-core",
  "pinmeter-platform",
@@ -2751,7 +2751,7 @@ dependencies = [
 
 [[package]]
 name = "pinmeter-platform"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "httpdate",
  "pinmeter-core",

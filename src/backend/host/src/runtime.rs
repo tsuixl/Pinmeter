@@ -32,6 +32,7 @@ pub struct RuntimeState {
     pub next_subscription: u64,
 }
 pub struct Runtime {
+    pub startup_visibility: Mutex<pinmeter_core::desktop::StartupVisibility>,
     desktop_menu_registered: AtomicBool,
     desktop_actions:
         Mutex<Option<std::sync::mpsc::SyncSender<pinmeter_core::desktop::DesktopIntent>>>,
@@ -67,6 +68,7 @@ impl Runtime {
         monitor.app_network =
             pinmeter_core::app_network::AppNetwork::new(cfg!(target_os = "windows"));
         Arc::new(Self {
+            startup_visibility: Mutex::new(Default::default()),
             desktop_menu_registered: AtomicBool::new(false),
             desktop_actions: Mutex::new(None),
             settings_operation: Mutex::new(()),

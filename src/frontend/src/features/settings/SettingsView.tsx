@@ -83,6 +83,21 @@ export function SettingsView({
       </Card>
       <Card title="启动" description="登录电脑后自动打开 Pinmeter">
         <Switch
+          label="启动到托盘"
+          checked={vm.draft.start_in_tray}
+          disabled={
+            vm.pending ||
+            (!client.getSnapshot().demo && state?.platform !== "windows")
+          }
+          onChange={(event) =>
+            vm.change({ start_in_tray: event.target.checked })
+          }
+        />
+        <p className="settings-note">
+          下次启动生效。保留托盘入口并继续监控，再次打开已运行的 Pinmeter
+          可恢复窗口；托盘不可用时自动显示主窗口。
+        </p>
+        <Switch
           label="开机自启"
           checked={vm.draft.autostart}
           disabled={

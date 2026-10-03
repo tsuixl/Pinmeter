@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import type { MonitorClient } from "../../shared/client/monitor-client";
 import type { SettingsDto } from "../../shared/contracts/monitor";
 const defaults: SettingsDto = {
+  start_in_tray: false,
   autostart: false,
   close_action: "ask",
   revision: "0",

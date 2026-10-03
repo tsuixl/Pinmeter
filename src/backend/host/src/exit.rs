@@ -123,6 +123,7 @@ impl Runtime {
         self.exit.lock().unwrap().clone()
     }
     fn notify_exit(&self, app: &AppHandle) {
+        self.startup_visibility.lock().unwrap().reveal();
         let _ = app.emit("pinmeter-exit", self.exit_status());
         if let Some(window) = app.get_webview_window("main") {
             let _ = crate::bridges::activate(&window);

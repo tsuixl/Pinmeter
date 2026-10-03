@@ -51,6 +51,7 @@ export class TauriMonitorClient extends ObservableClient {
       return () => {};
     }
     this.active = true;
+    this.nativeVisible = false;
     const nativeWindow = getCurrentWindow();
     const publishTheme = (nativeTheme: "light" | "dark" | null) => {
       if (this.active) this.publish({ ...this.snapshot, nativeTheme });
@@ -72,10 +73,21 @@ export class TauriMonitorClient extends ObservableClient {
       } else void this.connect();
     };
     document.addEventListener("visibilitychange", visibility);
+    let visibilityEventSeen = false;
     const unlisten = listen<boolean>("monitor-visibility", (event) => {
+      visibilityEventSeen = true;
       this.nativeVisible = event.payload;
       visibility();
     });
+    void unlisten
+      .then(() => nativeWindow.isVisible())
+      .then((visible) => {
+        if (this.active && !visibilityEventSeen) {
+          this.nativeVisible = visible;
+          visibility();
+        }
+      })
+      .catch((error) => console.error("无法读取窗口可见状态", error));
     const timer = window.setInterval(() => {
       if (!this.active || document.hidden || !this.nativeVisible) return;
       const timeout = Math.max(

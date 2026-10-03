@@ -286,6 +286,7 @@ fn save_settings(
         return Err("配置版本不一致".into());
     }
     let next = pinmeter_core::domain::Settings {
+        start_in_tray: settings.start_in_tray,
         autostart: settings.autostart,
         close_action: settings.close_action,
         taskbar: pinmeter_core::desktop::TaskbarSettings {

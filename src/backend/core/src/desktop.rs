@@ -1,6 +1,34 @@
 //! Platform-neutral desktop preferences, projections and operation intents.
 use serde::{Deserialize, Serialize};
 
+#[derive(Default)]
+pub struct StartupVisibility {
+    completed: bool,
+    reveal_requested: bool,
+}
+#[derive(Debug, PartialEq, Eq)]
+pub enum StartupAction {
+    Show,
+    Tray,
+    KeepCurrent,
+}
+impl StartupVisibility {
+    pub fn reveal(&mut self) {
+        self.reveal_requested = true;
+    }
+    pub fn complete(&mut self, start_in_tray: bool, tray_ready: bool) -> StartupAction {
+        if self.completed {
+            return StartupAction::KeepCurrent;
+        }
+        self.completed = true;
+        if start_in_tray && tray_ready && !self.reveal_requested {
+            StartupAction::Tray
+        } else {
+            StartupAction::Show
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct TaskbarSettings {
@@ -38,6 +66,32 @@ pub struct DesktopStatus {
     pub stage: String,
     pub detail: String,
     pub revision: u64,
+}
+
+#[cfg(test)]
+mod startup_tests {
+    use super::*;
+    #[test]
+    fn startup_hides_only_once_with_a_working_tray() {
+        let mut state = StartupVisibility::default();
+        assert_eq!(state.complete(true, true), StartupAction::Tray);
+        state.reveal();
+        assert_eq!(state.complete(true, true), StartupAction::KeepCurrent);
+    }
+    #[test]
+    fn missing_tray_and_explicit_recovery_keep_the_window_available() {
+        assert_eq!(
+            StartupVisibility::default().complete(true, false),
+            StartupAction::Show
+        );
+        assert_eq!(
+            StartupVisibility::default().complete(false, true),
+            StartupAction::Show
+        );
+        let mut state = StartupVisibility::default();
+        state.reveal();
+        assert_eq!(state.complete(true, true), StartupAction::Show);
+    }
 }
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SummaryReading {

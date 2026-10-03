@@ -92,6 +92,7 @@ pub fn interface(value: &NetworkInterface) -> InterfaceDto {
 }
 pub fn settings(value: &Settings) -> SettingsDto {
     SettingsDto {
+        start_in_tray: value.start_in_tray,
         autostart: value.autostart,
         close_action: value.close_action.clone(),
         taskbar: TaskbarSettingsDto {

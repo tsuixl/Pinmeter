@@ -83,9 +83,11 @@ export function useWindowViewModel(client?: WindowClient) {
     });
     // App applies the confirmed theme in a layout effect before revealing.
     // A hidden WebView may suspend animation frames, so do not await one here.
-    void client.show().catch((e) => {
-      if (active) setError(`无法显示窗口：${String(e)}`);
-    });
+    void (client.finishStartup ? client.finishStartup() : client.show()).catch(
+      (e) => {
+        if (active) setError(`无法显示窗口：${String(e)}`);
+      },
+    );
     return () => {
       active = false;
       void release.then((unlisten) => unlisten()).catch(() => {});

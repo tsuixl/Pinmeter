@@ -9,6 +9,7 @@ mod network_control;
 pub mod presenters;
 mod runtime;
 mod settings;
+mod startup_window;
 mod updates;
 
 pub fn run() {
@@ -29,6 +30,9 @@ pub fn run() {
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_single_instance::init(|app, _, _| {
+            if let Some(runtime) = app.try_state::<std::sync::Arc<runtime::Runtime>>() {
+                runtime.startup_visibility.lock().unwrap().reveal();
+            }
             if let Some(window) = app.get_webview_window("main") {
                 let _ = bridges::activate(&window);
             }
@@ -57,8 +61,8 @@ pub fn run() {
                 let theme = runtime.inner.lock().unwrap().monitor.settings.theme.clone();
                 bridges::apply_theme(&window, &theme)?;
             }
+            app.manage(runtime.clone());
             runtime.start(app.handle().clone());
-            app.manage(runtime);
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -74,6 +78,7 @@ pub fn run() {
             }
         })
         .invoke_handler(tauri::generate_handler![
+            startup_window::complete_window_startup,
             updates::get_update_state,
             updates::check_app_update,
             updates::download_app_update,

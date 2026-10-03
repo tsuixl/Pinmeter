@@ -52,6 +52,10 @@ mod tests {
         fs::write(&path, br#"{"schema_version":1,"revision":2,"theme":"dark","interval_ms":1000,"network_id":null,"taskbar":{"enabled":false,"hidden":false,"layout":"double","cpu":true,"memory":true}}"#).unwrap();
         let repository = FileSettings::new(path);
         let mut settings = repository.load().unwrap().unwrap();
+        assert!(!settings.start_in_tray);
+        settings.start_in_tray = true;
+        repository.save(&settings).unwrap();
+        assert!(repository.load().unwrap().unwrap().start_in_tray);
         assert!(!settings.autostart);
         settings.autostart = true;
         repository.save(&settings).unwrap();

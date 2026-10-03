@@ -209,6 +209,7 @@ fn build_tray(app: &AppHandle, tx: SyncSender<DesktopIntent>) -> tauri::Result<T
 fn act(runtime: &Arc<Runtime>, app: &AppHandle, intent: DesktopIntent) {
     match intent {
         DesktopIntent::Open(page) => {
+            runtime.startup_visibility.lock().unwrap().reveal();
             if page == "updates" {
                 let updates = app.state::<Arc<crate::updates::Updates>>().inner().clone();
                 let app = app.clone();
