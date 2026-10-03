@@ -181,7 +181,7 @@ impl Updates {
                 .await
                 .map_err(|e| {
                     eprintln!("Pinmeter 检查更新失败：{e}");
-                    "暂时无法获取更新信息，请稍后重试或前往发行页面。".to_string()
+                    update_error_message(&e).to_string()
                 })?;
             let mut history = vec![];
             let notes = if let Some(u) = update.as_mut() {
@@ -268,10 +268,7 @@ impl Updates {
         let result: Result<Vec<u8>, String> = tokio::select! {
             result=request=>result.map_err(|e| {
                 eprintln!("Pinmeter 下载更新失败：{e}");
-                match e {
-                    tauri_plugin_updater::Error::Minisign(_) | tauri_plugin_updater::Error::Base64(_) | tauri_plugin_updater::Error::SignatureUtf8(_) => "更新包校验未通过，请重新下载。".into(),
-                    _ => "更新下载未完成，请检查网络后重试。".into(),
-                }
+                update_error_message(&e).into()
             }),
             _=limit_rx.recv()=>Err("更新包超出 512 MiB 限制".into()),
         };
@@ -355,6 +352,35 @@ impl Updates {
         Err(error)
     }
 }
+fn update_error_message(error: &tauri_plugin_updater::Error) -> &'static str {
+    use tauri_plugin_updater::Error;
+    match error {
+        Error::SignedVersionMismatch { .. } | Error::MissingSignedVersion => {
+            "更新包的签名版本与发行信息不一致或缺失，已拒绝安装。请等待发行材料修正，或查看官方发行页面。"
+        }
+        Error::Minisign(_) | Error::Base64(_) | Error::SignatureUtf8(_) => {
+            "更新包签名校验未通过，已拒绝安装。请重新下载；仍然失败时请查看官方发行页面。"
+        }
+        Error::ReleaseNotFound => {
+            "当前更新入口未返回有效发行清单。可能尚未发布或服务暂时不可用；预览版请到官方发行页面查看。"
+        }
+        Error::Serialization(_) | Error::Semver(_) | Error::FormatDate => {
+            "发行清单的格式、版本或日期无效。请等待发行材料修正，或查看官方发行页面。"
+        }
+        Error::TargetNotFound(_)
+        | Error::TargetsNotFound(_)
+        | Error::UnsupportedArch
+        | Error::UnsupportedOs => {
+            "该发行未提供适用于当前系统和架构的更新包，请查看官方发行页面的支持范围。"
+        }
+        Error::Reqwest(e) if e.is_timeout() => "更新请求超时，请稍后重试。",
+        Error::Reqwest(_) | Error::Network(_) => "更新请求未完成，请检查网络连接或稍后重试。",
+        Error::Io(_) | Error::TempDirNotFound | Error::FailedToDetermineExtractPath => {
+            "无法读写更新文件，请检查可用磁盘空间和目录权限后重试。"
+        }
+        _ => "更新未完成，请稍后重试或查看官方发行页面。",
+    }
+}
 fn trusted_package_url(value: &str) -> bool {
     let Ok(url) = tauri::Url::parse(value) else {
         return false;
@@ -372,6 +398,35 @@ fn trusted_package_url(value: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn update_material_errors_are_not_reported_as_network_failures() {
+        use tauri_plugin_updater::Error;
+        for error in [
+            Error::SignedVersionMismatch {
+                signed: "0.1.2".into(),
+                announced: "0.1.3".into(),
+            },
+            Error::MissingSignedVersion,
+        ] {
+            assert!(update_error_message(&error).contains("已拒绝安装"));
+            assert!(!update_error_message(&error).contains("检查网络"));
+        }
+        assert!(update_error_message(&Error::ReleaseNotFound).contains("未返回有效发行清单"));
+        assert!(
+            update_error_message(&Error::TargetNotFound("windows-x86_64".into()))
+                .contains("系统和架构")
+        );
+        assert!(update_error_message(&Error::TargetsNotFound(vec![])).contains("系统和架构"));
+        let invalid = serde_json::from_str::<serde_json::Value>("{").unwrap_err();
+        assert!(update_error_message(&Error::Serialization(invalid)).contains("格式"));
+        assert!(update_error_message(&Error::Network("offline".into())).contains("网络连接"));
+        assert!(
+            update_error_message(&Error::Io(std::io::Error::from(
+                std::io::ErrorKind::PermissionDenied
+            )))
+            .contains("目录权限")
+        );
+    }
     #[test]
     fn only_official_https_installer_urls_are_accepted() {
         assert!(trusted_package_url(

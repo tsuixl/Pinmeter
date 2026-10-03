@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createHash, createPublicKey, verify } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
+import { execFileSync } from 'node:child_process';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // Verify the Tauri/minisign artifact against the public key embedded in the app.
@@ -20,16 +21,36 @@ export function verifyUpdateSignature(bytes, publicKey, signature) {
   const message = algorithm === 'ED' ? createHash('blake2b512').update(bytes).digest() : bytes;
   if (!verify(null,message,publicObject,sig.subarray(10)) ||
       !verify(null,Buffer.concat([sig.subarray(10),Buffer.from(lines[2].slice(17))]),publicObject,global)) throw new Error('更新包签名验证失败');
+  return lines[2].slice(17);
+}
+export function verifySignedVersion(comment, version) {
+  const versions = comment.split('\t').filter(field => field.startsWith('version:'));
+  if (versions.length > 1 || (versions.length === 1 && versions[0].slice(8).replace(/^v/, '') !== version)) {
+    throw new Error('更新签名中的版本与目标版本不一致');
+  }
+}
+export function verifyInstallerVersion(installer, version) {
+  if (process.platform !== 'win32') throw new Error('Windows 安装器版本核对必须在 Windows 构建环境执行');
+  // The path is data, never interpolated into PowerShell source.
+  const script = "$ErrorActionPreference='Stop'; $v=[Diagnostics.FileVersionInfo]::GetVersionInfo($env:PINMETER_INSPECT_INSTALLER); [Console]::Write($v.ProductVersion)";
+  const actual = execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], {
+    encoding: 'utf8', windowsHide: true, timeout: 15000,
+    env: { ...process.env, PINMETER_INSPECT_INSTALLER: path.resolve(installer) },
+  }).trim();
+  if (actual !== version && actual !== version + '.0') {
+    throw new Error(`安装器实际产品版本 ${actual || '缺失'} 与目标 ${version} 不一致`);
+  }
+  return actual;
 }
 export function updateManifest({ version, filename, signature, releases, baseUrl }) {
   if (!/^\d+\.\d+\.\d+$/.test(version)) throw new Error('更新版本必须为正式三段版本号');
-  if (!filename.endsWith('.exe') || filename !== path.basename(filename)) throw new Error('更新文件必须为 NSIS EXE');
+  if (filename !== `Pinmeter_${version}_x64-setup.exe`) throw new Error('安装器名称必须与目标版本和 x64 架构一致');
   if (!signature.trim()) throw new Error('缺少更新签名');
   const current = releases.find(release => release.version === version);
   if (!current || !Array.isArray(current.sections)) throw new Error('缺少同版本更新公告');
   const url = new URL(baseUrl);
   if (url.protocol !== 'https:' || url.hostname !== 'github.com' || url.username || url.password || url.port || url.search || url.hash ||
-      !url.pathname.startsWith('/tsuixl/Pinmeter/releases/download/')) throw new Error('发行地址必须属于 Pinmeter 官方 GitHub Release');
+      url.pathname.replace(/\/$/, '') !== '/tsuixl/Pinmeter/releases/download/v' + version) throw new Error('发行地址必须属于同版本 Pinmeter 官方 GitHub Release');
   const selected = releases.filter(release => /^\d+\.\d+\.\d+$/.test(release.version) &&
     release.version.localeCompare(version, undefined, { numeric: true }) <= 0).slice(0, 50);
   return {
@@ -47,14 +68,17 @@ export function prepareUpdate({ installer, outputDirectory }) {
     signature: fs.readFileSync(installer + '.sig', 'utf8'), releases,
     baseUrl: 'https://github.com/tsuixl/Pinmeter/releases/download/v' + config.version });
   const bytes = fs.readFileSync(installer);
-  verifyUpdateSignature(bytes, config.plugins.updater.pubkey, manifest.platforms['windows-x86_64'].signature);
+  const comment = verifyUpdateSignature(bytes, config.plugins.updater.pubkey, manifest.platforms['windows-x86_64'].signature);
+  verifySignedVersion(comment, config.version);
   if (bytes.length < 1024 || bytes[0] !== 0x4d || bytes[1] !== 0x5a) throw new Error('安装包不是有效的 Windows 可执行文件');
+  const productVersion = verifyInstallerVersion(installer, config.version);
+  if (!bytes.equals(fs.readFileSync(installer))) throw new Error('版本核对期间安装器内容发生变化，拒绝生成清单');
   fs.mkdirSync(outputDirectory, { recursive: true });
   fs.writeFileSync(path.join(outputDirectory, 'latest.json'), JSON.stringify(manifest, null, 2) + '\n');
   fs.writeFileSync(path.join(outputDirectory, 'release-notes.json'), JSON.stringify(releases, null, 2) + '\n');
   fs.writeFileSync(path.join(outputDirectory, 'update-artifacts.json'), JSON.stringify({ installer,
     sha256: createHash('sha256').update(bytes).digest('hex'), signature: installer + '.sig', version: config.version,
-    published: false }, null, 2) + '\n');
+    productVersion, published: false }, null, 2) + '\n');
   console.log('已生成待发布更新清单：' + path.join(outputDirectory, 'latest.json'));
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
