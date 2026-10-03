@@ -77,6 +77,11 @@ pub struct TaskbarSettingsDto {
     pub cpu: bool,
     pub gpu: bool,
     pub memory: bool,
+    pub network: bool,
+    pub cpu_temperature: bool,
+    pub gpu_temperature: bool,
+    pub gpu_id: Option<String>,
+    pub order: Vec<String>,
 }
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
 pub struct DesktopStatusDto {

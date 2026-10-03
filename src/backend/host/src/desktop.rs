@@ -260,8 +260,13 @@ fn summary_at(runtime: &Runtime, now: u64, preferred_gpu: Option<&str>) -> Deskt
     let device = gpu
         .devices
         .iter()
-        .find(|d| Some(d.id.as_str()) == preferred_gpu)
+        .find(|d| {
+            Some(d.id.as_str()) == monitor.settings.taskbar.gpu_id.as_deref().or(preferred_gpu)
+        })
         .or_else(|| {
+            if monitor.settings.taskbar.gpu_id.is_some() {
+                return None;
+            }
             gpu.devices.iter().reduce(|best, next| {
                 let capacity = |device: &pinmeter_core::gpu::GpuDevice| {
                     device
@@ -317,15 +322,53 @@ fn summary_at(runtime: &Runtime, now: u64, preferred_gpu: Option<&str>) -> Deskt
             now,
         ));
     } else {
-        readings[4].detail = gpu.detail.clone();
-        let missing = missing_temperature(gpu.status, &gpu.detail);
+        let detail = if monitor.settings.taskbar.gpu_id.is_some() {
+            "指定显卡当前不可用"
+        } else {
+            &gpu.detail
+        };
+        readings[4].detail = detail.into();
+        let missing = missing_temperature(gpu.status, detail);
         readings[4].temperature = Some(project_temperature(&missing, "GPU 温度", false, now));
+    }
+    for (index, show, temperature) in [
+        (
+            2,
+            monitor.settings.taskbar.cpu,
+            monitor.settings.taskbar.cpu_temperature,
+        ),
+        (
+            4,
+            monitor.settings.taskbar.gpu,
+            monitor.settings.taskbar.gpu_temperature,
+        ),
+    ] {
+        readings[index].show_value = show;
+        if !temperature {
+            readings[index].temperature = None;
+        }
+        if !show {
+            readings[index].valid_at_ms = readings[index]
+                .temperature
+                .as_ref()
+                .and_then(|t| t.valid_at_ms);
+            readings[index].normal = readings[index]
+                .temperature
+                .as_ref()
+                .is_some_and(|t| t.normal);
+            readings[index].detail = "仅显示温度".into();
+        }
     }
     DesktopSummary {
         session: runtime.session.clone(),
         cursor: frame.as_ref().map_or(0, |f| f.cursor),
         network_id: frame.as_ref().and_then(|f| f.network_id.clone()),
-        gpu_id: device.map(|d| d.id.clone()),
+        gpu_id: monitor
+            .settings
+            .taskbar
+            .gpu_id
+            .clone()
+            .or_else(|| device.map(|d| d.id.clone())),
         revision: monitor.settings.revision,
         settings: monitor.settings.taskbar.clone(),
         network: monitor
@@ -346,6 +389,7 @@ fn project_reading(
 ) -> SummaryReading {
     let Some(r) = reading else {
         return SummaryReading {
+            show_value: true,
             key,
             label,
             valid_at_ms: None,
@@ -385,6 +429,7 @@ fn project_reading(
         );
     }
     SummaryReading {
+        show_value: true,
         valid_at_ms: r.valid_at_ms,
         key,
         label,
@@ -441,6 +486,29 @@ pub fn minimize_to_tray(app: &AppHandle) -> Result<(), String> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn temperature_only_and_missing_selected_gpu_do_not_show_other_readings() {
+        let runtime = Runtime::new(Arc::new(Repository));
+        {
+            let mut state = runtime.inner.lock().unwrap();
+            state.monitor.settings.taskbar.cpu = false;
+            state.monitor.settings.taskbar.gpu_id = Some("missing-device".into());
+            state.monitor.accept_temperature(Observation {
+                result: Ok(65.),
+                mono_ms: 1000,
+                wall_ms: 1000,
+                source: "test",
+                semantic: "test",
+            });
+        }
+        let summary = summary_at(&runtime, 1000, None);
+        assert!(!summary.readings[2].show_value);
+        assert!(summary.readings[2].display().contains("65°C"));
+        assert!(!summary.readings[2].display().contains('%'));
+        assert_eq!(summary.gpu_id.as_deref(), Some("missing-device"));
+        assert!(!summary.readings[4].normal);
+        assert!(summary.readings[4].detail.contains("指定显卡"));
+    }
     #[test]
     fn restarting_desktop_routes_to_the_new_bounded_queue_without_registering_again() {
         let runtime = Runtime::new(Arc::new(Repository));

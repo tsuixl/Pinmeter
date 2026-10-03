@@ -1,0 +1,7 @@
+[
+  {"settings":{"enabled":true},"expected":[[0,1],[2,4],[3]],"compact":[[0,1]]},
+  {"settings":{"enabled":true,"network":false,"cpu":false,"cpu_temperature":true,"gpu":false,"gpu_temperature":false,"memory":false},"expected":[[2]],"compact":[[2]]},
+  {"settings":{"enabled":true,"network":false,"order":["memory","gpu","cpu","network"]},"expected":[[3,4],[2]],"compact":[[3]]},
+  {"settings":{"enabled":true,"order":["cpu","network","memory","gpu"]},"expected":[[2],[0,1],[3,4]],"compact":[[2]]},
+  {"settings":{"enabled":true,"layout":"single","order":["memory","cpu","network","gpu"]},"expected":[[3],[2],[0],[1],[4]],"compact":[[3]]}
+]

@@ -45,6 +45,45 @@
 .taskbar-preview-temperature {
   font-variant-numeric: tabular-nums;
 }
+.taskbar-preview-no-values > div {
+  grid-template-columns: 28px max-content;
+}
+.taskbar-order {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+.taskbar-order-row {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-8);
+  padding-block: var(--space-8);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+.taskbar-order-metrics {
+  display: flex;
+  gap: var(--space-12);
+  flex-wrap: wrap;
+}
+.taskbar-order-actions {
+  display: flex;
+}
+@media (max-width: 600px) {
+  .taskbar-order-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .taskbar-order-row > strong {
+    grid-column: 1;
+  }
+  .taskbar-order-metrics {
+    grid-column: 1;
+  }
+  .taskbar-order-actions {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+}
 .taskbar-preview-group strong {
   font-weight: 400;
   text-align: right;

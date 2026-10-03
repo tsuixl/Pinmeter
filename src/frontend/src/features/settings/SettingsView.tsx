@@ -1,6 +1,6 @@
 import type { MonitorClient } from "../../shared/client/monitor-client";
 import type { MonitorStateDto } from "../../shared/contracts/monitor";
-import { TaskbarPreview } from "./TaskbarPreview";
+import { TaskbarSettingsView } from "./TaskbarSettingsView";
 import { useSettingsViewModel } from "./useSettingsViewModel";
 import { buildInfo } from "../../shared/client/build-info";
 import { UpdateSettings } from "../updates/UpdateViews";
@@ -155,127 +155,7 @@ export function SettingsView({
           。最近五分钟历史仅保存在内存中。
         </p>
       </Card>
-      <Card
-        title="任务栏显示"
-        description="在主屏任务栏查看网速、CPU / GPU 使用率与温度、内存"
-      >
-        <Switch
-          label="启用任务栏显示"
-          checked={vm.draft.taskbar.enabled}
-          disabled={
-            vm.pending ||
-            (!state?.desktop.supported && !vm.draft.taskbar.enabled)
-          }
-          onChange={(event) =>
-            vm.change({
-              taskbar: {
-                ...vm.draft.taskbar,
-                enabled: event.target.checked,
-                hidden: false,
-              },
-            })
-          }
-        />
-        <p className="settings-note">
-          开关和选项更改后立即生效。最小化到托盘后仍会继续监控。
-        </p>
-        <div className="settings-fields">
-          <Select
-            id="taskbar-layout"
-            label="读数布局"
-            value={vm.draft.taskbar.layout}
-            disabled={
-              vm.pending ||
-              !vm.draft.taskbar.enabled ||
-              !state?.desktop.supported
-            }
-            options={[
-              { value: "double", label: "双行紧凑" },
-              { value: "single", label: "单行横排" },
-            ]}
-            onChange={(layout) =>
-              vm.change({ taskbar: { ...vm.draft.taskbar, layout } })
-            }
-          />
-          <fieldset
-            className="taskbar-metrics"
-            disabled={
-              vm.pending ||
-              !vm.draft.taskbar.enabled ||
-              !state?.desktop.supported
-            }
-          >
-            <legend>显示指标</legend>
-            <span className="settings-note">下载与上传始终显示</span>
-            <Checkbox
-              label="CPU 使用率与温度"
-              checked={vm.draft.taskbar.cpu}
-              disabled={
-                vm.pending ||
-                !vm.draft.taskbar.enabled ||
-                !state?.desktop.supported
-              }
-              onChange={(event) =>
-                vm.change({
-                  taskbar: { ...vm.draft.taskbar, cpu: event.target.checked },
-                })
-              }
-            />
-            <Checkbox
-              label="GPU 使用率与温度"
-              checked={vm.draft.taskbar.gpu}
-              disabled={
-                vm.pending ||
-                !vm.draft.taskbar.enabled ||
-                !state?.desktop.supported
-              }
-              onChange={(event) =>
-                vm.change({
-                  taskbar: { ...vm.draft.taskbar, gpu: event.target.checked },
-                })
-              }
-            />
-            <Checkbox
-              label="内存使用率"
-              checked={vm.draft.taskbar.memory}
-              disabled={
-                vm.pending ||
-                !vm.draft.taskbar.enabled ||
-                !state?.desktop.supported
-              }
-              onChange={(event) =>
-                vm.change({
-                  taskbar: {
-                    ...vm.draft.taskbar,
-                    memory: event.target.checked,
-                  },
-                })
-              }
-            />
-          </fieldset>
-        </div>
-        <p className="settings-note">
-          温度不可用时显示 —。GPU 默认选择显存容量最大的设备；温度后的 * 表示 VR
-          SoC 测温点，悬停可查看详情。
-        </p>
-        <TaskbarPreview settings={vm.draft.taskbar} />
-        <p className="settings-note" role="status">
-          {state?.desktop.detail || "等待任务栏能力检测"}
-        </p>
-        {vm.draft.taskbar.hidden && (
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            disabled={vm.pending}
-            onClick={() =>
-              vm.change({ taskbar: { ...vm.draft.taskbar, hidden: false } })
-            }
-          >
-            恢复读数
-          </Button>
-        )}
-      </Card>
+      <TaskbarSettingsView vm={vm} state={state} />
       <Card title="网络控制" description="决定退出时如何处理应用限制">
         <Switch
           label="退出 Pinmeter 时解除所有网络限制"

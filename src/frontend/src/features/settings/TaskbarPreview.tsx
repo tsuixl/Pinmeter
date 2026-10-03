@@ -1,59 +1,94 @@
 import { ArrowDown, ArrowUp } from "lucide-react";
 import type { TaskbarSettingsDto } from "../../shared/contracts/monitor";
+import { taskbarGroups } from "./taskbar-model";
 import "./taskbar.css";
-
 export function TaskbarPreview({ settings }: { settings: TaskbarSettingsDto }) {
-  const hardware = [
-    ...(settings.cpu ? [{ label: "CPU", usage: 2, temperature: 57 }] : []),
-    ...(settings.gpu ? [{ label: "GPU", usage: 18, temperature: 49 }] : []),
+  const readings = [
+    {
+      label: "下载",
+      value: "3.2",
+      unit: "MB/s",
+      temperature: null,
+      show: true,
+    },
+    {
+      label: "上传",
+      value: "128.0",
+      unit: "KB/s",
+      temperature: null,
+      show: true,
+    },
+    {
+      label: "CPU",
+      value: "2",
+      unit: "%",
+      temperature: settings.cpu_temperature ? 57 : null,
+      show: settings.cpu,
+    },
+    {
+      label: "内存",
+      value: "44",
+      unit: "%",
+      temperature: null,
+      show: settings.memory,
+    },
+    {
+      label: "GPU",
+      value: "18",
+      unit: "%",
+      temperature: settings.gpu_temperature ? 49 : null,
+      show: settings.gpu,
+    },
   ];
-  const memory = { label: "内存", usage: 44, temperature: null };
-  const groups =
-    hardware.length < 2
-      ? [[...hardware, ...(settings.memory ? [memory] : [])]]
-      : [hardware, ...(settings.memory ? [[memory]] : [])];
   return (
     <div className="taskbar-preview-container">
       <span className="settings-note">布局预览 · 示例数据</span>
-      <div
-        className={`taskbar-preview ${settings.layout === "single" ? "taskbar-preview-single" : ""}`}
-        aria-label="任务栏读数布局预览"
-      >
-        <div className="taskbar-preview-group">
-          <div>
-            <ArrowDown size={14} />
-            <strong>3.2</strong>
-            <span>MB/s</span>
-          </div>
-          <div>
-            <ArrowUp size={14} />
-            <strong>128.0</strong>
-            <span>KB/s</span>
-          </div>
-        </div>
-        {groups
-          .filter((group) => group.length > 0)
-          .map((group) => (
+      <div className="taskbar-preview" aria-label="任务栏读数布局预览">
+        {taskbarGroups(settings).map((indices, i) => {
+          const network = indices[0] < 2;
+          const anyValue = indices.some((index) => readings[index].show);
+          const anyTemperature = indices.some(
+            (index) => readings[index].temperature !== null,
+          );
+          return (
             <div
-              key={group[0].label}
-              className={`taskbar-preview-group taskbar-preview-percent ${group.some((r) => r.temperature !== null) ? "taskbar-preview-hardware" : ""}`}
+              key={i}
+              className={
+                "taskbar-preview-group" +
+                (!network ? " taskbar-preview-percent" : "") +
+                (anyTemperature ? " taskbar-preview-hardware" : "") +
+                (!anyValue ? " taskbar-preview-no-values" : "")
+              }
             >
-              {group.map((reading) => (
-                <div key={reading.label}>
-                  <span>{reading.label}</span>
-                  <strong>
-                    {reading.usage}
-                    <span>%</span>
-                  </strong>
-                  {reading.temperature !== null && (
-                    <span className="taskbar-preview-temperature">
-                      ({reading.temperature}°C)
-                    </span>
-                  )}
-                </div>
-              ))}
+              {indices.map((index) => {
+                const r = readings[index];
+                return (
+                  <div key={index}>
+                    {index === 0 ? (
+                      <ArrowDown size={14} />
+                    ) : index === 1 ? (
+                      <ArrowUp size={14} />
+                    ) : (
+                      <span>{r.label}</span>
+                    )}
+                    {anyValue && (
+                      <strong>
+                        {r.show ? r.value : ""}
+                        {index >= 2 && r.show && <span>%</span>}
+                      </strong>
+                    )}
+                    {network && <span>{r.unit}</span>}
+                    {r.temperature !== null && (
+                      <span className="taskbar-preview-temperature">
+                        ({r.temperature}°C)
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-          ))}
+          );
+        })}
       </div>
     </div>
   );

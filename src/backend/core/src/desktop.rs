@@ -29,8 +29,7 @@ impl StartupVisibility {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(default, deny_unknown_fields)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct TaskbarSettings {
     pub enabled: bool,
     pub hidden: bool,
@@ -38,6 +37,11 @@ pub struct TaskbarSettings {
     pub cpu: bool,
     pub gpu: bool,
     pub memory: bool,
+    pub network: bool,
+    pub cpu_temperature: bool,
+    pub gpu_temperature: bool,
+    pub gpu_id: Option<String>,
+    pub order: Vec<String>,
 }
 impl Default for TaskbarSettings {
     fn default() -> Self {
@@ -48,15 +52,100 @@ impl Default for TaskbarSettings {
             cpu: true,
             gpu: true,
             memory: true,
+            network: true,
+            cpu_temperature: true,
+            gpu_temperature: true,
+            gpu_id: None,
+            order: vec![
+                "network".into(),
+                "cpu".into(),
+                "gpu".into(),
+                "memory".into(),
+            ],
         }
     }
 }
 impl TaskbarSettings {
+    pub fn group_enabled(&self, key: &str) -> bool {
+        match key {
+            "network" => self.network,
+            "cpu" => self.cpu || self.cpu_temperature,
+            "gpu" => self.gpu || self.gpu_temperature,
+            "memory" => self.memory,
+            _ => false,
+        }
+    }
     pub fn validate(&self) -> Result<(), String> {
         if !matches!(self.layout.as_str(), "double" | "single") {
             return Err("无效的任务栏布局".into());
         }
+        let mut order = self.order.clone();
+        order.sort();
+        if order != ["cpu", "gpu", "memory", "network"] {
+            return Err("任务栏排序必须包含且只包含四类指标".into());
+        }
+        if self.enabled && !self.order.iter().any(|k| self.group_enabled(k)) {
+            return Err("任务栏至少需要保留一个指标".into());
+        }
+        if self
+            .gpu_id
+            .as_ref()
+            .is_some_and(|id| id.is_empty() || id.len() > 256)
+        {
+            return Err("无效的显卡标识".into());
+        }
         Ok(())
+    }
+}
+impl<'de> Deserialize<'de> for TaskbarSettings {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        #[derive(Deserialize)]
+        #[serde(default, deny_unknown_fields)]
+        struct Stored {
+            enabled: bool,
+            hidden: bool,
+            layout: String,
+            cpu: bool,
+            gpu: bool,
+            memory: bool,
+            network: bool,
+            cpu_temperature: Option<bool>,
+            gpu_temperature: Option<bool>,
+            gpu_id: Option<String>,
+            order: Vec<String>,
+        }
+        impl Default for Stored {
+            fn default() -> Self {
+                let d = TaskbarSettings::default();
+                Self {
+                    enabled: d.enabled,
+                    hidden: d.hidden,
+                    layout: d.layout,
+                    cpu: d.cpu,
+                    gpu: d.gpu,
+                    memory: d.memory,
+                    network: d.network,
+                    cpu_temperature: None,
+                    gpu_temperature: None,
+                    gpu_id: d.gpu_id,
+                    order: d.order,
+                }
+            }
+        }
+        let d = Stored::deserialize(deserializer)?;
+        Ok(Self {
+            enabled: d.enabled,
+            hidden: d.hidden,
+            layout: d.layout,
+            cpu: d.cpu,
+            gpu: d.gpu,
+            memory: d.memory,
+            network: d.network,
+            cpu_temperature: d.cpu_temperature.unwrap_or(d.cpu),
+            gpu_temperature: d.gpu_temperature.unwrap_or(d.gpu),
+            gpu_id: d.gpu_id,
+            order: d.order,
+        })
     }
 }
 
@@ -93,8 +182,81 @@ mod startup_tests {
         assert_eq!(state.complete(true, true), StartupAction::Show);
     }
 }
+
+#[cfg(test)]
+mod display_settings_tests {
+    use super::*;
+    #[test]
+    fn old_groups_keep_their_temperature_visibility_and_invalid_settings_are_rejected() {
+        let old: TaskbarSettings = serde_json::from_str(r#"{"cpu":false,"gpu":true}"#).unwrap();
+        assert!(!old.cpu_temperature);
+        assert!(old.gpu_temperature);
+        assert!(old.network);
+        let mut invalid = TaskbarSettings {
+            enabled: true,
+            network: false,
+            cpu: false,
+            cpu_temperature: false,
+            gpu: false,
+            gpu_temperature: false,
+            memory: false,
+            ..Default::default()
+        };
+        assert!(invalid.validate().is_err());
+        invalid.cpu_temperature = true;
+        assert!(invalid.validate().is_ok());
+        invalid.order = vec!["cpu".into(); 4];
+        assert!(invalid.validate().is_err());
+    }
+    #[test]
+    fn native_groups_match_shared_preview_cases() {
+        #[derive(Deserialize)]
+        struct Case {
+            settings: TaskbarSettings,
+            expected: Vec<Vec<usize>>,
+            compact: Vec<Vec<usize>>,
+        }
+        let cases: Vec<Case> =
+            serde_json::from_str(include_str!("../../../shared/fixtures/taskbar-groups.json"))
+                .unwrap();
+        for case in cases {
+            let summary = DesktopSummary {
+                session: "test".into(),
+                cursor: 0,
+                network_id: None,
+                gpu_id: None,
+                revision: 0,
+                settings: case.settings,
+                network: String::new(),
+                readings: ["network", "network", "cpu", "memory", "gpu"]
+                    .into_iter()
+                    .map(|key| SummaryReading {
+                        show_value: true,
+                        valid_at_ms: None,
+                        key,
+                        label: key,
+                        text: String::new(),
+                        unit: String::new(),
+                        detail: String::new(),
+                        normal: false,
+                        temperature: None,
+                    })
+                    .collect(),
+            };
+            let full = summary_groups(&summary, false);
+            let actual = if summary.settings.layout == "single" {
+                full.into_iter().flatten().map(|i| vec![i]).collect()
+            } else {
+                full
+            };
+            assert_eq!(actual, case.expected);
+            assert_eq!(summary_groups(&summary, true), case.compact);
+        }
+    }
+}
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SummaryReading {
+    pub show_value: bool,
     pub valid_at_ms: Option<u64>,
     pub key: &'static str,
     pub label: &'static str,
@@ -128,7 +290,11 @@ impl SummaryReading {
             .as_ref()
             .map(|t| format!(" {}", t.formatted()))
             .unwrap_or_default();
-        format!("{} {}{}{}", self.label, self.text, self.unit, temperature)
+        if self.show_value {
+            format!("{} {}{}{}", self.label, self.text, self.unit, temperature)
+        } else {
+            format!("{}{}", self.label, temperature)
+        }
     }
 }
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -141,6 +307,43 @@ pub struct DesktopSummary {
     pub settings: TaskbarSettings,
     pub network: String,
     pub readings: Vec<SummaryReading>,
+}
+pub fn summary_groups(summary: &DesktopSummary, compact: bool) -> Vec<Vec<usize>> {
+    let mut groups = vec![];
+    let mut pending = vec![];
+    for key in &summary.settings.order {
+        if !summary.settings.group_enabled(key) {
+            continue;
+        }
+        let indices: Vec<_> = summary
+            .readings
+            .iter()
+            .enumerate()
+            .filter_map(|(i, r)| (r.key == key).then_some(i))
+            .collect();
+        if key == "network" {
+            if !pending.is_empty() {
+                groups.push(std::mem::take(&mut pending));
+            }
+            if !indices.is_empty() {
+                groups.push(indices);
+            }
+        } else {
+            for i in indices {
+                pending.push(i);
+                if pending.len() == 2 {
+                    groups.push(std::mem::take(&mut pending));
+                }
+            }
+        }
+        if compact {
+            break;
+        }
+    }
+    if !pending.is_empty() {
+        groups.push(pending);
+    }
+    groups
 }
 #[derive(Clone, Copy, Debug)]
 pub enum DesktopIntent {

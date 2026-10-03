@@ -294,26 +294,28 @@ impl Painter {
                     // A fixed right-aligned value slot keeps % and temperature aligned
                     // across CPU/GPU rows, including one-, two- and three-digit loads.
                     let value_width = cell.value_width;
-                    self.text(
-                        &r.text,
-                        [cell.x + cell.label_width, cell.y, value_width, 20.],
-                        fg,
-                        true,
-                    )?;
-                    self.text(
-                        &r.unit,
-                        [
-                            cell.x
-                                + cell.label_width
-                                + value_width
-                                + if cell.index < 2 { 4. } else { 0. },
-                            cell.y,
-                            cell.unit_width,
-                            20.,
-                        ],
-                        muted,
-                        false,
-                    )?;
+                    if r.show_value {
+                        self.text(
+                            &r.text,
+                            [cell.x + cell.label_width, cell.y, value_width, 20.],
+                            fg,
+                            true,
+                        )?;
+                        self.text(
+                            &r.unit,
+                            [
+                                cell.x
+                                    + cell.label_width
+                                    + value_width
+                                    + if cell.index < 2 { 4. } else { 0. },
+                                cell.y,
+                                cell.unit_width,
+                                20.,
+                            ],
+                            muted,
+                            false,
+                        )?;
+                    }
                     if let Some(temperature) = &r.temperature {
                         self.text(
                             &temperature.formatted(),
@@ -440,8 +442,16 @@ pub struct Cell {
     pub temperature_width: f32,
 }
 pub fn tooltip_lines(summary: &DesktopSummary) -> Vec<String> {
-    let mut lines = vec![summary.network.clone()];
-    for reading in &summary.readings {
+    let mut lines = if summary.settings.network {
+        vec![summary.network.clone()]
+    } else {
+        vec![]
+    };
+    for index in pinmeter_core::desktop::summary_groups(summary, false)
+        .into_iter()
+        .flatten()
+    {
+        let reading = &summary.readings[index];
         lines.push(reading.display());
         lines.push(reading.detail.clone());
         if let Some(temperature) = &reading.temperature {
@@ -456,34 +466,11 @@ pub fn layout(
     double: bool,
     compact: bool,
 ) -> Result<(Vec<Cell>, f32, f32)> {
-    let mut groups = vec![vec![0, 1]];
-    if !compact {
-        let mut hardware: Vec<_> = summary
-            .readings
-            .iter()
-            .enumerate()
-            .filter_map(|(i, r)| match r.key {
-                "cpu" if summary.settings.cpu => Some(i),
-                "gpu" if summary.settings.gpu => Some(i),
-                _ => None,
-            })
-            .collect();
-        let memory = summary
-            .readings
-            .iter()
-            .position(|r| r.key == "memory" && summary.settings.memory);
-        if hardware.len() < 2 {
-            hardware.extend(memory);
-        } else if let Some(index) = memory {
-            groups.push(vec![index]);
-        }
-        if !hardware.is_empty() {
-            groups.insert(1, hardware);
-        }
-    }
+    let mut groups = pinmeter_core::desktop::summary_groups(summary, compact);
     if !double {
         groups = groups.into_iter().flatten().map(|i| vec![i]).collect();
     }
+    let two_rows = double && groups.iter().any(|g| g.len() > 1);
     let value = painter.measure("888.8")?.ceil();
     let unit = painter.measure("GB/s")?.ceil();
     let percent = painter.measure("100")?.ceil();
@@ -501,12 +488,25 @@ pub fn layout(
     let mut cells = vec![];
     let mut x = 8.;
     for group in groups {
+        let any_value = group.iter().any(|i| summary.readings[*i].show_value);
         let mut group_width: f32 = 0.;
         for (row, index) in group.into_iter().enumerate() {
             let label_width = if index < 2 { 22. } else { label };
-            let value_width = if index < 2 { value } else { percent };
-            let unit_width = if index < 2 { unit } else { percent_unit };
-            let temperature_width = if matches!(summary.readings[index].key, "cpu" | "gpu") {
+            let value_width = if !any_value {
+                0.
+            } else if index < 2 {
+                value
+            } else {
+                percent
+            };
+            let unit_width = if !any_value {
+                0.
+            } else if index < 2 {
+                unit
+            } else {
+                percent_unit
+            };
+            let temperature_width = if summary.readings[index].temperature.is_some() {
                 temperature
             } else {
                 0.
@@ -536,7 +536,7 @@ pub fn layout(
         }
         x += group_width + 12.;
     }
-    Ok((cells, x - 4., if double { 44. } else { 24. }))
+    Ok((cells, x - 4., if two_rows { 44. } else { 24. }))
 }
 
 #[cfg(test)]
@@ -574,6 +574,7 @@ mod tests {
             ]
             .into_iter()
             .map(|(key, text)| SummaryReading {
+                show_value: true,
                 valid_at_ms: None,
                 key,
                 label: key,
@@ -667,6 +668,8 @@ mod tests {
         for mask in 0..8 {
             summary.settings.cpu = mask & 1 != 0;
             summary.settings.gpu = mask & 2 != 0;
+            summary.settings.cpu_temperature = summary.settings.cpu;
+            summary.settings.gpu_temperature = summary.settings.gpu;
             summary.settings.memory = mask & 4 != 0;
             for double in [true, false] {
                 for compact in [false, true] {

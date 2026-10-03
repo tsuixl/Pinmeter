@@ -48,6 +48,7 @@ fn main() {
             ]
             .into_iter()
             .map(|(key, label, text, unit)| SummaryReading {
+                show_value: true,
                 valid_at_ms: None,
                 key,
                 label,

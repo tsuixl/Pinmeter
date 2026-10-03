@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import type { MonitorClient } from "../../shared/client/monitor-client";
 import type { SettingsDto } from "../../shared/contracts/monitor";
+import { moveTaskbarGroup } from "./taskbar-model";
 const defaults: SettingsDto = {
   start_in_tray: false,
   autostart: false,
@@ -17,6 +18,11 @@ const defaults: SettingsDto = {
     cpu: true,
     gpu: true,
     memory: true,
+    network: true,
+    cpu_temperature: true,
+    gpu_temperature: true,
+    gpu_id: null,
+    order: ["network", "cpu", "gpu", "memory"],
   },
 };
 export function useSettingsViewModel(
@@ -65,6 +71,15 @@ export function useSettingsViewModel(
       });
   };
   return {
+    changeTaskbar: (patch: Partial<SettingsDto["taskbar"]>) => {
+      const current = client.getSnapshot().state?.settings.taskbar;
+      if (current) change({ taskbar: { ...current, ...patch } });
+    },
+    moveTaskbar: (key: string, direction: number) => {
+      const current = client.getSnapshot().state?.settings.taskbar;
+      if (current)
+        change({ taskbar: moveTaskbarGroup(current, key, direction) });
+    },
     draft: pending ? draft : (confirmed ?? defaults),
     pending: pending || !confirmed,
     feedback,
@@ -80,3 +95,4 @@ export function useSettingsViewModel(
     reset: () => change(defaults),
   };
 }
+export type SettingsViewModel = ReturnType<typeof useSettingsViewModel>;
