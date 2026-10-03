@@ -11,6 +11,8 @@
 
 ## 进度
 
+- 2026-10-04 本批交付：源码 `96b8c4677384bf32f09f7aec0920698832492bfd`，实际入口 `E:\dev\github\Pinmeter\src\backend\target\test6\Pinmeter.exe`。统一检查通过（Rust 167 项、前端 49 项、格式/Clippy/契约/打包工具）；完整 release/NSIS 构建、42 个运行文件及 376 个源码指纹核对通过。原生、管理员、真实升级及长期未验证项保留；[交付详情](../v0.1.0-desktop-runtime/execution.md)。
+
 - 第 6 项浏览器验收：搜索云盘、固定并展开后进入同一应用历史，返回时保留搜索、固定、展开与选中状态；[指定应用趋势](assets/application-history-dark.jpg)、[返回浅色](assets/application-return-light.jpg)、[返回深色](assets/application-return-dark.jpg)、[420px 窄窗](assets/application-narrow.jpg)已保存并目视核对。发现原 64px 控制列容不下新增固定按钮后，已把固定移到名称旁，累计流量无遮挡；原控制菜单及规则未改。窄窗根宽 420px，760px 表格在自身区域横向滚动，未造成页面溢出。主验收页无应用控制台错误；窄窗仅出现 Chrome 扩展自身 removeChild 错误，不归为应用通过或失败依据。
 
 - 2026-10-04 第 6 项实现：应用名称直接进入相同稳定 ID 的历史，返回保留排序、展开、搜索、选中/固定及网络图表锚点、滚动位置。新增名称/路径筛选和单目标置顶；固定目标缺失单独提示，不填零，不修改控制规则及占比分母。共用官方 Input、Button、Table 状态；组件文档已浏览核对，HTML 仅作布局参考。格式检查通过，深浅/窄窗交互截图见本节证据；统一类型/构建与原生验收待完成。

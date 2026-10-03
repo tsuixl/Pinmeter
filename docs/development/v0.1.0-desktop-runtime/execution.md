@@ -1,6 +1,6 @@
 ## 任务计划
 
-- [ ] 2026-10-04：检查并减少已证实的常驻重复工作，复核现有全进程测量的身份、权限及结果有效性；执行针对性检查和本次完整 Windows 构建。
+- [x] 2026-10-04：检查并减少已证实的常驻重复工作，复核现有全进程测量的身份、权限及结果有效性；执行针对性检查和本次完整 Windows 构建。
 - [ ] 在可读取本次管理员宿主且保持窗口状态的环境完成两种状态各 120 秒预热 + 600 秒测量及 8 小时稳定性；现有实例不强停，无法完成时保留明确未验证项。
 
 - [x] v0.1.3：完成 P1 六项集成、隐藏停止刷新、统一公告、项目检查和本地 Windows 完整运行包。
@@ -35,8 +35,13 @@
 
 ## 进度
 
+- 2026-10-04 优化交付完成：从干净源码 `96b8c4677384bf32f09f7aec0920698832492bfd` 经 `PINMETER_HOLD_DELIVERY=1 node tools/desktop.mjs build -- --locked` 生成 release 和 NSIS。实际运行入口 `E:\dev\github\Pinmeter\src\backend\target\test6\Pinmeter.exe`，产品版本 0.1.3，57,425,920 字节。test1–5 因现有进程占用或管理员子进程路径无法确认跳过；构建锁及 test6 独占保持至交付核对结束，未停止用户旧版。
+- 构建与复核：42 个运行文件按当前资源配置逐项核对源/副本路径及 SHA-256；376 个源码文件构建前后与交付复核一致。主 EXE SHA-256 为 `14e8b78c3b3cbb16a6497fc3662a979ffd2bd98ccda08939db7ff40b923551bc`；安装器与签名已复制到 `test6/update-artifacts/` 并再次验签/核对 PE 产品版本，安装器 SHA-256 为 `d7e97455839d1a864572a915ca8ff16e43174eb9ac33c78e86b2999ba0055aa3`。完整 sensors、network、network-control、licenses 目录须随 EXE 保留。来源与证据为同目录 `build-source.json`、`source-manifest.json`、`package-hashes.json`、`delivery-verification.json`、`helper-smoke.json`、`final-check.log`。
+- 最终统一 `tools/dev.ps1 check` 全部通过：Rust 167 项通过、3 项原有外部环境测试跳过，前端 49 项/16 个文件通过，Clippy `-D warnings`、Rust/前端格式、受控契约、前端生产构建、打包/构建互斥/隔离卸载回归通过。MSVC 信息性 linker 输出及前端主 chunk 530.63 kB 的体积提示保留，未调高告警阈值；不据此宣称已满足常驻资源预算。
+- 运行边界：本包 CPU/GPU helper 启动、协议及正常退出通过；CPU 如实返回 `permission_denied`，GPU `normal` 且枚举 1 张设备，stderr 均为空。初次冒烟脚本将 UTF-8 BOM 写入 stdin 导致无回复，改为无 BOM 的既有 `sample` 协议后复验通过，应用代码未改变。保留旧实例，未将其激活当作新版启动；本次管理员主程序、真实安装升级/下载目录导出、Explorer/休眠/多屏混合 DPI、10 分钟预算和 8 小时稳定性仍未实测。各新增界面的浏览器证据见各原功能 execution，不能代替原生验收。网络控制与故障恢复仅登记问题，源代码和真实规则未修改；未推送、打标签或发布。
+
 - 2026-10-04：减少 GPU 重复快照克隆，磁盘/进程空闲改为请求/显隐/退出通知唤醒，保持原采样频率、租约和有效性。限时排障是明确操作后的有期限后台进程需求；详见 diagnostics 原功能。现有测量脚本未被改写；当前旧版 test4 的管理员子进程路径不可读，保留实例，未把旧启动器的占用当作新版基线。
-- 本批宿主单元测试首次因缺少 Common Controls v6 清单返回 `0xc0000139`；构建脚本由仅 integration-tests 的链接参数改为全部链接目标，覆盖 lib 单元测试宿主。修复后宿主 33 项测试通过，仍继续最终完整项目检查；不是绕过测试。链接参数依据 [Cargo 构建脚本](https://doc.rust-lang.org/cargo/reference/build-scripts.html#rustc-link-arg)。
+- 本批修复库单元测试缺少 Common Controls v6 清单及重复嵌入资源的问题：MSVC 由链接器统一嵌入同一清单，Tauri 资源继续提供图标/版本但不重复携带 RT_MANIFEST。宿主最终 35 项测试、全部二进制目标及 release 构建通过，未绕过测试。链接参数依据 [Cargo 构建脚本](https://doc.rust-lang.org/cargo/reference/build-scripts.html#rustc-link-arg)。
 
 - v0.1.3：P1 六项实现、浏览器检查与完整本地运行包已交付，各功能分别本地提交。原生隐藏事件同时暂停磁盘/进程/历史页轮询。已有安装版 `pinmeter-host` 与辅助组件正在运行，本轮保留实例，不进行冷启动替换、登录或管理员交互验收。
 - [v0.1.3 公告弹窗](assets/p1-release-notes-light.jpg)已核对，六项变化与统计边界完整展示，浏览器控制台无错误。Sakani 决定组件视觉，HTML 只供结构参考。

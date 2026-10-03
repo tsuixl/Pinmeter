@@ -1,6 +1,6 @@
 ## 任务计划
 
-- [ ] 2026-10-04：完成可跳过且后端记忆的常驻设置引导、设置分类直达与恢复默认确认/局部重置；核对 Sakani 组件深浅主题与保存失败状态。
+- [x] 2026-10-04：完成可跳过且后端记忆的常驻设置引导、设置分类直达与恢复默认确认/局部重置；核对 Sakani 组件深浅主题与保存失败状态。
 
 - [x] 扩展可搜索 Windows 字体目录及真实字体样式，保留旧配置和默认鸿蒙。
 - [x] 接入前端与原生同一字面选择、缺失回退、刷新及保存验证。
@@ -18,6 +18,8 @@
 - [x] 实现卸载时按安装路径清理自启，隔离验证仅删除匹配任务及失败保护。
 
 ## 进度
+
+- 2026-10-04 本批交付：源码 `96b8c4677384bf32f09f7aec0920698832492bfd`，实际入口 `E:\dev\github\Pinmeter\src\backend\target\test6\Pinmeter.exe`。统一检查通过（Rust 167 项、前端 49 项、格式/Clippy/契约/打包工具）；完整 release/NSIS 构建、42 个运行文件及 376 个源码指纹核对通过。原生、管理员、真实升级及长期未验证项保留；[交付详情](../v0.1.0-desktop-runtime/execution.md)。
 
 - 2026-10-04：新增后端保存的 `onboarding_completed`，旧配置默认首次展示，引导仅提供设置入口；设置按分类直达并区分即时保存与提醒的显式保存。全部默认先确认影响，外观/采样网卡支持局部恢复。浏览器演示核对引导直达启动设置、深色保存、重置取消保留原值与焦点返回；证据：[引导浅色](assets/improvements-setup-light.jpg)、[设置深色](assets/improvements-settings-dark.jpg)、[重置确认](assets/improvements-reset-dark.jpg)。使用 Sakani 0.3.1 Card/Select/Button/Modal；HTML 仅供布局。原生 DPI、真实配置重启和窗口恢复仍分别待验收。
 

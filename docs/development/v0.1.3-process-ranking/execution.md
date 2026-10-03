@@ -8,6 +8,8 @@
 
 ## 进度
 
+- 2026-10-04 本批交付：源码 `96b8c4677384bf32f09f7aec0920698832492bfd`，实际入口 `E:\dev\github\Pinmeter\src\backend\target\test6\Pinmeter.exe`。统一检查通过（Rust 167 项、前端 49 项、格式/Clippy/契约/打包工具）；完整 release/NSIS 构建、42 个运行文件及 376 个源码指纹核对通过。原生、管理员、真实升级及长期未验证项保留；[交付详情](../v0.1.0-desktop-runtime/execution.md)。
+
 - 第 7 项浏览器验收：内存入口自动选内存，搜索 PID 2108 可找到默认前十以外进程；两个同名浏览器按不同身份独立展示。复制 PID 显示成功反馈、固定与暂停/恢复状态可用；[浅色](assets/investigation-light.jpg)、[深色暂停](assets/investigation-dark.jpg)、[420px 窄窗](assets/investigation-narrow.jpg)已保存并对照 Sakani 核对，根 scrollWidth=420，无横向溢出。没有应用控制台错误，未操作真实进程或权限。
 - 补充服务重建边界：宿主为进程及应用 DTO 增加每实例不复用前缀，失败更新后重新启动采集服务也不会将固定项误绑到新 app:1。新增回归验证同 PID/创建时间/路径的两个服务实例输出不同身份；不将这个身份用于持久化。
 
