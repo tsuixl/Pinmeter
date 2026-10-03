@@ -152,7 +152,7 @@ export function SettingsView({
         </div>
         <p className="settings-note">
           当前接口：{state?.selected_interface?.name ?? "暂无可用网卡"}
-          。最近五分钟历史仅保存在内存中。
+          。最近五分钟的细粒度趋势保存在内存中，历史页另按分钟保存最近 24 小时。
         </p>
       </Card>
       <TaskbarSettingsView vm={vm} state={state} />
