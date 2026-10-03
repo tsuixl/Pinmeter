@@ -69,7 +69,19 @@ export function DiskView({ client }: { client: MonitorClient }) {
         })}
       </div>
       <Card className="trend-card">
-        <h2>磁盘读写趋势</h2>
+        <div className="section-heading">
+          <h2>磁盘读写趋势</h2>
+          <div className="legend">
+            <span>
+              <i />
+              读取
+            </span>
+            <span>
+              <i className="secondary" />
+              写入
+            </span>
+          </div>
+        </div>
         <TrendChart
           history={vm.history}
           keys={["download", "upload"]}
