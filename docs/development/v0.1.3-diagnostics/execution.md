@@ -6,5 +6,7 @@
 
 ## 进度
 
+- 已对照 Sakani Modal/Button/Alert，沿用 0.3.1 组件及 tokens；[浅色](assets/p1-preview-light.jpg)、[深色](assets/p1-preview-dark.jpg)与[420×400 弹窗](assets/p1-narrow-dark.jpg)检查通过，内容区独立滚动且关闭/导出按钮可见。演示导出明确提示“未写入文件”，不伪装成功；真实文件写入的准确性与冲突由平台测试覆盖。HTML 仅参考布局，真实主窗口和系统下载目录交互仍未实测。统一运行包见 [desktop-runtime](../v0.1.0-desktop-runtime/execution.md)。
+
 - 当前：实现中。本轮 P1 六项全部推进，诊断先提供本地快照，不扩展为日志上报服务。桌面与安装验收边界继续按 desktop-runtime 原记录。
 - 已接入设置页预览、同一快照令牌导出、UTF-8 JSON 与独占文件创建。核心白名单测试和平台文件冲突/失败测试、Rust 工作区测试、前端类型及 25 项既有测试通过；原有 3 项外部环境测试仍跳过。真实界面、系统下载目录和构建交付待后续统一验证。
