@@ -14,16 +14,15 @@
   font-variant-numeric: tabular-nums;
 }
 .process-name {
-  display: inline-block;
-  max-width: min(280px, 40vw);
+  display: block;
+  min-width: 0;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  vertical-align: middle;
 }
 .process-toolbar,
-.process-actions,
-.process-identity {
+.process-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -32,8 +31,20 @@
 .process-toolbar {
   gap: var(--space-16);
 }
+.process-identity {
+  min-width: 0;
+}
+.process-group {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: var(--space-8);
+}
 .process-identity .processor-caption {
   display: block;
+  grid-column: 2;
+  margin: 0;
+  overflow-wrap: anywhere;
 }
 .process-child {
   padding-left: var(--space-24);

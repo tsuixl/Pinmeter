@@ -28,7 +28,9 @@ export function ProcessView({
       key: "name",
       header: vm.mode === "applications" ? "应用 / 进程" : "进程",
       render: (row) => (
-        <div className={`process-identity${row.child ? " process-child" : ""}`}>
+        <div
+          className={`process-identity${row.pid === null ? " process-group" : ""}${row.child ? " process-child" : ""}`}
+        >
           {row.pid === null && (
             <Button
               variant="ghost"
@@ -45,16 +47,14 @@ export function ProcessView({
               )}
             </Button>
           )}
-          <div>
-            <span className="process-name" title={row.name}>
-              {row.name}
-            </span>
-            {row.pid === null && (
-              <small className="processor-caption">
-                {row.process_count} 个进程 · ID {row.id}
-              </small>
-            )}
-          </div>
+          <span className="process-name" title={row.name}>
+            {row.name}
+          </span>
+          {row.pid === null && (
+            <small className="processor-caption">
+              {row.process_count} 个进程 · ID {row.id}
+            </small>
+          )}
         </div>
       ),
     },
