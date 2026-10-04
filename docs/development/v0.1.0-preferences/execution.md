@@ -1,7 +1,7 @@
 ## 任务计划
 
 - [x] 2026-10-04 独立设置：迁移八类专属侧栏与内容归属，保留提醒草稿和返回上下文，核对保存反馈/失败/窄窗/主题。
-- [ ] 2026-10-04 本批 Windows release 构建、完整运行包核对及本地提交。
+- [x] 2026-10-04 本批 Windows release 构建、完整运行包核对及本地提交。
 
 - [x] 2026-10-04：完成可跳过且后端记忆的常驻设置引导、设置分类直达与恢复默认确认/局部重置；核对 Sakani 组件深浅主题与保存失败状态。
 
@@ -22,9 +22,11 @@
 
 ## 进度
 
+- 2026-10-04 本批已交付 `E:\dev\github\Pinmeter\src\backend\target\test11\Pinmeter.exe`，源码 `6e06977d2062f56fa0c0ba7b4cfb228466b93b72`。项目入口完成 Windows release、最新前端与辅助组件，383 个源码指纹及 42 个运行文件的路径/哈希复核通过；[完整构建证据](../v0.1.0-main-window/execution.md)。保留既有实例，没有启动新版；实际原生/管理员场景和混合 DPI 仍未验证。截图按原始 JPEG 格式保留为 `.jpg`，未改动像素。完全退出旧版后从新链接启动，保留完整 test11 目录。
+
 - 2026-10-04 独立设置验收：同一窗口内用八类专属侧栏替换主导航，移除分类下拉/监控页底栏，窗口恢复、版本许可和存储管理归位；历史保留按时段导出。普通偏好即时保存；提醒草稿跨类别保留，取消不丢稿，保存并返回成功，失败保留草稿并可放弃。已验证修改主题推进配置版本后仍能保存未冲突的提醒草稿；纯测试覆盖重基与真实冲突边界。任务栏关闭时收起细项且可手动展开，数据页提供原有自动记录偏好。
-- 本次浏览器视觉结果：参考用户 Cindy 截图的完整设置结构，并实际核对官方 [SidebarItem All States](https://main--6a5a658b3681fcc010430db5.chromatic.com/?path=/story/composite-sidebar-item--all-states)、[Dark Mode](https://main--6a5a658b3681fcc010430db5.chromatic.com/?path=/story/composite-sidebar-item--dark-mode)、StatCard 与现有 Card/Button/Switch/Select/Modal。Sakani 0.3.1 继续决定控件、颜色、圆角与状态；鸿蒙字体沿用项目已确认例外，Cindy/HTML 仅提供结构。证据：[880×600 浅色及键盘焦点](assets/settings-layout-light.png)、[深色](assets/settings-layout-dark.png)、[420×700 分类列表](assets/settings-narrow-list.png)、[窄窗详情](assets/settings-narrow-detail.png)、[离页草稿保护](assets/settings-draft-guard.png)、[保存失败](assets/settings-save-failed.png)。修复首轮桌面误显示“返回分类”的样式优先级，复查已正常；分类 Enter、选中态、返回焦点、默认关闭控件与滚动可用。截图来源实际视口：草稿保护为 880×669，其余按文件所述；Cindy 原图 2559×1527 仅作结构对照，不作为字号/密度基准。图片均已打开复核；字体层级、分区间距、主题变量、既有图标与业务文案检查无本批阻塞问题，浏览器局部设计检查 final result: passed。完整原生 DPI、管理员保存/启动与真实系统重启未验证，不算完整视觉发行验收。
-- 设置返回验证：总览温度分组与历史锚点、进程搜索及暂停快照（[证据](../v0.1.0-main-window/assets/settings-return-process.png)）、历史 7 天范围与应用筛选均恢复。只保留当前页面的有限界面状态及暂停进程快照；普通导航释放，页面查询随卸载停止。静态审查发现的普通导航 GPU 旧锚点、延迟滚动串页已修复。浏览器控制台无错误；前端 TypeScript、79 项单测、修改文件格式、项目目录/文档链接和差异检查通过。本次 Windows 构建和运行边界待交付补充。
+- 本次浏览器视觉结果：参考用户 Cindy 截图的完整设置结构，并实际核对官方 [SidebarItem All States](https://main--6a5a658b3681fcc010430db5.chromatic.com/?path=/story/composite-sidebar-item--all-states)、[Dark Mode](https://main--6a5a658b3681fcc010430db5.chromatic.com/?path=/story/composite-sidebar-item--dark-mode)、StatCard 与现有 Card/Button/Switch/Select/Modal。Sakani 0.3.1 继续决定控件、颜色、圆角与状态；鸿蒙字体沿用项目已确认例外，Cindy/HTML 仅提供结构。证据：[880×600 浅色及键盘焦点](assets/settings-layout-light.jpg)、[深色](assets/settings-layout-dark.jpg)、[420×700 分类列表](assets/settings-narrow-list.jpg)、[窄窗详情](assets/settings-narrow-detail.jpg)、[离页草稿保护](assets/settings-draft-guard.jpg)、[保存失败](assets/settings-save-failed.jpg)。修复首轮桌面误显示“返回分类”的样式优先级，复查已正常；分类 Enter、选中态、返回焦点、默认关闭控件与滚动可用。截图来源实际视口：草稿保护为 880×669，其余按文件所述；Cindy 原图 2559×1527 仅作结构对照，不作为字号/密度基准。图片均已打开复核；字体层级、分区间距、主题变量、既有图标与业务文案检查无本批阻塞问题，浏览器局部设计检查 final result: passed。完整原生 DPI、管理员保存/启动与真实系统重启未验证，不算完整视觉发行验收。
+- 设置返回验证：总览温度分组与历史锚点、进程搜索及暂停快照（[证据](../v0.1.0-main-window/assets/settings-return-process.jpg)）、历史 7 天范围与应用筛选均恢复。只保留当前页面的有限界面状态及暂停进程快照；普通导航释放，页面查询随卸载停止。静态审查发现的普通导航 GPU 旧锚点、延迟滚动串页已修复。浏览器控制台无错误；前端 TypeScript、79 项单测、修改文件格式、项目目录/文档链接和差异检查通过。本次 Windows 构建和运行边界见本节交付记录。
 
 - 2026-10-04 本批交付：源码 `96b8c4677384bf32f09f7aec0920698832492bfd`，实际入口 `E:\dev\github\Pinmeter\src\backend\target\test6\Pinmeter.exe`。统一检查通过（Rust 167 项、前端 49 项、格式/Clippy/契约/打包工具）；完整 release/NSIS 构建、42 个运行文件及 376 个源码指纹核对通过。原生、管理员、真实升级及长期未验证项保留；[交付详情](../v0.1.0-desktop-runtime/execution.md)。
 

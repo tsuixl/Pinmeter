@@ -1,7 +1,7 @@
 ## 任务计划
 
 - [x] 2026-10-04 界面精简：实现四张资源卡并核对独立指标状态、深浅主题、宽窄布局。
-- [ ] 2026-10-04 独立设置页面与返回上下文交付：完成本次 Windows 构建和资源核对，原生验证边界单列。
+- [x] 2026-10-04 独立设置页面与返回上下文交付：完成本次 Windows 构建和资源核对，原生验证边界单列。
 
 - [x] 移除侧栏“监控 / 排查 / 工具”分组标题，核对平铺导航深浅主题与折叠状态，构建并交付完整 Windows 运行包。
 
@@ -17,7 +17,9 @@
 
 ## 进度
 
-- 2026-10-04 四卡实现：CPU/GPU 使用率与温度独立状态合卡，内存/网速保持对应单位和口径，支持 GPU 核心/VR SoC 测温点，型号只出现一次。依照官方 Sakani Card 与 StatCard 读数规格，保留官方悬停/焦点与主题；HTML 只提供结构。[880×600 浅色](assets/overview-four-light.png)、[1440×900 深色四列](assets/overview-four-dark.png)、[420×700 单列及 VR SoC](assets/overview-four-narrow.png)已检查。8 项总览单测覆盖正常零值、温度失败/权限/不支持、上下行独立状态、多卡与历史断档；整合 TypeScript 和前端 79 项单测通过。生产 Windows 构建证据待本批末补充；演示数据不证明真实采集或原生 DPI。
+- 2026-10-04 界面精简交付：稳定源码 `6e06977d2062f56fa0c0ba7b4cfb228466b93b72`（总览提交 `f969074`、独立设置提交 `6e06977`）通过 `node tools/desktop.mjs build --no-bundle -- --locked` 生成完整前端、Windows release 与辅助组件；本次不生成安装器。入口 `E:\dev\github\Pinmeter\src\backend\target\test11\Pinmeter.exe`，v0.1.3，57,430,016 字节，SHA-256 `fea5ef00ea107950a6b1cae29d0876d72c34477833f93c610ce16ec7c7e1b2f1`。构建前后源码清单一致，交付时再次核对 383 个源码指纹、42 个运行文件、配置资源路径及哈希通过；详情随包 `build-source.json`、`source-manifest.json`、`package-hashes.json`、`delivery-verification.json`。两把锁覆盖构建与交付核对，跳过被占用/无法确认的 test1–test10；保留正在运行的 test10 及无法读取路径的提权实例，没有启动新版，故实际原生启动/管理员行为/混合 DPI 未验证。构建仅保留既有前端块大于 500 kB 与 MSVC 创建库的非阻塞消息。切换时完全退出旧版并保留整个 test11 目录。
+
+- 2026-10-04 四卡实现：CPU/GPU 使用率与温度独立状态合卡，内存/网速保持对应单位和口径，支持 GPU 核心/VR SoC 测温点，型号只出现一次。依照官方 Sakani Card 与 StatCard 读数规格，保留官方悬停/焦点与主题；HTML 只提供结构。[880×600 浅色](assets/overview-four-light.jpg)、[1440×900 深色四列](assets/overview-four-dark.jpg)、[420×700 单列及 VR SoC](assets/overview-four-narrow.jpg)已检查。8 项总览单测覆盖正常零值、温度失败/权限/不支持、上下行独立状态、多卡与历史断档；整合 TypeScript 和前端 79 项单测通过。Windows 构建证据见本节交付记录；演示数据不证明真实采集或原生 DPI。
 
 - 2026-10-04 侧栏简化交付：稳定源码 `70db5527187a23b54488e395a42bb4f16e46813e` 经 `node tools/desktop.mjs build -- --locked` 完整生成前端、Windows release、辅助组件与 NSIS；实际入口为 `E:\dev\github\Pinmeter\src\backend\target\test10\Pinmeter.exe`（v0.1.3）。379 个源码指纹、42 个运行文件的配置路径/哈希及安装器版本/签名复核通过，EXE SHA-256 为 `bb9bd4cf76605690fbaf86ef409bb140a30b0b31bc65cd72e1d733bf8b609d1a`；安装器与签名已复制至该目录 `update-artifacts/` 并核对一致。构建锁与目录独占保留至交付核对结束；已有 `test9` 实例及无法确定路径的提升权限进程未停止，因此没有启动新版主程序，原生/管理员/混合 DPI 交互仍未实测。构建保留已有前端大于 500 kB 提示及 MSVC 创建库的非阻塞消息；无构建错误。切换时完全退出旧版并保留完整 `test10` 目录。
 
