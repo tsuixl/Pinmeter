@@ -51,7 +51,7 @@ S0–S3 的功能主体已实现；S1 曾完成浏览器深浅主题/控件状�
 | 8 | 历史峰值与异常回看 | local-history，已实现峰值/时间与旧数据未知语义 |
 | 9 | 首次运行与常驻引导 | preferences / desktop-runtime，已实现可跳过引导及后端记忆 |
 | 10 | 本地数据与隐私管理 | local-history / preferences，已实现清除水位、空间说明与确认导出 |
-| 11 | 导航与设置整理 | main-window / preferences，已实现分组、分类直达和重置确认 |
+| 11 | 导航与设置整理 | main-window / preferences，扁平导航、设置分类直达和重置确认 |
 | 12 | 默认关闭的异常提醒 | [alerts](v0.1.3-alerts/design.md)，已实现应用内及托盘提示，不发送系统弹窗 |
 | 13 | 用户主动开启的限时排障记录 | diagnostics，已实现有期限记录及独立预览导出 |
 | 14 | 更长历史与周期比较 | local-history，已实现 24h/7d/30d 分层与覆盖比较；真实长时待验收 |

@@ -384,27 +384,18 @@ export function App({
         <nav aria-label="监控页面">
           {(
             [
-              {
-                label: "监控",
-                pages: ["overview", "cpu", "memory", "gpu", "network", "disk"],
-              },
-              { label: "排查", pages: ["processes", "history"] },
-              { label: "工具", pages: ["hardware", "ip"] },
-            ] as { label: string; pages: Page[] }[]
-          ).map((group) => (
-            <div key={group.label} role="group" aria-label={group.label}>
-              <div
-                className={
-                  collapsed
-                    ? "sr-only"
-                    : "processor-caption sidebar-group-label"
-                }
-              >
-                {group.label}
-              </div>
-              {group.pages.map(nav)}
-            </div>
-          ))}
+              "overview",
+              "cpu",
+              "memory",
+              "gpu",
+              "network",
+              "disk",
+              "processes",
+              "history",
+              "hardware",
+              "ip",
+            ] as Page[]
+          ).map(nav)}
         </nav>
         <div className="sidebar-bottom">
           <UpdateBanner vm={updateVm} collapsed={collapsed} />

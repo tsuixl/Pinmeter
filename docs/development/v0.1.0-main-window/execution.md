@@ -1,5 +1,7 @@
 ## 任务计划
 
+- [ ] 移除侧栏“监控 / 排查 / 工具”分组标题，核对平铺导航深浅主题与折叠状态，构建并交付完整 Windows 运行包。
+
 - [x] 第 5 项：实现 CPU/内存直达进程与上下文返回；浏览器检查指标排序及回看锚点保留。
 
 - [x] 将侧栏品牌标识与 favicon 同步为已选应用图标，检查深浅主题及折叠侧栏。
@@ -11,6 +13,8 @@
 - [ ] 完成 macOS/Linux 窗口实机验证；最大化按钮原生悬停贴靠面板尚未提供。
 
 ## 进度
+
+- 2026-10-04 侧栏简化：移除“监控 / 排查 / 工具”标题及专用容器/样式，十项导航顺序与底部设置保留。已核对官方 [SidebarItem / All States](https://main--6a5a658b3681fcc010430db5.chromatic.com/?path=/story/composite-sidebar-item--all-states) 和 [Dark Mode](https://main--6a5a658b3681fcc010430db5.chromatic.com/?path=/story/composite-sidebar-item--dark-mode)，继续直接复用组件；HTML 仅供结构参考。开发演示环境中 [1280×720 浅色](assets/sidebar-flat-light.jpg)、[深色](assets/sidebar-flat-dark.jpg)与 [880×600 折叠侧栏](assets/sidebar-flat-compact.jpg)检查通过，标题消失、入口齐全，CPU/进程/硬件信息切换、键盘 Enter、选中态与折叠可访问名称正常。TypeScript、修改文件 Prettier、项目文档/目录及 `git diff --check` 通过；Windows 构建和资源核对待完成，原生交互及混合 DPI 未实测。
 
 - 2026-10-04 本批交付：源码 `96b8c4677384bf32f09f7aec0920698832492bfd`，实际入口 `E:\dev\github\Pinmeter\src\backend\target\test6\Pinmeter.exe`。统一检查通过（Rust 167 项、前端 49 项、格式/Clippy/契约/打包工具）；完整 release/NSIS 构建、42 个运行文件及 376 个源码指纹核对通过。原生、管理员、真实升级及长期未验证项保留；[交付详情](../v0.1.0-desktop-runtime/execution.md)。
 

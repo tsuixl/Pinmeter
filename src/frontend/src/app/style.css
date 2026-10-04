@@ -83,14 +83,6 @@ dd,
 .sidebar-bottom {
   margin-top: auto;
 }
-.sidebar nav > [role="group"] {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-8);
-}
-.sidebar-group-label {
-  padding: var(--space-4) var(--space-12);
-}
 .device {
   display: flex;
   align-items: center;
