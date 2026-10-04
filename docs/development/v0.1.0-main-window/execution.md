@@ -1,6 +1,6 @@
 ## 任务计划
 
-- [ ] 2026-10-04 说明收起：复用信息图标浮层，整理 GPU/网络/进程常驻说明与短状态，检查深浅主题、展开/关闭/键盘及窄窗，构建并核对本次 Windows 运行包。
+- [x] 2026-10-04 说明收起：复用信息图标浮层，整理 GPU/网络/进程常驻说明与短状态，检查深浅主题、展开/关闭/键盘及窄窗，构建并核对本次 Windows 运行包。
 
 - [x] 2026-10-04 大卡内容展开：调整 CPU/GPU 双列分布与宽网速卡横排，检查宽窄、常见读数、异常及深浅主题，构建本次完整 Windows 运行包并本地提交。
 
@@ -21,9 +21,11 @@
 
 ## 进度
 
-- 2026-10-04 收尾回归：Vite 日志发现首轮 ResizeObserver 同步重排产生一次循环警告，已中止 test13 的中间构建（不交付该目录），将尺寸观察回调合并到下一动画帧执行并在卸载时取消。重新打开/关闭、键盘滚动，以及 1100×800 → 420×700 → 880×600 连续缩放检查通过；新浏览器和 Vite 日志未再出现错误，[修复后边界截图](assets/info-resize-check.jpg)已保存。类型与格式复查通过，最终运行包将从修复后的源码重新生成。
+- 2026-10-04 信息浮层最终交付：源码 `4d4d6bfd523a7688076a91896a399e04d477d15e`（含 `fb5a94a`、`2ff8675`、`1b74d58` 与尺寸监听修复 `4d4d6bf`），通过 `node tools/desktop.mjs build --no-bundle -- --locked` 生成最新前端、Windows release 与全部辅助组件。入口 `E:\dev\github\Pinmeter\src\backend\target\test13\Pinmeter.exe`，v0.1.3，SHA-256 `fdbaa278790d78f6d9e5a84aab4a552e642b261d54b02f7485aeb8896bf32668`。脚本重新取得空闲 test13 独占并清理上一中间构建，385 个源码指纹、42 个运行文件及配置路径/源与目标哈希均通过复核；`build-source.json`、`source-manifest.json`、`package-hashes.json`、`delivery-verification.json` 随运行目录保存。保留现有 test11 和提权实例，没有启动新版；真实主程序、管理员场景、混合 DPI 未验证。构建只有既有前端大块和 MSVC 创建库提示，无构建错误；两把锁保持至交付核对完成。完全退出旧版后启动新链接，保留整个 test13 目录。
 
-- 2026-10-04 信息图标整合：GPU、网卡指标、应用排行与进程长说明均按需展示；CPU/内存原说明入口保留，指标直达进程页的历史归因提示同样收起。共享组件直接复用 Sakani Popover/IconButton，仅增加滚动容器的几何定位、视口约束及可聚焦说明区。实际查阅官方 [Popover One Button](https://main--6a5a658b3681fcc010430db5.chromatic.com/?path=/story/composite-popover--one-button) 与 [Dark Mode](https://main--6a5a658b3681fcc010430db5.chromatic.com/?path=/story/composite-popover--dark-mode)；项目继续沿用鸿蒙字体例外，HTML 仅供结构。首轮发现窄窗被滚动区裁切，修复后 420×700 浮层边界位于 x=16–336、y≈310–684，内容可滚到末尾，Enter 打开、Esc/外部关闭和焦点返回通过；控制台无错误。[网卡说明深色证据](assets/network-info-open-dark.jpg)，其他页面见各功能执行记录。TypeScript、全前端格式、文档目录及差异检查通过；本次仅更改呈现，无新增业务单测或重复运行采集测试。局部浏览器设计检查 final result: passed；原生/管理员/混合 DPI 不据此标为通过，Windows 交付待本批补充。
+- 2026-10-04 收尾回归：Vite 日志发现首轮 ResizeObserver 同步重排产生一次循环警告，已中止 test13 的中间构建（不交付中间产物），将尺寸观察回调合并到下一动画帧执行并在卸载时取消。重新打开/关闭、键盘滚动，以及 1100×800 → 420×700 → 880×600 连续缩放检查通过；新浏览器和 Vite 日志未再出现错误，[修复后边界截图](assets/info-resize-check.jpg)已保存。类型与格式复查通过，最终运行包已从修复后的源码重新生成，详见本节最终交付。
+
+- 2026-10-04 信息图标整合：GPU、网卡指标、应用排行与进程长说明均按需展示；CPU/内存原说明入口保留，指标直达进程页的历史归因提示同样收起。共享组件直接复用 Sakani Popover/IconButton，仅增加滚动容器的几何定位、视口约束及可聚焦说明区。实际查阅官方 [Popover One Button](https://main--6a5a658b3681fcc010430db5.chromatic.com/?path=/story/composite-popover--one-button) 与 [Dark Mode](https://main--6a5a658b3681fcc010430db5.chromatic.com/?path=/story/composite-popover--dark-mode)；项目继续沿用鸿蒙字体例外，HTML 仅供结构。首轮发现窄窗被滚动区裁切，修复后 420×700 浮层边界位于 x=16–336、y≈310–684，内容可滚到末尾，Enter 打开、Esc/外部关闭和焦点返回通过；控制台无错误。[网卡说明深色证据](assets/network-info-open-dark.jpg)，其他页面见各功能执行记录。TypeScript、全前端格式、文档目录及差异检查通过；本次仅更改呈现，无新增业务单测或重复运行采集测试。局部浏览器设计检查 final result: passed；原生/管理员/混合 DPI 不据此标为通过，Windows 交付见本节最终交付记录。
 
 - 2026-10-04 大卡展开交付：源码 `91dee4c833670f1aaa9af1ec376ecbc466bc0c56`，通过项目入口 `node tools/desktop.mjs build --no-bundle -- --locked` 生成本次完整 Windows release、最新前端及辅助组件。入口 `E:\dev\github\Pinmeter\src\backend\target\test12\Pinmeter.exe`，v0.1.3，SHA-256 `4f0b66cd2db61e63ed173189953c13e34b5498050ef9eb5a3a3d09d859ea8f8e`；383 个源码指纹、42 个运行文件、配置资源路径与源/目标哈希复核通过。构建与目录锁保留至交付核对；源码与文件清单、构建日志及复核结果随包保存。现有 test11 和路径不可读取的提权实例保持运行，未启动新版；原生启动、管理员及混合 DPI 未验证。保留既有前端大块和 MSVC 创建库的非阻塞提示，无构建错误。完全退出旧版后运行新链接，保留整个 test12 目录。
 
