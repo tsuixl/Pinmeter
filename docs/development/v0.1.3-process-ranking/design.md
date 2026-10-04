@@ -6,6 +6,8 @@
 - P1：只读 CPU / 内存排行，默认前 10 项，可搜索和展开；显示名称、PID、CPU 占用与工作集，不提供结束进程、提权或系统优化。
 
 ## 方案
+
+- 2026-10-04 说明收起：资源占用标题旁提供 Sakani 信息图标，CPU 基线、应用聚合/工作集口径、排序和列操作等长说明按需展开。暂停、采样中、查询失败、读取不全与截断以紧凑状态标记呈现，浮层保留完整原因；搜索仅常驻匹配数量，表格与操作优先。保留真实缺失状态与暂停采样语义，不改排序、搜索、列布局或采集。
 - 2026-10-04 层级与表头：父级使用 Sakani 小号图标按钮保留固定折叠槽，子进程名称在父名称起点基础上再缩进一级。进程表头支持拖动换列、边界调宽（含最小宽度及键盘步进）、名称/PID/CPU/内存点击升降排序；拖动与调宽不误触排序。应用父子保持分组，固定项优先，无效值始终置后；按应用的 PID 排序只调整组内子进程，父级保持稳定。表头与单元格由同一列顺序/宽度驱动，刷新不重置布局，恢复默认列只作用于布局。列布局仅保留在当前页面会话，不作为已确认持久设置。
 - 本地 ProcessTable 适配复用固定 Sakani 0.3.1 Table/Button/IconButton 及变量；已核对该版本在运行时直接渲染 ReactNode header，但类型声明过窄，在该适配内单点转换并以交互回归覆盖升级。使用官方 responsive="default" 保留可操作表头，窄窗只在表格容器内横向滚动，不在每张堆叠卡片复制表头控件；不依赖私有哈希 CSS 类、不修改 node_modules、不另造视觉体系。
 - 主窗口配置 `dragDropEnabled: false`，按 [Tauri 官方说明](https://v2.tauri.app/reference/config/#dragdropenabled) 为 Windows 前端 HTML5 列拖动关闭原生文件拖放处理。当前应用没有依赖原生文件拖放的入口；此项不改变窗口标题栏拖动或 Tauri 命令权限。配置检查与构建不替代原生鼠标验收。
@@ -15,7 +17,7 @@
 - 遵循[产品设计](../../design/product-design.md)与[架构](../../architecture/overview.md)。core/processes 计算 CPU 差值、识别 PID 复用和排行；platform/processes 封装 Toolhelp、GetProcessTimes、GetProcessMemoryInfo。host 管理单工作线程，ViewModel 通过 client 读取。
 - CPU 为进程内核与用户时间增量 / 墙钟采样时长 / 逻辑处理器数，与全机百分比口径一致；内存为工作集，不称为独占或私有内存。创建时间变化时重新预热；无权限不可推算为零。
 - 每两秒采集；主窗口可见且页面轮询五秒租约有效时工作，切页五秒内停止。最多 4096 个进程，展示无法读取和截断计数；完整路径仅用于上述瞬时身份确认，不读取命令行、不保存进程历史。其他平台明确不支持；独立的用户限时排障可按 [diagnostics](../v0.1.3-diagnostics/design.md) 复用该来源继续采集。
-- 使用当前受控 Sakani [Table](https://main--6a5a658b3681fcc010430db5.chromatic.com/?path=/docs/composite-table--docs)、Segmented Control、Alert 与 Badge；深浅主题沿用 tokens。HTML 仅作结构参考。
+- 使用当前受控 Sakani [Table](https://main--6a5a658b3681fcc010430db5.chromatic.com/?path=/docs/composite-table--docs)、Segmented Control、Popover、IconButton 与 Badge；深浅主题沿用 tokens。HTML 仅作结构参考。
 
 ## 验收
 - CPU 多核归一、PID 复用、计数回退、权限和退出、排序稳定、前十限制有测试；普通权限只读探针通过。

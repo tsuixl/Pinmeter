@@ -313,7 +313,6 @@ export function ProcessTable({
   return (
     <div className="process-table-container">
       <div className="process-table-tools">
-        <p className="muted">点击表头排序，拖动标题换列，拖动列边界调宽。</p>
         <Button variant="ghost" size="sm" onClick={reset}>
           恢复默认列
         </Button>
