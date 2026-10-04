@@ -1,5 +1,7 @@
 ## 任务计划
 
+- [ ] 2026-10-04 说明收起：复用信息图标浮层，整理 GPU/网络/进程常驻说明与短状态，检查深浅主题、展开/关闭/键盘及窄窗，构建并核对本次 Windows 运行包。
+
 - [x] 2026-10-04 大卡内容展开：调整 CPU/GPU 双列分布与宽网速卡横排，检查宽窄、常见读数、异常及深浅主题，构建本次完整 Windows 运行包并本地提交。
 
 - [x] 2026-10-04 界面精简：实现四张资源卡并核对独立指标状态、深浅主题、宽窄布局。
@@ -18,6 +20,8 @@
 - [ ] 完成 macOS/Linux 窗口实机验证；最大化按钮原生悬停贴靠面板尚未提供。
 
 ## 进度
+
+- 2026-10-04 信息图标整合：GPU、网卡指标、应用排行与进程长说明均按需展示；CPU/内存原说明入口保留，指标直达进程页的历史归因提示同样收起。共享组件直接复用 Sakani Popover/IconButton，仅增加滚动容器的几何定位、视口约束及可聚焦说明区。实际查阅官方 [Popover One Button](https://main--6a5a658b3681fcc010430db5.chromatic.com/?path=/story/composite-popover--one-button) 与 [Dark Mode](https://main--6a5a658b3681fcc010430db5.chromatic.com/?path=/story/composite-popover--dark-mode)；项目继续沿用鸿蒙字体例外，HTML 仅供结构。首轮发现窄窗被滚动区裁切，修复后 420×700 浮层边界位于 x=16–336、y≈310–684，内容可滚到末尾，Enter 打开、Esc/外部关闭和焦点返回通过；控制台无错误。[网卡说明深色证据](assets/network-info-open-dark.jpg)，其他页面见各功能执行记录。TypeScript、全前端格式、文档目录及差异检查通过；本次仅更改呈现，无新增业务单测或重复运行采集测试。局部浏览器设计检查 final result: passed；原生/管理员/混合 DPI 不据此标为通过，Windows 交付待本批补充。
 
 - 2026-10-04 大卡展开交付：源码 `91dee4c833670f1aaa9af1ec376ecbc466bc0c56`，通过项目入口 `node tools/desktop.mjs build --no-bundle -- --locked` 生成本次完整 Windows release、最新前端及辅助组件。入口 `E:\dev\github\Pinmeter\src\backend\target\test12\Pinmeter.exe`，v0.1.3，SHA-256 `4f0b66cd2db61e63ed173189953c13e34b5498050ef9eb5a3a3d09d859ea8f8e`；383 个源码指纹、42 个运行文件、配置资源路径与源/目标哈希复核通过。构建与目录锁保留至交付核对；源码与文件清单、构建日志及复核结果随包保存。现有 test11 和路径不可读取的提权实例保持运行，未启动新版；原生启动、管理员及混合 DPI 未验证。保留既有前端大块和 MSVC 创建库的非阻塞提示，无构建错误。完全退出旧版后运行新链接，保留整个 test12 目录。
 

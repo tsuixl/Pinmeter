@@ -1,0 +1,24 @@
+.info-popover-content {
+  max-height: min(55vh, 420px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  overflow-wrap: anywhere;
+}
+.info-popover-anchor {
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+/* Geometry only: retain the official Popover surface, typography and controls. */
+.info-popover > [role="dialog"] {
+  position: fixed;
+  transform: none;
+  right: auto;
+  bottom: auto;
+  max-width: min(320px, calc(100vw - 32px));
+}
+.info-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-width: 0;
+}

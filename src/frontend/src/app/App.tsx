@@ -41,6 +41,7 @@ import {
   Checkbox,
 } from "../shared/ui/sakani";
 import { icons } from "../shared/ui/icons";
+import { InfoPopover } from "../shared/ui/InfoPopover";
 import pinmeterIcon from "../assets/pinmeter.png";
 import type { ReadingStatus } from "../shared/contracts/monitor";
 import type { WindowClient } from "../shared/client/window-client";
@@ -839,9 +840,9 @@ export function App({
                     <Button variant="ghost" size="sm" onClick={returnToMetric}>
                       返回{pageLabels[processOrigin.page]}详情
                     </Button>
-                    <span className="processor-caption">
-                      这里显示当前进程；不能据此判断过去时刻的占用原因。
-                    </span>
+                    <InfoPopover title="当前进程与历史说明">
+                      <p>这里显示当前进程；不能据此判断过去时刻的占用原因。</p>
+                    </InfoPopover>
                   </div>
                 )}
                 <ProcessView client={client} initialSort={processSort} />
@@ -876,6 +877,13 @@ export function App({
                     <Badge>
                       {vm.state?.settings.network_id ? "手动选择" : "自动选择"}
                     </Badge>
+                    <InfoPopover title="网络指标说明">
+                      <p>
+                        速率来自累计字节差与实际经过时间。使用十进制
+                        KB/s、MB/s，不叠加其他网卡。接口切换、重连或休眠后重新预热，曲线保留断档。
+                      </p>
+                      <p>来源：{vm.reading("download").source}</p>
+                    </InfoPopover>
                   </div>
                   <Button
                     variant="outline"
@@ -896,14 +904,6 @@ export function App({
                       {chart([key], labels[key])}
                     </Card>
                   ))}
-                </div>
-                <div className="explanation">
-                  <h2>单个接口，清楚计量</h2>
-                  <p>
-                    速率来自累计字节差与实际经过时间。使用十进制
-                    KB/s、MB/s，不叠加其他网卡。接口切换、重连或休眠后重新预热，曲线保留断档。
-                  </p>
-                  <p>来源：{vm.reading("download").source}</p>
                 </div>
                 <AppNetworkRanking
                   client={client}

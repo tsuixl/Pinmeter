@@ -1,5 +1,6 @@
 import { useEffect } from "react";
-import { Alert, Badge, Card, Select, StatCard } from "../../shared/ui/sakani";
+import { Badge, Card, Select, StatCard } from "../../shared/ui/sakani";
+import { InfoPopover } from "../../shared/ui/InfoPopover";
 import { icons } from "../../shared/ui/icons";
 import { statusLabels } from "../monitoring/useMonitorViewModel";
 import { TrendChart } from "../monitoring/TrendChart";
@@ -35,26 +36,50 @@ export function GpuView({
   ];
   return (
     <section className="gpu-page" aria-label="GPU 详情">
-      {vm.devices.length > 0 && (
-        <div className="gpu-heading">
+      <div className="gpu-heading">
+        {vm.devices.length > 0 && (
           <Select
             label="显卡"
             value={vm.selected?.id ?? ""}
             options={vm.devices.map((d) => ({ value: d.id, label: d.name }))}
             onChange={vm.setSelectedId}
           />
-          <Badge variant="neutral">
+        )}
+        <div className="info-heading" role="status">
+          <Badge
+            variant={
+              vm.status === "failed"
+                ? "danger"
+                : vm.status === "permission_denied" || vm.status === "stale"
+                  ? "warning"
+                  : "neutral"
+            }
+          >
             {vm.devices.length} 张显卡 · {statusLabels[vm.status]}
           </Badge>
+          <InfoPopover title="GPU 指标说明">
+            {vm.status !== "normal" && (
+              <p>
+                {statusLabels[vm.status]}：{vm.detail}
+              </p>
+            )}
+            <p>
+              使用率取最忙引擎，不累加不同引擎。专用与共享内存采用 Windows D3D
+              统计；容量为驱动报告值，核显可能使用预留系统内存，不将共享内存当作独立显存。
+            </p>
+            <p>
+              未提供核心温度时，可显示另行标注的 GPU VR SoC
+              温度，两者测温点不同。频率按驱动读数显示，显存 MHz
+              不等同于有效数据传输率。
+            </p>
+            <p>
+              来源：{vm.reading("usage").source}；
+              {vm.reading(vm.temperature.key).source}。GPU
+              独立约每秒采样，历史随监控间隔保存。
+            </p>
+          </InfoPopover>
         </div>
-      )}
-      {vm.status !== "normal" && (
-        <Alert
-          color="info"
-          title={statusLabels[vm.status]}
-          description={vm.detail}
-        />
-      )}
+      </div>
       {vm.selected && (
         <>
           <div className="gpu-stats">
@@ -168,23 +193,6 @@ export function GpuView({
                 axis={{ unit: "MHz", divisor: 1, step: 1000, minimum: 1000 }}
               />
             </Card>
-          </div>
-          <div className="explanation">
-            <h2>关于这张显卡</h2>
-            <p>
-              使用率取最忙引擎，不累加不同引擎。专用与共享内存采用 Windows D3D
-              统计；容量为驱动报告值，核显可能使用预留系统内存，不将共享内存当作独立显存。
-            </p>
-            <p>
-              未提供核心温度时，可显示另行标注的 GPU VR SoC
-              温度，两者测温点不同。 频率按驱动读数显示，显存 MHz
-              不等同于有效数据传输率。
-            </p>
-            <p>
-              来源：{vm.reading("usage").source}；
-              {vm.reading(vm.temperature.key).source}。GPU
-              独立约每秒采样，历史随监控间隔保存。
-            </p>
           </div>
         </>
       )}
