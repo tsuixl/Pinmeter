@@ -220,12 +220,14 @@ function ColumnHeader(props: HeaderProps) {
 }
 
 export function ProcessTable({
+  toolbar,
   columns,
   rows,
   sort,
   direction,
   onSort,
 }: {
+  toolbar?: ReactNode;
   columns: TableColumn<ProcessDisplayRow>[];
   rows: ProcessDisplayRow[];
   sort: ProcessSortKey;
@@ -313,7 +315,13 @@ export function ProcessTable({
   return (
     <div className="process-table-container">
       <div className="process-table-tools">
-        <Button variant="ghost" size="sm" onClick={reset}>
+        {toolbar}
+        <Button
+          className="process-columns-reset"
+          variant="ghost"
+          size="sm"
+          onClick={reset}
+        >
           恢复默认列
         </Button>
       </div>
