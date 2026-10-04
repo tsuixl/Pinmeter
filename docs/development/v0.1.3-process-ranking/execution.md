@@ -1,5 +1,5 @@
 ## 任务计划
-- [ ] 修正折叠按钮与名称换行，检查普通/长名称、展开/搜索禁用、深浅主题及窄窗；完成前端检查、本次 Windows 构建和本地提交。
+- [x] 修正折叠按钮与名称换行，检查普通/长名称、展开/搜索禁用、深浅主题及窄窗；完成前端检查、本次 Windows 构建和本地提交。
 - [x] 第 5 项：接受指标页排序与返回上下文，明确当前读数语义。
 - [x] 第 7 项：实现可靠应用归组、搜索、固定、展开、暂停/恢复和复制；补充身份/不完整/排序行为测试并完成浏览器深浅窄窗检查。
 - [ ] 第 7 项：通过本批统一类型/行为检查及完整 Windows 构建，记录原生验证边界。
@@ -9,8 +9,11 @@
 
 ## 进度
 
+- 名称行修复交付：从干净提交 `f9dd779318929a56a7eb527d34e7a49c1decbfcd` 通过 `PINMETER_HOLD_DELIVERY=1 node tools/desktop.mjs build -- --locked` 完整构建前端、宿主、辅助组件和 NSIS。实际入口 `E:\dev\github\Pinmeter\src\backend\target\test7\Pinmeter.exe`，版本 0.1.3，57,425,920 字节；42 个运行文件与 376 个源码指纹独立核对通过。EXE SHA-256：`2c7f0ebd5e13259e8fb07bca6115c601faf3a005809b9476abeeeb3a6d215a92`；同目录 update-artifacts 中安装器的复制哈希、Tauri 签名和 PE 版本均通过，SHA-256：`1e2d1b036f8261423a7b21e068801c3958a604f4e5fff2c516ec034005609c96`。构建锁和编号目录独占保持至交付复核结束，test6 运行实例保留。
+- 本次验证包括前端类型/局部格式、404 个本地文档链接、生产构建与浏览器布局，未为纯布局改动增加镜像测试或重跑不相关后端单测。运行包 CPU/GPU helper 协议与退出通过（CPU permission_denied，GPU normal / 1 设备），详见 test7 的 build-source、source-manifest、package-hashes、delivery-verification 和 helper-smoke JSON。本次未启动新的管理员主窗口，不将浏览器或文件核对当作原生字体/缩放验收；先完全退出旧版再打开 test7，移动时保留整个运行目录。未推送或发布。
+
 - 2026-10-04 名称行布局：移除身份区继承的 flex 换行，改为按钮/名称同一网格行、辅助说明置于名称下方；名称可收缩省略，完整 title 保留，长说明可换行并去掉多余底边距。不改变列宽、Sakani 控件尺寸/颜色或采集行为。已实际核对官方 Table 默认、深色和 640px 卡片切换，HTML 仅作结构参考。
-- 本次浏览器验证：1280/960/640/420 宽度下，所有可见应用的按钮与名称垂直中心差小于 0.001px，无页面横向溢出；960 宽度下长名称省略且 title 完整。展开子进程、搜索自动展开与折叠按钮禁用均可用。证据：[浅色展开](assets/name-alignment-light.jpg)、[深色桌面窄窗](assets/name-alignment-dark-960.jpg)、[420px 搜索状态](assets/name-alignment-narrow.jpg)。前端类型与修改文件格式检查通过；Windows 原生缩放与当前用户字体实机复验另列，待本次完整包交付。
+- 本次浏览器验证：1280/960/640/420 宽度下，所有可见应用的按钮与名称垂直中心差小于 0.001px，无页面横向溢出；960 宽度下长名称省略且 title 完整。展开子进程、搜索自动展开与折叠按钮禁用均可用。证据：[浅色展开](assets/name-alignment-light.jpg)、[深色桌面窄窗](assets/name-alignment-dark-960.jpg)、[420px 搜索状态](assets/name-alignment-narrow.jpg)。前端类型与修改文件格式检查通过；Windows 原生缩放与当前用户字体实机复验另列，本次完整包见上方交付记录。
 
 - 2026-10-04 本批交付：源码 `96b8c4677384bf32f09f7aec0920698832492bfd`，实际入口 `E:\dev\github\Pinmeter\src\backend\target\test6\Pinmeter.exe`。统一检查通过（Rust 167 项、前端 49 项、格式/Clippy/契约/打包工具）；完整 release/NSIS 构建、42 个运行文件及 376 个源码指纹核对通过。原生、管理员、真实升级及长期未验证项保留；[交付详情](../v0.1.0-desktop-runtime/execution.md)。
 
