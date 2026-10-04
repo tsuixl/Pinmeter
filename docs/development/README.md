@@ -8,7 +8,7 @@ UI 开发与交接必须明确：[Sakani 官方 Storybook](https://main--6a5a658
 
 ## v0.1.0 首版计划
 
-当前工作版本为 **v0.1.3**，P1 六项已接入；最近已发布版本仍为 [v0.1.1 Windows x64 预览版](https://github.com/tsuixl/Pinmeter/releases/tag/v0.1.1)。本轮生成本地完整运行包，不自动发布。Windows 交付沿用 [desktop-runtime](v0.1.0-desktop-runtime/design.md)，在线更新维护在 [app-update](v0.1.2-app-update/design.md)。下列 v0.1.0 表格和目录保留首版计划含义，发布与验收以各功能执行记录为准。
+当前工作版本为 **v0.1.3**，P1 六项及后续界面/排查优化已接入；已按用户授权发布 [v0.1.3 Windows x64 预览版](https://github.com/tsuixl/Pinmeter/releases/tag/v0.1.3)。安装器、完整便携包、匹配源码及校验材料已公开，仍采用预览版手动升级策略。Windows 交付沿用 [desktop-runtime](v0.1.0-desktop-runtime/design.md)，在线更新维护在 [app-update](v0.1.2-app-update/design.md)。下列 v0.1.0 表格和目录保留首版计划含义，发布与原生未验收项以各功能执行记录为准。
 
 [preferences](v0.1.0-preferences/design.md) 包含默认关闭的开机自启；任务注册、即时保存和验证由原设置功能维护。
 

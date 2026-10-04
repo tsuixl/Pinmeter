@@ -1,6 +1,6 @@
 ## 任务计划
 
-- [ ] 2026-10-04 v0.1.3 预览发行：补齐公告，核对新安装器签名/PE版本及清单，上传同版本材料并记录预览手动升级策略；真实安装升级仍单列。
+- [x] 2026-10-04 v0.1.3 预览发行：补齐公告，核对新安装器签名/PE版本及清单，上传同版本材料并记录预览手动升级策略；真实安装升级仍单列。
 
 - [x] 2026-10-04：补齐更新错误分类、安装器版本绑定和错版材料回归，保留未发布通道与真实安装验收边界。
 
@@ -12,6 +12,8 @@
 - [x] 构建完整 Windows release，记录来源、资源核对、启动和未验证项；本地提交。
 
 ## 进度
+
+- 2026-10-04 v0.1.3 [预览 Release](https://github.com/tsuixl/Pinmeter/releases/tag/v0.1.3) 已公开：同版本 NSIS、`.sig`、`latest.json`、`release-notes.json` 已上传并通过远端大小/摘要及匿名下载哈希复核；安装器实际 PE 版本 0.1.3，Tauri 公钥验签通过。Release 为 prerelease，稳定 `/releases/latest` 入口未被推进（仍 HTTP 404）；预览版手动下载安装，v0.1.1 需手动升级。对应源码/CI/完整包为 [desktop-runtime 发布记录](../v0.1.0-desktop-runtime/execution.md)中的 `0165ecf` 与本地 test16；本次仅验证发行材料，不把发布成功当作真实 A→B 安装链路验收。
 
 - 2026-10-04 本批交付：源码 `96b8c4677384bf32f09f7aec0920698832492bfd`，实际入口 `E:\dev\github\Pinmeter\src\backend\target\test6\Pinmeter.exe`。统一检查通过（Rust 167 项、前端 49 项、格式/Clippy/契约/打包工具）；完整 release/NSIS 构建、42 个运行文件及 376 个源码指纹核对通过。原生、管理员、真实升级及长期未验证项保留；[交付详情](../v0.1.0-desktop-runtime/execution.md)。
 

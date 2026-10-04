@@ -1,6 +1,6 @@
 ## 任务计划
 
-- [ ] 2026-10-04 v0.1.3 发布：准备公告和材料，推送并等待发布提交三平台 CI，通过完整 Windows 构建及资源/签名/源码/压缩包检查；草稿上传核对后公开预览 Release，验证匿名下载并更新发布记录。
+- [x] 2026-10-04 v0.1.3 发布：准备公告和材料，推送并等待发布提交三平台 CI，通过完整 Windows 构建及资源/签名/源码/压缩包检查；草稿上传核对后公开预览 Release，验证匿名下载并更新发布记录。
 
 - [x] 2026-10-04：检查并减少已证实的常驻重复工作，复核现有全进程测量的身份、权限及结果有效性；执行针对性检查和本次完整 Windows 构建。
 - [ ] 在可读取本次管理员宿主且保持窗口状态的环境完成两种状态各 120 秒预热 + 600 秒测量及 8 小时稳定性；现有实例不强停，无法完成时保留明确未验证项。
@@ -36,6 +36,11 @@
 - [ ] 完成 macOS/Linux 宿主及实机验证；按实际需要拆分职责集中的模块。
 
 ## 进度
+
+- 2026-10-04 19:54（Asia/Shanghai）已公开发布 [v0.1.3 Windows 预览版](https://github.com/tsuixl/Pinmeter/releases/tag/v0.1.3)，保留旧 Release。发布提交 `0165ecfbd01ce17fc5120456deaedf647de09be8` 已推送，附注标签 `v0.1.3` 解引用、Release target、源码 ZIP 及二进制构建来源均对应此提交；该提交的 [Windows/macOS/Linux CI](https://github.com/tsuixl/Pinmeter/actions/runs/37198913197) 全部通过。后续首页与发布记录只改文档，不移动标签或重建已发布 EXE。
+- 从该干净提交经 `PINMETER_HOLD_DELIVERY=1 node tools/desktop.mjs build -- --locked` 构建最新前端、宿主、辅助组件、NSIS 及 Tauri 更新签名，运行入口 `E:\dev\github\Pinmeter\src\backend\target\test16\Pinmeter.exe`。385 个源码指纹及 42 个运行文件路径/哈希复核通过；EXE SHA-256 `c9d4e54ceeda22929172966ea17eb91cfa1f34e86ae6a03eb61e3dfa14ad16a7`，安装器 SHA-256 `aa38d543c4ec715d8a096a72325a3a9d61c6619f7528962fae1f729aedd50344`。安装器 PE 产品版本 0.1.3，与同版本签名和清单核对通过；应用与安装器 Authenticode 状态均为 NotSigned，发布说明已区分其与 Tauri 签名。
+- 发行附件共七项：安装器、`.sig`、完整便携 ZIP、对应源码 ZIP、`SHA256SUMS.txt`、`latest.json`、`release-notes.json`。便携 ZIP 按运行清单白名单生成，包含 42 个运行文件和一份使用说明，逐条哈希一致；源码 ZIP 来自 `git archive`，583 个跟踪文件及构建所需 385 个指纹均匹配。发布前草稿附件大小/服务器摘要与本地一致；发布后七个附件均可匿名 HTTP 200 下载，大小与 SHA-256 再次匹配。预览标记保持，不推进稳定 latest 入口（匿名稳定入口仍为 HTTP 404）。本地证据集中在 test16 的 build-source/source-manifest/package-hashes/delivery-verification/release-files/release-upload-verification/release-verification JSON；公开 ZIP 不含本机配置、日志及这些带本机路径的元数据。
+- 辅助组件只读冒烟：CPU 一次 sample 返回 permission_denied，GPU 三帧 normal / 1 设备，二者 stderr 为空且 exit 0；仅验证协议、可用读取和退出，未安装驱动或操作网络规则，证据为 test16/helper-smoke.json。现有 test15 与提权实例未停止，未启动新主程序；真实管理员、安装/升级/卸载、VPN/网络恢复、多屏混合 DPI、休眠与长期资源占用继续保持未验收。构建/目录独占保留至发布与下载核对结束；切换前完全退出旧版，并保留完整运行目录。
 
 - 2026-10-04 优化交付完成：从干净源码 `96b8c4677384bf32f09f7aec0920698832492bfd` 经 `PINMETER_HOLD_DELIVERY=1 node tools/desktop.mjs build -- --locked` 生成 release 和 NSIS。实际运行入口 `E:\dev\github\Pinmeter\src\backend\target\test6\Pinmeter.exe`，产品版本 0.1.3，57,425,920 字节。test1–5 因现有进程占用或管理员子进程路径无法确认跳过；构建锁及 test6 独占保持至交付核对结束，未停止用户旧版。
 - 构建与复核：42 个运行文件按当前资源配置逐项核对源/副本路径及 SHA-256；376 个源码文件构建前后与交付复核一致。主 EXE SHA-256 为 `14e8b78c3b3cbb16a6497fc3662a979ffd2bd98ccda08939db7ff40b923551bc`；安装器与签名已复制到 `test6/update-artifacts/` 并再次验签/核对 PE 产品版本，安装器 SHA-256 为 `d7e97455839d1a864572a915ca8ff16e43174eb9ac33c78e86b2999ba0055aa3`。完整 sensors、network、network-control、licenses 目录须随 EXE 保留。来源与证据为同目录 `build-source.json`、`source-manifest.json`、`package-hashes.json`、`delivery-verification.json`、`helper-smoke.json`、`final-check.log`。
