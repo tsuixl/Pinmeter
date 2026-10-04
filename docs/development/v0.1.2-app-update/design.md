@@ -10,6 +10,8 @@
 
 ## 方案
 
+- 2026-10-04 v0.1.3 预览分发：本次发布安装器、Tauri 签名、版本公告和同版本 `latest.json`，作为可核对的发行材料；GitHub Release 保留 prerelease 标志，不推进 `/releases/latest` 稳定入口。用户从版本发布页手动下载安装/完整便携包；预览自动更新通道仍未就绪，v0.1.1 没有更新客户端，不能声称其可自动升级。保持现有信任公钥和更新配置，不为本次预览改用任意动态下载源。
+
 - 2026-10-04 发行可靠性：校验签名与版本绑定、清单异常、平台包缺失和网络失败分别提供真实原因，不把材料错误统一提示为网络故障。生成清单前要求安装器名称、实际 PE 产品版本和签名内版本（存在时）与目标版本一致，先验证再写入材料，拒绝合法旧包被误标新版。稳定版仍使用现有固定官方更新入口；预览通道在具备实际清单发布入口前保持明确未就绪，不自动发布、不静默改到任意发行。实际 A→B 安装与自启路径验收单独记录，不改网络清理实现或执行真实规则操作。
 
 - UI 入口为侧栏提示、设置中的版本与更新、托盘检查更新。使用 [Sakani Modal](https://main--6a5a658b3681fcc010430db5.chromatic.com/?path=/docs/application-modal--docs)、[Toast](https://main--6a5a658b3681fcc010430db5.chromatic.com/?path=/docs/composite-toast--docs)、[Progress](https://main--6a5a658b3681fcc010430db5.chromatic.com/?path=/docs/core-progress--docs) 与已有 Card/Button，依赖 `@sakaniui/react` 0.3.1。HTML 预览仅供布局；深浅主题、焦点、禁用、加载和错误分别截图验收。
