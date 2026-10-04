@@ -1,5 +1,7 @@
 ## 任务计划
 
+- [ ] 2026-10-04 大卡内容展开：调整 CPU/GPU 双列分布与宽网速卡横排，检查宽窄、长读数、异常及深浅主题，构建本次完整 Windows 运行包并本地提交。
+
 - [x] 2026-10-04 界面精简：实现四张资源卡并核对独立指标状态、深浅主题、宽窄布局。
 - [x] 2026-10-04 独立设置页面与返回上下文交付：完成本次 Windows 构建和资源核对，原生验证边界单列。
 
@@ -16,6 +18,8 @@
 - [ ] 完成 macOS/Linux 窗口实机验证；最大化按钮原生悬停贴靠面板尚未提供。
 
 ## 进度
+
+- 2026-10-04 大卡内容展开：仅调整总览业务布局 CSS，CPU/GPU 等分两列；卡宽至少 420px 时网速上下行并排，窄卡继续两行，数字与单位允许自然换行。Sakani Card/StatCard 的字号、内边距、主题、悬停/焦点及独立指标状态保持，HTML 仅供结构。浏览器演示检查 [1200×900 浅色](assets/card-spread-light.jpg)、[深色宽卡](assets/card-spread-dark.jpg)、[1440×900 四列窄卡](assets/card-spread-four-columns.jpg)、[420×700 权限不足状态](assets/card-spread-narrow-state.jpg)：470px 卡的双列各约 204px，289px 网速卡仍纵排，所有卡片无横向溢出；原型字体与常见数字/单位可读，极端自定义字体仍未穷举。对照本轮用户截图确认两组读数随卡宽展开；保存截图已打开检查，控制台无错误。CSS 格式、TypeScript、文档/目录检查与差异检查通过。本轮为布局调整，未新增或重复运行业务单元测试；Windows 构建及原生验证边界待交付补充。
 
 - 2026-10-04 界面精简交付：稳定源码 `6e06977d2062f56fa0c0ba7b4cfb228466b93b72`（总览提交 `f969074`、独立设置提交 `6e06977`）通过 `node tools/desktop.mjs build --no-bundle -- --locked` 生成完整前端、Windows release 与辅助组件；本次不生成安装器。入口 `E:\dev\github\Pinmeter\src\backend\target\test11\Pinmeter.exe`，v0.1.3，57,430,016 字节，SHA-256 `fea5ef00ea107950a6b1cae29d0876d72c34477833f93c610ce16ec7c7e1b2f1`。构建前后源码清单一致，交付时再次核对 383 个源码指纹、42 个运行文件、配置资源路径及哈希通过；详情随包 `build-source.json`、`source-manifest.json`、`package-hashes.json`、`delivery-verification.json`。两把锁覆盖构建与交付核对，跳过被占用/无法确认的 test1–test10；保留正在运行的 test10 及无法读取路径的提权实例，没有启动新版，故实际原生启动/管理员行为/混合 DPI 未验证。构建仅保留既有前端块大于 500 kB 与 MSVC 创建库的非阻塞消息。切换时完全退出旧版并保留整个 test11 目录。
 

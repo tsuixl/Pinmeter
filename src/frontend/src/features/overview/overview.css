@@ -13,6 +13,7 @@
 }
 .overview-metric {
   min-width: 0;
+  container: overview-card / inline-size;
 }
 @container (min-width: 508px) {
   .overview-metrics {
@@ -44,6 +45,11 @@
   gap: var(--space-12) var(--space-20);
   margin-block: auto;
 }
+.overview-metric[data-metric="cpu"] .overview-readings,
+.overview-metric[data-metric="gpu"] .overview-readings {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
 .overview-reading {
   display: flex;
   flex-direction: column;
@@ -63,7 +69,7 @@
   line-height: 1.1;
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+  white-space: normal;
 }
 .overview-reading-secondary .overview-reading-value {
   font-size: 24px;
@@ -95,6 +101,19 @@
 }
 .overview-network .overview-reading-status {
   grid-column: 2;
+}
+@container overview-card (min-width: 420px) {
+  .overview-network .overview-readings {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: baseline;
+    gap: var(--space-12) var(--space-20);
+  }
+  .overview-network .overview-reading {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-4);
+  }
 }
 .overview-trends .section-heading {
   margin-bottom: var(--space-12);
