@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   defaultProcessSort,
+  formatProcessMemory,
   processRows,
   processSnapshotSort,
   toggleProcessSort,
@@ -40,6 +41,63 @@ function sample(): ProcessSnapshotDto {
   };
 }
 describe("process investigation", () => {
+  it.each<[number, string]>([
+    [0, "0 B"],
+    [512, "512 B"],
+    [1023, "1023 B"],
+    [1024, "1.0 KiB"],
+    [768 * 1024, "768.0 KiB"],
+    [1024 ** 2, "1.0 MiB"],
+    [1024 ** 3, "1.0 GiB"],
+    [1024 ** 4, "1.0 TiB"],
+    [1024 ** 5, "1.0 PiB"],
+    [1024 ** 6, "1.0 EiB"],
+    [5148.7 * 1024 ** 2, "5.0 GiB"],
+    [3652.5 * 1024 ** 2, "3.6 GiB"],
+    [1951.5 * 1024 ** 2, "1.9 GiB"],
+    [1023.94 * 1024 ** 2, "1023.9 MiB"],
+    [1024 ** 3 - 1, "1.0 GiB"],
+    [1024 ** 2 - 1, "1.0 MiB"],
+  ])("formats working set %s as %s", (bytes, expected) => {
+    expect(formatProcessMemory(bytes)).toBe(expected);
+  });
+
+  it.each([
+    null,
+    -1,
+    Number.NaN,
+    Number.POSITIVE_INFINITY,
+    Number.NEGATIVE_INFINITY,
+  ])("does not turn invalid working set %s into zero", (value) =>
+    expect(formatProcessMemory(value)).toBe("—"),
+  );
+
+  it("sorts original bytes across units even when rounded labels match", () => {
+    const data = sample();
+    data.rows = data.rows.slice(0, 3);
+    data.rows[0].working_set = 1024 ** 3;
+    data.rows[1].working_set = 900 * 1024 ** 2;
+    data.rows[2].working_set = 1024 ** 3 - 1;
+    const result = processRows(
+      data,
+      "processes",
+      "memory",
+      "",
+      null,
+      new Set(),
+      10,
+      "asc",
+    );
+    expect(result.rows.map((row) => row.id)).toEqual([
+      "pid:1",
+      "pid:2",
+      "pid:0",
+    ]);
+    expect(
+      result.rows.map((row) => formatProcessMemory(row.working_set)),
+    ).toEqual(["900.0 MiB", "1.0 GiB", "1.0 GiB"]);
+    expect(data.rows[2].working_set).toBe(1024 ** 3 - 1);
+  });
   it("searches beyond the default top ten and keeps same-name identities separate", () => {
     const data = sample();
     expect(

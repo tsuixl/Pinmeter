@@ -11,6 +11,27 @@ export interface ProcessSort {
   direction: ProcessSortDirection;
 }
 
+const memoryUnits = ["B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB"];
+
+export function formatProcessMemory(bytes: number | null): string {
+  if (bytes === null || !Number.isFinite(bytes) || bytes < 0) return "—";
+  let value = bytes;
+  let unit = 0;
+  while (value >= 1024 && unit < memoryUnits.length - 1) {
+    value /= 1024;
+    unit++;
+  }
+  // Rounding must not leave a lower unit displaying its next unit's threshold.
+  if (
+    Number(value.toFixed(unit === 0 ? 0 : 1)) >= 1024 &&
+    unit < memoryUnits.length - 1
+  ) {
+    value /= 1024;
+    unit++;
+  }
+  return `${value.toFixed(unit === 0 ? 0 : 1)} ${memoryUnits[unit]}`;
+}
+
 export function defaultProcessSort(key: string): ProcessSort {
   const normalized =
     key === "name" || key === "pid" || key === "memory" ? key : "cpu";

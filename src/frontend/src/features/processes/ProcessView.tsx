@@ -12,7 +12,7 @@ import { statusLabels } from "../monitoring/useMonitorViewModel";
 import { icons } from "../../shared/ui/icons";
 import { InfoPopover } from "../../shared/ui/InfoPopover";
 import { useProcessViewModel } from "./useProcessViewModel";
-import type { ProcessDisplayRow } from "./process-model";
+import { formatProcessMemory, type ProcessDisplayRow } from "./process-model";
 import { ProcessTable } from "./ProcessTable";
 import "./processes.css";
 
@@ -71,9 +71,9 @@ export function ProcessView({
       key: "working_set",
       header: "内存工作集",
       render: (row) =>
-        row.working_set === null
+        row.memory_status !== "normal"
           ? statusLabels[row.memory_status]
-          : `${(row.working_set / 1048576).toFixed(1)} MiB`,
+          : formatProcessMemory(row.working_set),
     },
     {
       key: "id",
@@ -149,6 +149,7 @@ export function ProcessView({
               </p>
               <p>
                 仅同一可执行文件的进程合并，同名不同来源保持独立；身份未知时单独显示。工作集合计包含重复共享页，不等于系统已用内存。
+                内存按 1024 进位，自动显示 B、KiB、MiB、GiB 等单位。
               </p>
               <p>
                 搜索覆盖本次已采集进程，默认显示前 10

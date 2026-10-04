@@ -198,6 +198,17 @@ export class DemoClient extends ObservableClient {
     sort: string,
   ): Promise<import("../contracts/monitor").ProcessSnapshotDto> {
     const status = this.getSnapshot().state?.frame?.cpu.status ?? "normal";
+    const memoryUnitsFixture =
+      typeof location !== "undefined" &&
+      new URLSearchParams(location.search).get("processMemory") === "units";
+    const memoryExamples = [
+      5148.7 * 1048576,
+      3652.5 * 1048576,
+      2496.5 * 1048576,
+      1951.5 * 1048576,
+      768 * 1024,
+      512,
+    ];
     const rows: import("../contracts/monitor").ProcessRowDto[] =
       status === "normal"
         ? Array.from({ length: 16 }, (_, i) => ({
@@ -214,7 +225,9 @@ export class DemoClient extends ObservableClient {
             ][i % 6],
             cpu: 12 / (i + 1),
             cpu_status: "normal",
-            working_set: 500_000_000 / (i + 1),
+            working_set: memoryUnitsFixture
+              ? (memoryExamples[i] ?? 0)
+              : 500_000_000 / (i + 1),
             memory_status: "normal",
           }))
         : [];
