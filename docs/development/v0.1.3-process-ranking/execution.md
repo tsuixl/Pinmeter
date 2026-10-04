@@ -1,6 +1,6 @@
 ## 任务计划
 
-- [ ] 2026-10-04 搜索布局：摘要移到资源占用下方，搜索与视图切换/恢复列贴近表格并对齐；检查宽窄、深浅、搜索/排序/恢复列，构建本次 Windows 运行包并本地提交。
+- [x] 2026-10-04 搜索布局：摘要移到资源占用下方，搜索与视图切换/恢复列贴近表格并对齐；检查宽窄、深浅、搜索/排序/恢复列，构建本次 Windows 运行包并本地提交。
 
 - [x] 2026-10-04：将长说明及大面积提示改为信息浮层和紧凑状态，检查正常/预热/暂停/读取不全、键盘与深浅主题，随本次 Windows 交付。
 - [x] 修正父子名称相对缩进，接入可拖动重排/调宽/点击排序表头，验证方向、无效值、分组及拖动不误排序；核对深浅主题、窄窗，构建本次完整 Windows 包并提交。
@@ -14,8 +14,11 @@
 
 ## 进度
 
+- 2026-10-04 搜索布局交付：源码 `a040e2570f3763cd8f9545fac8e95e5a0e8bfe60`，经 `node tools/desktop.mjs build --no-bundle -- --locked` 完整构建最新前端、Windows release 和辅助组件。入口 `E:\dev\github\Pinmeter\src\backend\target\test14\Pinmeter.exe`，v0.1.3，SHA-256 `df94835d9b5e7d963422da7e7ad3dc98bc1306d6c512d4585150bd6785ff602b`。385 个源码指纹、42 个运行文件及配置路径/源与副本哈希复核通过；随包保留构建来源、源码清单、文件哈希和独立复核结果。构建与目录独占保持至交付核对完成，保留已运行的 test13 及提权实例，未启动新主程序，因此原生字体/缩放、管理员与实际鼠标环境仍未验证。仅有既有前端大块和 MSVC 创建库提示，无构建错误。切换前完全退出旧版并保留完整 test14 目录。
+- 已实际对照官方 [Segmented Control Two](https://main--6a5a658b3681fcc010430db5.chromatic.com/?path=/story/composite-segmented-control--two) 的默认/选中结构及固定包 Input/Button 小号规格，沿用原主题与字体；本轮局部布局检查通过，完整原生视觉验收保持原边界。
+
 - 2026-10-04 搜索布局实现：将资源标题、短状态/匹配/时间、固定与复制反馈收为紧凑摘要区（内部 8px）；视图切换、无外置标签的搜索框和恢复默认列统一到表格上方工具栏，距表格 8px。搜索保留“查找应用或进程”可访问名称和搜索图标/占位文字，复用 Sakani 小号 Input/Button 与默认 SegmentedControl，按控件中心对齐，不覆盖官方高度；HTML 仅供结构。ProcessTable 只增加 ReactNode 工具栏插槽，保持同一实例及原列状态/操作。
-- 浏览器检查：[1200×800 浅色](assets/search-toolbar-light.jpg)、[深色](assets/search-toolbar-dark.jpg)、[420×700 搜索与换行](assets/search-toolbar-narrow.jpg)。1200 与 880 宽度的切换/搜索/恢复列中心差小于 0.01px；窄窗视图切换独立一行，搜索和恢复列同排，主内容 clientWidth/scrollWidth 均为 341，仅表格横向滚动。名称搜索、清空、按应用/进程切换、CPU 升序、暂停、键盘调宽和恢复列通过；调整后的列宽在搜索变更时保持，控制台无错误。类型、修改文件格式及差异检查通过；本次是布局调整，未新增或重复运行采集/业务单测。Windows 完整构建与原生验证边界待本批交付补充。
+- 浏览器检查：[1200×800 浅色](assets/search-toolbar-light.jpg)、[深色](assets/search-toolbar-dark.jpg)、[420×700 搜索与换行](assets/search-toolbar-narrow.jpg)。1200 与 880 宽度的切换/搜索/恢复列中心差小于 0.01px；窄窗视图切换独立一行，搜索和恢复列同排，主内容 clientWidth/scrollWidth 均为 341，仅表格横向滚动。名称搜索、清空、按应用/进程切换、CPU 升序、暂停、键盘调宽和恢复列通过；调整后的列宽在搜索变更时保持，控制台无错误。类型、修改文件格式及差异检查通过；本次是布局调整，未新增或重复运行采集/业务单测。Windows 完整构建与原生验证边界见本节搜索布局交付记录。
 
 - 2026-10-04 本批最终交付：源码 `4d4d6bf`，实际入口 `E:\dev\github\Pinmeter\src\backend\target\test13\Pinmeter.exe`。完整 Windows release 与辅助组件构建成功，385 个源码指纹及 42 个运行文件路径/哈希复核通过；[构建与验证边界](../v0.1.0-main-window/execution.md)。本次未启动新主程序，管理员/原生鼠标和混合 DPI 保持未验证。
 
