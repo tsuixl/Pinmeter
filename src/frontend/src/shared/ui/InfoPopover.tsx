@@ -17,6 +17,14 @@ export function InfoPopover({
   const id = useId();
   useLayoutEffect(() => {
     let observed: HTMLElement | null = null;
+    let frame = 0;
+    const schedulePosition = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        position();
+      });
+    };
     const position = () => {
       const panel =
         root.current?.querySelector<HTMLElement>('[role="dialog"]') ?? null;
@@ -48,7 +56,8 @@ export function InfoPopover({
       panel.style.top = `${Math.max(16, Math.min(desiredTop, window.innerHeight - box.height - 16))}px`;
     };
     // Sakani owns open/close/focus. Only adapt its geometry to the desktop scroll host.
-    const resized = new ResizeObserver(position);
+    // Resize callbacks must not synchronously resize their own observed panel.
+    const resized = new ResizeObserver(schedulePosition);
     const mutated = new MutationObserver(position);
     if (root.current)
       mutated.observe(root.current, { childList: true, subtree: true });
@@ -57,6 +66,7 @@ export function InfoPopover({
     document.addEventListener("scroll", position, true);
     return () => {
       resized.disconnect();
+      cancelAnimationFrame(frame);
       mutated.disconnect();
       window.removeEventListener("resize", position);
       document.removeEventListener("scroll", position, true);
