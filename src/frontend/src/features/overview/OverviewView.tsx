@@ -1,10 +1,4 @@
-import {
-  Button,
-  Card,
-  Select,
-  StatCard,
-  SegmentedControl,
-} from "../../shared/ui/sakani";
+import { Button, Card, Select, SegmentedControl } from "../../shared/ui/sakani";
 import type { useGpuViewModel } from "../gpu/useGpuViewModel";
 import type {
   Page,
@@ -36,12 +30,37 @@ export function OverviewView({
             aria-label={`查看${card.title}详情`}
             onClick={() => onNavigate(card.page)}
           >
-            <StatCard
-              title={card.title}
-              value={card.value}
-              description={card.description}
-              variant="minimal"
-            />
+            <Card interactive className="overview-resource-card">
+              <div className="overview-card-content">
+                <h2 className="overview-card-title">{card.title}</h2>
+                <div className="overview-readings">
+                  {card.readings.map((reading) => (
+                    <div
+                      key={reading.id}
+                      className={`overview-reading${reading.secondary ? " overview-reading-secondary" : ""}`}
+                      data-reading={reading.id}
+                      data-status={reading.status}
+                    >
+                      <span className="overview-reading-label">
+                        {reading.label}
+                      </span>
+                      <span className="overview-reading-value">
+                        {reading.value}
+                      </span>
+                      {reading.statusLabel && (
+                        <span
+                          className="overview-reading-status"
+                          title={reading.detail || undefined}
+                        >
+                          {reading.statusLabel}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <p className="overview-card-description">{card.description}</p>
+              </div>
+            </Card>
           </button>
         ))}
       </div>

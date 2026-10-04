@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import type { ReadingDto } from "../../shared/contracts/monitor";
+import { usePageUiState } from "../../shared/state/page-ui-state";
 import { useGpuViewModel, type GpuKey } from "../gpu/useGpuViewModel";
 import { type ChartSeries } from "../monitoring/chart";
 import {
@@ -60,15 +61,97 @@ export function overviewSeries(
 const text = (reading: ReadingDto) =>
   reading.status === "normal" ? `${reading.text} ${reading.unit}`.trim() : "—";
 
+type OverviewMonitor = Pick<
+  ReturnType<typeof useMonitorViewModel>,
+  "reading" | "temperature" | "cpuModel" | "frame" | "networkName" | "state"
+>;
+type OverviewGpu = Pick<
+  ReturnType<typeof useGpuViewModel>,
+  "reading" | "temperature" | "selected"
+>;
+
+export function overviewCards(monitor: OverviewMonitor, gpu: OverviewGpu) {
+  const readout = (
+    id: string,
+    label: string,
+    reading: ReadingDto,
+    secondary = false,
+  ) => ({
+    id,
+    label,
+    value: text(reading),
+    status: reading.status,
+    statusLabel:
+      reading.status === "normal" ? "" : statusLabels[reading.status],
+    detail: reading.detail,
+    secondary,
+  });
+  const memory = monitor.reading("memory");
+  return [
+    {
+      id: "cpu",
+      title: "CPU",
+      page: "cpu" as Page,
+      readings: [
+        readout("cpu", "使用率", monitor.reading("cpu")),
+        readout("cpu_temperature", "温度", monitor.temperature, true),
+      ],
+      description: monitor.cpuModel,
+    },
+    {
+      id: "gpu",
+      title: "GPU",
+      page: "gpu" as Page,
+      readings: [
+        readout("gpu_usage", "使用率", gpu.reading("usage")),
+        readout(
+          "gpu_temperature",
+          gpu.temperature.label.replace(/^GPU /, ""),
+          gpu.reading(gpu.temperature.key),
+          true,
+        ),
+      ],
+      description: gpu.selected?.name ?? "暂无可用显卡",
+    },
+    {
+      id: "memory",
+      title: "内存",
+      page: "memory" as Page,
+      readings: [readout("memory", "使用率", memory)],
+      description:
+        memory.status === "normal"
+          ? `${monitor.frame?.memory_used ?? "—"} / ${monitor.frame?.memory_total ?? "—"}`
+          : "物理内存",
+    },
+    {
+      id: "network",
+      title: "网速",
+      page: "network" as Page,
+      readings: [
+        readout("download", "↓ 下载", monitor.reading("download")),
+        readout("upload", "↑ 上传", monitor.reading("upload")),
+      ],
+      description: `${monitor.networkName} · ${monitor.state?.settings.network_id ? "手动选择" : "自动选择"}`,
+    },
+  ];
+}
+
 export function useOverviewViewModel(
   monitor: ReturnType<typeof useMonitorViewModel>,
   gpu: ReturnType<typeof useGpuViewModel>,
 ) {
-  const [hidden, setHidden] = useState<string[]>([]);
-  const [group, setGroup] = useState("usage");
+  const [hidden, setHidden] = usePageUiState<string[]>("overview.hidden", []);
+  const [group, setGroup] = usePageUiState("overview.group", "usage");
+  const gpuId = gpu.selected?.id ?? null;
+  const [lastGpuId, setLastGpuId] = usePageUiState<string | null>(
+    "overview.gpuId",
+    gpuId,
+  );
   useEffect(() => {
+    if (gpuId === lastGpuId) return;
     monitor.setAnchor(null);
-  }, [gpu.selected?.id, monitor.setAnchor]);
+    setLastGpuId(gpuId);
+  }, [gpuId, lastGpuId, monitor.setAnchor, setLastGpuId]);
   const series = overviewSeries(
     gpu.selected?.id,
     gpu.temperature.key,
@@ -79,81 +162,8 @@ export function useOverviewViewModel(
       group === "all" ||
       (group === "temperature" ? item.temperature : !item.temperature),
   );
-  const card = (
-    id: string,
-    title: string,
-    reading: ReadingDto,
-    page: Page,
-    description?: string,
-  ) => ({
-    id,
-    title,
-    page,
-    value: text(reading),
-    description:
-      reading.status === "normal"
-        ? (description ?? statusLabels[reading.status])
-        : reading.detail || statusLabels[reading.status],
-  });
   return {
-    cards: [
-      card(
-        "cpu",
-        "CPU 使用率",
-        monitor.reading("cpu"),
-        "cpu",
-        monitor.cpuModel,
-      ),
-      card(
-        "cpu_temperature",
-        "CPU 温度",
-        monitor.temperature,
-        "cpu",
-        monitor.cpuModel,
-      ),
-      card(
-        "gpu_usage",
-        "GPU 使用率",
-        gpu.reading("usage"),
-        "gpu",
-        gpu.selected?.name,
-      ),
-      card(
-        "gpu_temperature",
-        gpu.temperature.label,
-        gpu.reading(gpu.temperature.key),
-        "gpu",
-        gpu.temperature.key === "vr_soc_temperature"
-          ? gpu.temperature.description
-          : gpu.selected?.name,
-      ),
-      card(
-        "memory",
-        "内存",
-        monitor.reading("memory"),
-        "memory",
-        `${monitor.frame?.memory_used ?? "—"} / ${monitor.frame?.memory_total ?? "—"}`,
-      ),
-      {
-        id: "network",
-        title: "网速",
-        page: "network" as Page,
-        value: `↓ ${text(monitor.reading("download"))}\n↑ ${text(monitor.reading("upload"))}`,
-        description: `${monitor.networkName} · ${monitor.state?.settings.network_id ? "手动选择" : "自动选择"}${[
-          "download",
-          "upload",
-        ]
-          .flatMap((key) => {
-            const reading = monitor.reading(key as "download" | "upload");
-            return reading.status === "normal"
-              ? []
-              : [
-                  ` · ${key === "download" ? "下载" : "上传"}${statusLabels[reading.status]}`,
-                ];
-          })
-          .join("")}`,
-      },
-    ],
+    cards: overviewCards(monitor, gpu),
     series,
     groupSeries,
     group,

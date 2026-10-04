@@ -14,27 +14,87 @@
 .overview-metric {
   min-width: 0;
 }
-.overview-network {
-  white-space: pre-line;
-}
 @container (min-width: 508px) {
   .overview-metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
-@container (min-width: 768px) {
+@container (min-width: 1148px) {
   .overview-metrics {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
-@container (min-width: 1548px) {
-  .overview-metrics {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-  }
+.overview-resource-card > div,
+.overview-card-content {
+  height: 100%;
 }
-.overview-metric > div {
+.overview-card-content {
+  display: flex;
+  flex-direction: column;
   justify-content: space-between;
+  gap: var(--space-12);
+}
+.overview-card-title {
+  margin: 0;
+}
+.overview-readings {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-12) var(--space-20);
+  margin-block: auto;
+}
+.overview-reading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+.overview-reading-label {
+  color: var(--color-fg-muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+/* Business readouts retain the official StatCard value/description scale. */
+.overview-reading-value {
+  color: var(--color-fg-default);
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.overview-reading-secondary .overview-reading-value {
+  font-size: 24px;
+}
+.overview-reading-status,
+.overview-card-description {
+  color: var(--color-fg-muted);
+  font-size: 12px;
+  line-height: 16px;
+}
+.overview-reading[data-status]:not([data-status="normal"])
+  .overview-reading-value {
+  color: var(--color-fg-muted);
+}
+.overview-card-description {
+  margin: 0;
   overflow-wrap: anywhere;
+}
+.overview-network .overview-readings {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-8);
+}
+.overview-network .overview-reading {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: baseline;
+  gap: var(--space-4) var(--space-8);
+}
+.overview-network .overview-reading-status {
+  grid-column: 2;
 }
 .overview-trends .section-heading {
   margin-bottom: var(--space-12);

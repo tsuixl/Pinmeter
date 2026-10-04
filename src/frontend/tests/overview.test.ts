@@ -1,7 +1,128 @@
 import { describe, it, expect } from "vitest";
-import { overviewSeries } from "../src/features/overview/useOverviewViewModel";
+import {
+  overviewCards,
+  overviewSeries,
+} from "../src/features/overview/useOverviewViewModel";
 import { chartPaths } from "../src/features/monitoring/chart";
 import { DemoClient } from "../src/shared/client/demo-client";
+import { gpuTemperature } from "../src/features/gpu/useGpuViewModel";
+import { emptyReading } from "../src/features/monitoring/useMonitorViewModel";
+import type { ReadingDto } from "../src/shared/contracts/monitor";
+
+function cardSources() {
+  const state = new DemoClient().getSnapshot().state!;
+  const frame = state.frame!;
+  const selected = state.gpu.devices[0];
+  return {
+    monitor: {
+      state,
+      frame,
+      cpuModel: state.cpu_model!,
+      temperature: state.cpu_temperature,
+      networkName: state.selected_interface!.name,
+      reading: (
+        key: "cpu" | "cpu_temperature" | "memory" | "download" | "upload",
+      ) => frame[key],
+    },
+    gpu: {
+      selected,
+      temperature: gpuTemperature(selected.readings),
+      reading: (key: string) => selected.readings[key] ?? emptyReading,
+    },
+  };
+}
+
+describe("overview resource cards", () => {
+  it("merges utilization and temperature into four resource cards with one device description", () => {
+    const { monitor, gpu } = cardSources();
+    const cards = overviewCards(monitor, gpu);
+    expect(cards.map((card) => card.id)).toEqual([
+      "cpu",
+      "gpu",
+      "memory",
+      "network",
+    ]);
+    expect(cards[0].readings.map((reading) => reading.id)).toEqual([
+      "cpu",
+      "cpu_temperature",
+    ]);
+    expect(cards[0].description).toBe(monitor.cpuModel);
+    expect(cards[1].description).toBe(gpu.selected.name);
+    expect(cards[2].description).toBe(
+      `${monitor.frame.memory_used} / ${monitor.frame.memory_total}`,
+    );
+    expect(cards[3].readings.map((reading) => reading.id)).toEqual([
+      "download",
+      "upload",
+    ]);
+  });
+
+  it.each(["unsupported", "permission_denied", "failed", "stale"] as const)(
+    "keeps a normal zero utilization independent from %s temperature",
+    (status) => {
+      const { monitor, gpu } = cardSources();
+      const zero: ReadingDto = {
+        ...monitor.reading("cpu"),
+        value: 0,
+        text: "0.0",
+        unit: "%",
+        status: "normal",
+      };
+      const cards = overviewCards(
+        {
+          ...monitor,
+          reading: (key) => (key === "cpu" ? zero : monitor.reading(key)),
+          temperature: {
+            ...monitor.temperature,
+            status,
+            value: null,
+            text: "0",
+            detail: "温度读数不可用",
+          },
+        },
+        gpu,
+      );
+      expect(cards[0].readings[0]).toMatchObject({
+        value: "0.0 %",
+        status: "normal",
+        statusLabel: "",
+      });
+      expect(cards[0].readings[1]).toMatchObject({
+        value: "—",
+        status,
+        detail: "温度读数不可用",
+      });
+      expect(cards[0].readings[1].statusLabel).not.toBe("");
+    },
+  );
+
+  it("preserves the actual VR SoC label and the selected GPU's values", () => {
+    const { monitor, gpu } = cardSources();
+    const vrSoc: ReadingDto = {
+      ...emptyReading,
+      value: 53,
+      text: "53",
+      unit: "°C",
+      status: "normal",
+    };
+    const readings: Record<string, ReadingDto> = {
+      ...gpu.selected.readings,
+      temperature: { ...emptyReading, status: "unsupported" as const },
+      vr_soc_temperature: vrSoc,
+    };
+    const card = overviewCards(monitor, {
+      ...gpu,
+      temperature: gpuTemperature(readings),
+      reading: (key) => readings[key] ?? emptyReading,
+    })[1];
+    expect(card.description).toBe(gpu.selected.name);
+    expect(card.readings[1]).toMatchObject({
+      label: "VR SoC 温度",
+      value: "53 °C",
+      status: "normal",
+    });
+  });
+});
 
 describe("overview CPU and GPU coexistence", () => {
   it("reads five independent metrics without overwriting CPU history", () => {
