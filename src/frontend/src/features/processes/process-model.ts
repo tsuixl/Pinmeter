@@ -4,6 +4,35 @@ import type {
 } from "../../shared/contracts/monitor";
 
 export type ProcessMode = "applications" | "processes";
+export type ProcessSortKey = "name" | "pid" | "cpu" | "memory";
+export type ProcessSortDirection = "asc" | "desc";
+export interface ProcessSort {
+  key: ProcessSortKey;
+  direction: ProcessSortDirection;
+}
+
+export function defaultProcessSort(key: string): ProcessSort {
+  const normalized =
+    key === "name" || key === "pid" || key === "memory" ? key : "cpu";
+  return {
+    key: normalized,
+    direction: normalized === "name" || normalized === "pid" ? "asc" : "desc",
+  };
+}
+
+export function toggleProcessSort(
+  current: ProcessSort,
+  key: ProcessSortKey,
+): ProcessSort {
+  return current.key === key
+    ? { key, direction: current.direction === "asc" ? "desc" : "asc" }
+    : defaultProcessSort(key);
+}
+
+export function processSnapshotSort(key: ProcessSortKey): "cpu" | "memory" {
+  return key === "memory" ? "memory" : "cpu";
+}
+
 export interface ProcessDisplayRow {
   id: string;
   name: string;
@@ -16,14 +45,49 @@ export interface ProcessDisplayRow {
   process_count: number;
   child: boolean;
 }
+
+const processNameOrder = new Intl.Collator(undefined, {
+  numeric: true,
+  sensitivity: "base",
+});
+
+function sortValue(row: ProcessDisplayRow, key: ProcessSortKey) {
+  if (key === "name") return row.name;
+  if (key === "pid") return row.pid;
+  const value = key === "memory" ? row.working_set : row.cpu;
+  const status = key === "memory" ? row.memory_status : row.cpu_status;
+  return status === "normal" && value !== null && Number.isFinite(value)
+    ? value
+    : null;
+}
+
+function compareRows(
+  left: ProcessDisplayRow,
+  right: ProcessDisplayRow,
+  key: ProcessSortKey,
+  direction: ProcessSortDirection,
+) {
+  const a = sortValue(left, key);
+  const b = sortValue(right, key);
+  // Validity is independent of direction. Returning zero preserves equal rows,
+  // including application groups, whose PID is deliberately unknown.
+  if (a === null || b === null) return Number(a === null) - Number(b === null);
+  const comparison =
+    typeof a === "string" && typeof b === "string"
+      ? processNameOrder.compare(a, b)
+      : (a as number) - (b as number);
+  return direction === "asc" ? comparison : -comparison;
+}
+
 export function processRows(
   data: ProcessSnapshotDto | null,
   mode: ProcessMode,
-  sort: string,
+  sort: ProcessSortKey,
   search: string,
   pinnedId: string | null,
   expanded: Set<string>,
   limit: number,
+  direction: ProcessSortDirection = "desc",
 ) {
   if (!data) return { rows: [], total: 0, pinnedMissing: !!pinnedId };
   const needle = search.trim().toLocaleLowerCase();
@@ -52,15 +116,9 @@ export function processRows(
             application_id: app.id,
             child: false,
           }));
-  roots.sort((a, b) => {
-    const left = sort === "memory" ? a.working_set : a.cpu;
-    const right = sort === "memory" ? b.working_set : b.cpu;
-    return (
-      (left === null ? 1 : 0) - (right === null ? 1 : 0) ||
-      (right ?? 0) - (left ?? 0) ||
-      a.id.localeCompare(b.id)
-    );
-  });
+  const compare = (a: ProcessDisplayRow, b: ProcessDisplayRow) =>
+    compareRows(a, b, sort, direction);
+  roots.sort(compare);
   const pin = roots.find((r) => r.id === pinnedId);
   const selected = pin
     ? [pin, ...roots.filter((r) => r.id !== pinnedId)].slice(0, limit)
@@ -72,6 +130,7 @@ export function processRows(
       rows.push(
         ...(members.get(root.id) ?? [])
           .filter((p) => !needle || matches(p))
+          .sort(compare)
           .map((p) => ({ ...p, child: true })),
       );
   }

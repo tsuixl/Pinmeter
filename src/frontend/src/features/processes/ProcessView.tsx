@@ -6,13 +6,14 @@ import {
   Button,
   Card,
   Input,
+  IconButton,
   SegmentedControl,
-  Table,
 } from "../../shared/ui/sakani";
 import { statusLabels } from "../monitoring/useMonitorViewModel";
 import { icons } from "../../shared/ui/icons";
 import { useProcessViewModel } from "./useProcessViewModel";
 import type { ProcessDisplayRow } from "./process-model";
+import { ProcessTable } from "./ProcessTable";
 import "./processes.css";
 
 export function ProcessView({
@@ -32,20 +33,19 @@ export function ProcessView({
           className={`process-identity${row.pid === null ? " process-group" : ""}${row.child ? " process-child" : ""}`}
         >
           {row.pid === null && (
-            <Button
+            <IconButton
               variant="ghost"
               size="sm"
+              icon={
+                vm.expanded.has(row.id) || vm.search.trim()
+                  ? icons.chevronDown
+                  : icons.chevronRight
+              }
               aria-expanded={vm.expanded.has(row.id) || !!vm.search.trim()}
-              aria-label={`${vm.expanded.has(row.id) ? "收起" : "展开"} ${row.name} 的进程`}
+              aria-label={`${vm.expanded.has(row.id) || vm.search.trim() ? "收起" : "展开"} ${row.name} 的进程`}
               onClick={() => vm.toggle(row.id)}
               disabled={!!vm.search.trim()}
-            >
-              {vm.expanded.has(row.id) || vm.search.trim() ? (
-                <icons.chevronDown size={16} />
-              ) : (
-                <icons.chevronRight size={16} />
-              )}
-            </Button>
+            />
           )}
           <span className="process-name" title={row.name}>
             {row.name}
@@ -116,16 +116,6 @@ export function ProcessView({
     <section className="process-page" aria-label="进程排行">
       <div className="section-heading">
         <h2>资源占用</h2>
-        <div aria-label="排行指标">
-          <SegmentedControl
-            value={vm.sort}
-            onChange={vm.setSort}
-            options={[
-              { value: "cpu", label: "CPU" },
-              { value: "memory", label: "内存" },
-            ]}
-          />
-        </div>
         <Button variant="secondary" onClick={() => vm.setPaused(!vm.paused)}>
           {vm.paused ? "恢复刷新" : "暂停刷新"}
         </Button>
@@ -211,13 +201,14 @@ export function ProcessView({
         {vm.mode === "applications" ? "应用" : "进程"}。默认显示前 10
         项，固定项优先，展开项显示其进程。
       </p>
-      {vm.rows.length ? (
-        <Table<ProcessDisplayRow>
-          columns={columns}
-          rows={vm.rows}
-          rowKey={(row) => row.id}
-        />
-      ) : (
+      <ProcessTable
+        columns={columns}
+        rows={vm.rows}
+        sort={vm.sort}
+        direction={vm.sortDirection}
+        onSort={vm.sortBy}
+      />
+      {!vm.rows.length && (
         <Card>
           <p className="muted">
             {vm.search
@@ -225,6 +216,11 @@ export function ProcessView({
               : "尚未取得进程列表。CPU 需要两次采样，内存可在首次采样后查看。"}
           </p>
         </Card>
+      )}
+      {vm.mode === "applications" && vm.sort === "pid" && (
+        <p className="muted">
+          应用汇总没有 PID，父应用顺序保持稳定，PID 排序应用于各组的子进程。
+        </p>
       )}
       {vm.hasMore && (
         <Button variant="secondary" onClick={vm.showMore}>

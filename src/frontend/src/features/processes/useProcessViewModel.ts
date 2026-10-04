@@ -1,12 +1,20 @@
 import { useCallback, useMemo, useState } from "react";
 import type { MonitorClient } from "../../shared/client/monitor-client";
 import { usePageQuery } from "../monitoring/usePageQuery";
-import { processRows, type ProcessMode } from "./process-model";
+import {
+  defaultProcessSort,
+  processRows,
+  processSnapshotSort,
+  toggleProcessSort,
+  type ProcessMode,
+  type ProcessSortKey,
+} from "./process-model";
 export function useProcessViewModel(
   client: MonitorClient,
   initialSort = "cpu",
 ) {
-  const [sort, setSort] = useState(initialSort);
+  const [sorting, setSorting] = useState(() => defaultProcessSort(initialSort));
+  const { key: sort, direction: sortDirection } = sorting;
   const [mode, setMode] = useState<ProcessMode>("applications");
   const [search, setSearch] = useState("");
   const [paused, setPaused] = useState(false);
@@ -16,12 +24,13 @@ export function useProcessViewModel(
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [limit, setLimit] = useState(10);
   const [copyMessage, setCopyMessage] = useState("");
+  const snapshotSort = processSnapshotSort(sort);
   const load = useCallback(
     () =>
       client.getProcessSnapshot
-        ? client.getProcessSnapshot(sort)
+        ? client.getProcessSnapshot(snapshotSort)
         : Promise.reject(new Error("当前客户端不支持进程排行")),
-    [client, sort],
+    [client, snapshotSort],
   );
   const query = usePageQuery(client, load, 2000, !paused);
   const data = query.error && !paused ? null : query.data;
@@ -35,13 +44,17 @@ export function useProcessViewModel(
         pinned?.id ?? null,
         expanded,
         limit,
+        sortDirection,
       ),
-    [data, mode, sort, search, pinned, expanded, limit],
+    [data, mode, sort, search, pinned, expanded, limit, sortDirection],
   );
   return {
     ...query,
     sort,
-    setSort,
+    sortDirection,
+    setSort: (key: string) => setSorting(defaultProcessSort(key)),
+    sortBy: (key: ProcessSortKey) =>
+      setSorting((current) => toggleProcessSort(current, key)),
     ...result,
     mode,
     setMode: (next: string) => {

@@ -1,4 +1,5 @@
 ## 任务计划
+- [ ] 修正父子名称相对缩进，接入可拖动重排/调宽/点击排序表头，验证方向、无效值、分组及拖动不误排序；核对深浅主题、窄窗，构建本次完整 Windows 包并提交。
 - [x] 修正折叠按钮与名称换行，检查普通/长名称、展开/搜索禁用、深浅主题及窄窗；完成前端检查、本次 Windows 构建和本地提交。
 - [x] 第 5 项：接受指标页排序与返回上下文，明确当前读数语义。
 - [x] 第 7 项：实现可靠应用归组、搜索、固定、展开、暂停/恢复和复制；补充身份/不完整/排序行为测试并完成浏览器深浅窄窗检查。
@@ -8,6 +9,9 @@
 - [x] 构建、核对完整 Windows 运行包并本地提交。
 
 ## 进度
+
+- 2026-10-04 层级与表头已实现：父级折叠槽使用 Sakani IconButton sm（32px），子名称在父名称基础上再右移 24px；原指标快捷切换集中为可点击表头。名称/PID 默认升序、CPU/内存默认降序，再次点击反转；父子成组、固定项优先、异常值置后。应用 PID 只排序子进程并给出说明。列宽/顺序随刷新、暂停及空结果保持，离开页面后重新初始化，不冒充持久偏好。
+- 本次验证：进程排序与列布局 24 项针对性测试、全部前端 70 项测试和类型检查通过。浏览器实际验证鼠标调宽增加 120px、拖 CPU 到名称之前、键盘移动/调宽/最小宽度、恢复默认列，表头与数据对应且拖动不改变排序；名称/PID/CPU/内存点击排序及 PID 反向通过，空筛选恢复后布局保留。深浅主题下子名称右移 24px；420px 窄窗主内容 clientWidth/scrollWidth 均 341，只有表格横向滚动，未压缩官方控件。证据：[浅色层级](assets/columns-tree-light.jpg)、[深色换列](assets/columns-reordered-dark.jpg)、[窄窗](assets/columns-narrow.jpg)。Sakani Table、Button、IconButton 规格及状态已核对，HTML 仅供布局；原生管理员主窗口、用户缩放/字体及鼠标设备仍待实机复核，完整包待本次构建。
 
 - 名称行修复交付：从干净提交 `f9dd779318929a56a7eb527d34e7a49c1decbfcd` 通过 `PINMETER_HOLD_DELIVERY=1 node tools/desktop.mjs build -- --locked` 完整构建前端、宿主、辅助组件和 NSIS。实际入口 `E:\dev\github\Pinmeter\src\backend\target\test7\Pinmeter.exe`，版本 0.1.3，57,425,920 字节；42 个运行文件与 376 个源码指纹独立核对通过。EXE SHA-256：`2c7f0ebd5e13259e8fb07bca6115c601faf3a005809b9476abeeeb3a6d215a92`；同目录 update-artifacts 中安装器的复制哈希、Tauri 签名和 PE 版本均通过，SHA-256：`1e2d1b036f8261423a7b21e068801c3958a604f4e5fff2c516ec034005609c96`。构建锁和编号目录独占保持至交付复核结束，test6 运行实例保留。
 - 本次验证包括前端类型/局部格式、404 个本地文档链接、生产构建与浏览器布局，未为纯布局改动增加镜像测试或重跑不相关后端单测。运行包 CPU/GPU helper 协议与退出通过（CPU permission_denied，GPU normal / 1 设备），详见 test7 的 build-source、source-manifest、package-hashes、delivery-verification 和 helper-smoke JSON。本次未启动新的管理员主窗口，不将浏览器或文件核对当作原生字体/缩放验收；先完全退出旧版再打开 test7，移动时保留整个运行目录。未推送或发布。

@@ -1,5 +1,8 @@
 .process-page {
+  --process-toggle-width: var(--space-32);
+  --process-tree-gap: var(--space-8);
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-24);
   min-width: 0;
 }
@@ -36,9 +39,9 @@
 }
 .process-group {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: var(--process-toggle-width) minmax(0, 1fr);
   align-items: center;
-  column-gap: var(--space-8);
+  column-gap: var(--process-tree-gap);
 }
 .process-identity .processor-caption {
   display: block;
@@ -47,5 +50,88 @@
   overflow-wrap: anywhere;
 }
 .process-child {
-  padding-left: var(--space-24);
+  padding-left: calc(
+    var(--process-toggle-width) + var(--process-tree-gap) + var(--space-24)
+  );
+}
+.process-table-container {
+  min-width: 0;
+}
+.process-table-tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-12);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-8);
+}
+.process-table-tools p {
+  margin: 0;
+}
+.process-table-scroll {
+  overflow-x: auto;
+  max-width: 100%;
+}
+.process-table-scroll .process-interactive-table {
+  width: calc(var(--process-table-width) + 2 * var(--border-width-100));
+  overflow: hidden;
+}
+.process-interactive-table table {
+  width: var(--process-table-width);
+}
+.process-column-header {
+  min-width: 0;
+}
+.process-interactive-table th {
+  position: relative;
+}
+.process-column-header .process-column-title {
+  width: 100%;
+  justify-content: flex-start;
+  cursor: grab;
+}
+.process-column-title:active {
+  cursor: grabbing;
+}
+.process-column-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.process-column-header.is-dragging {
+  opacity: 0.6;
+}
+.process-column-header.drop-before {
+  box-shadow: calc(-1 * var(--space-4)) 0 0 var(--color-border-focus);
+}
+.process-column-header.drop-after {
+  box-shadow: var(--space-4) 0 0 var(--color-border-focus);
+}
+.process-column-resize {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: var(--space-8);
+  cursor: col-resize;
+  touch-action: none;
+  user-select: none;
+}
+.process-column-resize::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  background: var(--color-border-subtle);
+}
+.process-column-resize:hover::after,
+.process-column-resize:focus-visible::after {
+  background: var(--color-border-focus);
+}
+.process-column-resize:focus-visible,
+.process-table-scroll:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: -2px;
 }
