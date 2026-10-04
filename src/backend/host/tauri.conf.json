@@ -10,7 +10,7 @@
     "frontendDist": "../../frontend/dist"
   },
   "app": {
-    "windows": [{ "label": "main", "title": "Pinmeter", "width": 880, "height": 600, "minWidth": 420, "minHeight": 400, "decorations": true, "visible": false }],
+    "windows": [{ "label": "main", "title": "Pinmeter", "width": 880, "height": 600, "minWidth": 420, "minHeight": 400, "decorations": true, "visible": false, "dragDropEnabled": false }],
     "security": { "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src ipc: http://ipc.localhost" }
   },
   "plugins": {

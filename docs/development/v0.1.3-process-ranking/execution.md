@@ -10,6 +10,8 @@
 
 ## 进度
 
+- 交付前核对固定 Tauri 2.11.5 的 WindowBuilder 文档及官方配置说明：Windows HTML5 拖动要求关闭原生 drag/drop handler。已给 main 窗口显式设置 `dragDropEnabled: false`；未发现依赖原生文件拖放的现有入口。将从包含该配置的提交重建完整运行包，未把此前仅浏览器通过当作原生支持证据。
+
 - 2026-10-04 层级与表头已实现：父级折叠槽使用 Sakani IconButton sm（32px），子名称在父名称基础上再右移 24px；原指标快捷切换集中为可点击表头。名称/PID 默认升序、CPU/内存默认降序，再次点击反转；父子成组、固定项优先、异常值置后。应用 PID 只排序子进程并给出说明。列宽/顺序随刷新、暂停及空结果保持，离开页面后重新初始化，不冒充持久偏好。
 - 本次验证：进程排序与列布局 24 项针对性测试、全部前端 70 项测试和类型检查通过。浏览器实际验证鼠标调宽增加 120px、拖 CPU 到名称之前、键盘移动/调宽/最小宽度、恢复默认列，表头与数据对应且拖动不改变排序；名称/PID/CPU/内存点击排序及 PID 反向通过，空筛选恢复后布局保留。深浅主题下子名称右移 24px；420px 窄窗主内容 clientWidth/scrollWidth 均 341，只有表格横向滚动，未压缩官方控件。证据：[浅色层级](assets/columns-tree-light.jpg)、[深色换列](assets/columns-reordered-dark.jpg)、[窄窗](assets/columns-narrow.jpg)。Sakani Table、Button、IconButton 规格及状态已核对，HTML 仅供布局；原生管理员主窗口、用户缩放/字体及鼠标设备仍待实机复核，完整包待本次构建。
 
