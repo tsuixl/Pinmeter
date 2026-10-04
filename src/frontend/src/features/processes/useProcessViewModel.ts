@@ -1,4 +1,6 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { usePageUiState } from "../../shared/state/page-ui-state";
+import type { ProcessSnapshotDto } from "../../shared/contracts/monitor";
 import type { MonitorClient } from "../../shared/client/monitor-client";
 import { usePageQuery } from "../monitoring/usePageQuery";
 import {
@@ -13,16 +15,29 @@ export function useProcessViewModel(
   client: MonitorClient,
   initialSort = "cpu",
 ) {
-  const [sorting, setSorting] = useState(() => defaultProcessSort(initialSort));
+  const [sorting, setSorting] = usePageUiState("process.sort", () =>
+    defaultProcessSort(initialSort),
+  );
   const { key: sort, direction: sortDirection } = sorting;
-  const [mode, setMode] = useState<ProcessMode>("applications");
-  const [search, setSearch] = useState("");
-  const [paused, setPaused] = useState(false);
-  const [pinned, setPinned] = useState<{ id: string; name: string } | null>(
+  const [mode, setMode] = usePageUiState<ProcessMode>(
+    "process.mode",
+    "applications",
+  );
+  const [search, setSearch] = usePageUiState("process.search", "");
+  const [paused, setPaused] = usePageUiState("process.paused", false);
+  const [pinned, setPinned] = usePageUiState<{
+    id: string;
+    name: string;
+  } | null>("process.pinned", null);
+  const [expanded, setExpanded] = usePageUiState<Set<string>>(
+    "process.expanded",
+    () => new Set(),
+  );
+  const [limit, setLimit] = usePageUiState("process.limit", 10);
+  const [pausedData, setPausedData] = usePageUiState<ProcessSnapshotDto | null>(
+    "process.snapshot",
     null,
   );
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
-  const [limit, setLimit] = useState(10);
   const [copyMessage, setCopyMessage] = useState("");
   const snapshotSort = processSnapshotSort(sort);
   const load = useCallback(
@@ -32,7 +47,16 @@ export function useProcessViewModel(
         : Promise.reject(new Error("当前客户端不支持进程排行")),
     [client, snapshotSort],
   );
-  const query = usePageQuery(client, load, 2000, !paused);
+  const query = usePageQuery(
+    client,
+    load,
+    2000,
+    !paused,
+    paused ? pausedData : null,
+  );
+  useEffect(() => {
+    setPausedData(paused ? query.data : null);
+  }, [paused, query.data, setPausedData]);
   const data = query.error && !paused ? null : query.data;
   const result = useMemo(
     () =>

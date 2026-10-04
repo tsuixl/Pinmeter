@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { usePageUiState } from "../../shared/state/page-ui-state";
 import {
   Building2,
   Check,
@@ -132,7 +132,7 @@ function ExitCard({
   );
 }
 export function IpView({ client }: { client: IpClient }) {
-  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = usePageUiState("ip.details", false);
   const vm = useIpViewModel(client);
   const ipv6 = vm.exits.find((e) => e.id === "ipv6");
   const select = (id: string) => {

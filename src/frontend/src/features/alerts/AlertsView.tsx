@@ -1,9 +1,5 @@
-import { useEffect, useState } from "react";
 import type { MonitorClient } from "../../shared/client/monitor-client";
-import type {
-  AlertEventDto,
-  AlertsConfigDto,
-} from "../../shared/contracts/monitor";
+import type { AlertEventDto } from "../../shared/contracts/monitor";
 import {
   Alert,
   Badge,
@@ -13,6 +9,7 @@ import {
   Switch,
 } from "../../shared/ui/sakani";
 import { useAlertsViewModel } from "./useAlertsViewModel";
+import { useAlertsEditor, type AlertsEditor } from "./useAlertsEditor";
 import "./alerts.css";
 
 type Props = {
@@ -77,22 +74,18 @@ export function AlertsBanner({ client, onNavigate }: Props) {
 }
 
 export function AlertsView({ client, onNavigate }: Props) {
-  const vm = useAlertsViewModel(client);
-  const [draft, setDraft] = useState<AlertsConfigDto | null>(null);
-  const [baseRevision, setBaseRevision] = useState("");
-  const [dirty, setDirty] = useState(false);
-  const [saved, setSaved] = useState(false);
-  useEffect(() => {
-    if (vm.data && !dirty) {
-      setDraft(vm.data.config);
-      setBaseRevision(vm.data.settings_revision);
-    }
-  }, [vm.data, dirty]);
-  const change = (value: AlertsConfigDto) => {
-    setDraft(value);
-    setDirty(true);
-    setSaved(false);
-  };
+  const vm = useAlertsEditor(client);
+  return <AlertsSettingsForm vm={vm} onNavigate={onNavigate} />;
+}
+
+export function AlertsSettingsForm({
+  vm,
+  onNavigate,
+}: {
+  vm: AlertsEditor;
+  onNavigate: Props["onNavigate"];
+}) {
+  const { draft, dirty, saved, change } = vm;
   if (!vm.data || !draft)
     return (
       <Alert
@@ -122,10 +115,7 @@ export function AlertsView({ client, onNavigate }: Props) {
         className="alerts-config"
         onSubmit={async (event) => {
           event.preventDefault();
-          if (await vm.save(draft, baseRevision)) {
-            setDirty(false);
-            setSaved(true);
-          }
+          await vm.saveDraft();
         }}
       >
         {(["cpu", "memory"] as const).map((metric) => {
@@ -281,12 +271,7 @@ export function AlertsView({ client, onNavigate }: Props) {
             size="sm"
             variant="ghost"
             disabled={!dirty || vm.pending}
-            onClick={() => {
-              setDraft(vm.data!.config);
-              setBaseRevision(vm.data!.settings_revision);
-              setDirty(false);
-              setSaved(false);
-            }}
+            onClick={vm.discard}
           >
             放弃未保存更改
           </Button>

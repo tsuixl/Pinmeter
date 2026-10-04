@@ -77,11 +77,11 @@ export function useSettingsViewModel(
     };
   }, [refreshFonts]);
   const change = (patch: Partial<SettingsDto>) => {
-    if (busy.current) return;
+    if (busy.current) return Promise.resolve(false);
     const previous = client.getSnapshot().state?.settings;
     if (!previous) {
       setError("采集服务未连接，无法保存设置");
-      return;
+      return Promise.resolve(false);
     }
     busy.current = true;
     setPending(true);
@@ -89,7 +89,7 @@ export function useSettingsViewModel(
     const next = { ...previous, ...patch, revision: previous.revision };
     setDraft(next);
     setFeedback("正在保存…");
-    void (
+    return (
       next.font_family !== previous.font_family ||
       next.font_style !== previous.font_style
         ? (client.getFontCatalog?.() ?? Promise.resolve(fontCatalog)).then(
@@ -108,11 +108,13 @@ export function useSettingsViewModel(
         setFeedback(
           client.getSnapshot().demo ? "已更新演示设置" : "已自动保存",
         );
+        return true;
       })
       .catch((error) => {
         setDraft(client.getSnapshot().state?.settings ?? previous);
         setError(String(error));
         setFeedback("保存失败，已恢复原设置");
+        return false;
       })
       .finally(() => {
         busy.current = false;

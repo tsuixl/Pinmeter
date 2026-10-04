@@ -46,6 +46,25 @@ dd,
 .app.compact-nav {
   grid-template-columns: 64px minmax(0, 1fr);
 }
+.app.settings-mode {
+  grid-template-columns: minmax(0, 1fr);
+}
+.settings-mode.mac-window .topbar {
+  padding-left: 88px;
+}
+.content.settings-host {
+  padding: 0;
+  gap: 0;
+  overflow: hidden;
+  min-height: 0;
+}
+.settings-host > .settings-workspace {
+  flex: 1;
+  min-height: 0;
+}
+.settings-host > :not(.settings-workspace) {
+  margin: var(--space-8) var(--space-20);
+}
 .sidebar {
   display: flex;
   flex-direction: column;

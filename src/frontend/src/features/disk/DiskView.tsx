@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { usePageUiState } from "../../shared/state/page-ui-state";
 import type { MonitorClient } from "../../shared/client/monitor-client";
 import { Alert, Badge, Card, Select, StatCard } from "../../shared/ui/sakani";
 import { icons } from "../../shared/ui/icons";
@@ -9,7 +9,10 @@ import "./disk.css";
 
 export function DiskView({ client }: { client: MonitorClient }) {
   const vm = useDiskViewModel(client);
-  const [anchor, setAnchor] = useState<number | null>(null);
+  const [anchor, setAnchor] = usePageUiState<number | null>(
+    "disk.anchor",
+    null,
+  );
   return (
     <section className="disk-page" aria-label="磁盘监控">
       <div className="section-heading">

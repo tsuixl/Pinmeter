@@ -1,5 +1,6 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import type { IpClient } from "../../shared/client/ip-client";
+import { usePageUiState } from "../../shared/state/page-ui-state";
 export const exitLabels: Record<string, string> = {
   ipv4: "公网 IPv4",
   ipv6: "公网 IPv6",
@@ -16,7 +17,10 @@ export const queryLabels: Record<string, string> = {
 export function useIpViewModel(client: IpClient) {
   const state = useSyncExternalStore(client.subscribe, client.getSnapshot);
   const connected = useSyncExternalStore(client.subscribe, client.isConnected);
-  const [selectedId, setSelectedId] = useState<string>();
+  const [selectedId, setSelectedId] = usePageUiState<string | undefined>(
+    "ip.selected",
+    undefined,
+  );
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState(0);

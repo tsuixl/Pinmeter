@@ -7,6 +7,7 @@ import {
 } from "react";
 import type { MonitorClient } from "../../shared/client/monitor-client";
 import { usePageQuery } from "../monitoring/usePageQuery";
+import { usePageUiState } from "../../shared/state/page-ui-state";
 import {
   appHistoryFrames,
   historyRows,
@@ -17,12 +18,24 @@ export function useAppHistoryViewModel(
   initialAppId: string | null = null,
 ) {
   const snapshot = useSyncExternalStore(client.subscribe, client.getSnapshot);
-  const [range, setRange] = useState(initialAppId ? "24h" : "today");
-  const [selectedId, setSelectedId] = useState<string | null>(initialAppId);
-  const [search, setSearch] = useState("");
-  const [sort, setSort] = useState<HistorySort>("total");
-  const [limit, setLimit] = useState(10);
-  const [anchor, setAnchor] = useState<number | null>(null);
+  const [range, setRange] = usePageUiState(
+    "appHistory.range",
+    initialAppId ? "24h" : "today",
+  );
+  const [selectedId, setSelectedId] = usePageUiState<string | null>(
+    "appHistory.selected",
+    initialAppId,
+  );
+  const [search, setSearch] = usePageUiState("appHistory.search", "");
+  const [sort, setSort] = usePageUiState<HistorySort>(
+    "appHistory.sort",
+    "total",
+  );
+  const [limit, setLimit] = usePageUiState("appHistory.limit", 10);
+  const [anchor, setAnchor] = usePageUiState<number | null>(
+    "appHistory.anchor",
+    null,
+  );
   const [pending, setPending] = useState(false);
   const [actionError, setActionError] = useState("");
   const busy = useRef(false);

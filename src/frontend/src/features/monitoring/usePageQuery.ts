@@ -7,12 +7,13 @@ export function usePageQuery<T>(
   load: () => Promise<T>,
   interval = 2_000,
   enabled = true,
+  initialData: T | null = null,
 ) {
   const visible = useSyncExternalStore(
     client.subscribe,
     () => client.getSnapshot().nativeVisible !== false,
   );
-  const [data, setData] = useState<T | null>(null);
+  const [data, setData] = useState<T | null>(initialData);
   const [error, setError] = useState("");
   useEffect(() => {
     if (!visible || !enabled) return;

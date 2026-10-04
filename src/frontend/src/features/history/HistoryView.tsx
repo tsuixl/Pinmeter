@@ -194,6 +194,7 @@ export function HistoryView({ client }: { client: MonitorClient }) {
         </p>
       </div>
       <HistoryDataCard
+        mode="export"
         client={client}
         from={vm.data?.from_ms ?? Date.now() - Number(vm.range)}
         through={vm.data?.now_ms ?? Date.now()}

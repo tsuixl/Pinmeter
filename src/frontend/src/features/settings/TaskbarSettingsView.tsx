@@ -1,4 +1,5 @@
 import { ArrowUp, ArrowDown } from "lucide-react";
+import { useState } from "react";
 import type { MonitorStateDto } from "../../shared/contracts/monitor";
 import {
   Card,
@@ -40,6 +41,7 @@ export function TaskbarSettingsView({
   state: MonitorStateDto | null;
 }) {
   const value = vm.draft.taskbar;
+  const [customize, setCustomize] = useState(false);
   const disabled = vm.pending || !state?.desktop.supported;
   const devices = state?.gpu.devices ?? [];
   const gpuOptions = [
@@ -57,88 +59,108 @@ export function TaskbarSettingsView({
         label="启用任务栏显示"
         checked={value.enabled}
         disabled={vm.pending || (!state?.desktop.supported && !value.enabled)}
-        onChange={(event) =>
-          vm.changeTaskbar({ enabled: event.target.checked, hidden: false })
-        }
+        onChange={(event) => {
+          if (!event.target.checked) setCustomize(false);
+          vm.changeTaskbar({ enabled: event.target.checked, hidden: false });
+        }}
       />
-      <div className="settings-fields">
-        <Select
-          id="taskbar-layout"
-          label="读数布局"
-          value={value.layout}
-          disabled={disabled}
-          options={[
-            { value: "double", label: "双行紧凑" },
-            { value: "single", label: "单行横排" },
-          ]}
-          onChange={(layout) => vm.changeTaskbar({ layout })}
-        />
-        <Select
-          id="taskbar-gpu"
-          label="任务栏显卡"
-          value={value.gpu_id ?? "auto"}
-          options={gpuOptions}
-          disabled={disabled}
-          onChange={(id) =>
-            vm.changeTaskbar({ gpu_id: id === "auto" ? null : id })
-          }
-        />
-      </div>
-      <p className="settings-note">
-        使用率和温度可独立显示。启用时至少保留一个指标；空间不足时优先显示排在前面的指标组。
-      </p>
-      <div className="taskbar-order" aria-label="任务栏指标顺序">
-        {value.order.map((key, index) => {
-          const group = groups[key];
-          if (!group) return null;
-          return (
-            <div key={key} className="taskbar-order-row">
-              <strong>{group.name}</strong>
-              <div className="taskbar-order-metrics">
-                {group.metrics.map(([field, label]) => (
-                  <Checkbox
-                    key={field}
-                    label={label}
-                    checked={value[field]}
-                    disabled={
-                      disabled ||
-                      (value.enabled &&
-                        value[field] &&
-                        selectedMetricCount(value) === 1)
-                    }
-                    onChange={(event) =>
-                      vm.changeTaskbar({ [field]: event.target.checked })
-                    }
-                  />
-                ))}
-              </div>
-              <div className="taskbar-order-actions">
-                <IconButton
-                  variant="ghost"
-                  size="sm"
-                  icon={ArrowUp}
-                  aria-label={"上移" + group.name}
-                  disabled={disabled || index === 0}
-                  onClick={() => vm.moveTaskbar(key, -1)}
-                />
-                <IconButton
-                  variant="ghost"
-                  size="sm"
-                  icon={ArrowDown}
-                  aria-label={"下移" + group.name}
-                  disabled={disabled || index === value.order.length - 1}
-                  onClick={() => vm.moveTaskbar(key, 1)}
-                />
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      <TaskbarPreview settings={value} />
-      <p className="settings-note">
-        指定显卡不可用时保留选择，读数显示 —。温度后的 * 表示 VR SoC
-        测温点，详情可悬停查看。
-      </p>
+      {!value.enabled && (
+        <div className="taskbar-disabled-summary">
+          <p className="settings-note">
+            任务栏显示已关闭，现有读数与布局配置会保留。
+          </p>
+          <Button
+            variant="ghost"
+            size="sm"
+            aria-expanded={customize}
+            onClick={() => setCustomize(!customize)}
+          >
+            {customize ? "收起显示配置" : "自定义显示配置"}
+          </Button>
+        </div>
+      )}
+      {(value.enabled || customize) && (
+        <>
+          <div className="settings-fields">
+            <Select
+              id="taskbar-layout"
+              label="读数布局"
+              value={value.layout}
+              disabled={disabled}
+              options={[
+                { value: "double", label: "双行紧凑" },
+                { value: "single", label: "单行横排" },
+              ]}
+              onChange={(layout) => vm.changeTaskbar({ layout })}
+            />
+            <Select
+              id="taskbar-gpu"
+              label="任务栏显卡"
+              value={value.gpu_id ?? "auto"}
+              options={gpuOptions}
+              disabled={disabled}
+              onChange={(id) =>
+                vm.changeTaskbar({ gpu_id: id === "auto" ? null : id })
+              }
+            />
+          </div>
+          <p className="settings-note">
+            使用率和温度可独立显示。启用时至少保留一个指标；空间不足时优先显示排在前面的指标组。
+          </p>
+          <div className="taskbar-order" aria-label="任务栏指标顺序">
+            {value.order.map((key, index) => {
+              const group = groups[key];
+              if (!group) return null;
+              return (
+                <div key={key} className="taskbar-order-row">
+                  <strong>{group.name}</strong>
+                  <div className="taskbar-order-metrics">
+                    {group.metrics.map(([field, label]) => (
+                      <Checkbox
+                        key={field}
+                        label={label}
+                        checked={value[field]}
+                        disabled={
+                          disabled ||
+                          (value.enabled &&
+                            value[field] &&
+                            selectedMetricCount(value) === 1)
+                        }
+                        onChange={(event) =>
+                          vm.changeTaskbar({ [field]: event.target.checked })
+                        }
+                      />
+                    ))}
+                  </div>
+                  <div className="taskbar-order-actions">
+                    <IconButton
+                      variant="ghost"
+                      size="sm"
+                      icon={ArrowUp}
+                      aria-label={"上移" + group.name}
+                      disabled={disabled || index === 0}
+                      onClick={() => vm.moveTaskbar(key, -1)}
+                    />
+                    <IconButton
+                      variant="ghost"
+                      size="sm"
+                      icon={ArrowDown}
+                      aria-label={"下移" + group.name}
+                      disabled={disabled || index === value.order.length - 1}
+                      onClick={() => vm.moveTaskbar(key, 1)}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <TaskbarPreview settings={value} />
+          <p className="settings-note">
+            指定显卡不可用时保留选择，读数显示 —。温度后的 * 表示 VR SoC
+            测温点，详情可悬停查看。
+          </p>
+        </>
+      )}
       <p className="settings-note" role="status">
         {state?.desktop.detail || "等待任务栏能力检测"}
       </p>

@@ -18,11 +18,13 @@ export function HistoryDataCard({
   from,
   through,
   onChanged,
+  mode = "all",
 }: {
   client: MonitorClient;
   from: number;
   through: number;
   onChanged: () => void;
+  mode?: "all" | "manage" | "export";
 }) {
   const vm = useHistoryDataViewModel(client, from, through, onChanged);
   const name = (scope: HistoryScope) =>
@@ -30,36 +32,46 @@ export function HistoryDataCard({
   return (
     <>
       <Card
-        title="本地数据与隐私"
-        description="历史只存储在本机，不自动上传。仅应用流量记录需要主动开启。"
+        title={mode === "export" ? "导出历史" : "本地存储"}
+        description={
+          mode === "export"
+            ? "按当前所选时段导出已有记录"
+            : "历史只存储在本机，不自动上传。仅应用流量记录需要主动开启。"
+        }
       >
         <div className="history-data-content">
-          <p>
-            基础历史保存 CPU /
-            内存有效均值和峰值、所选网卡收发字节及覆盖时长；应用历史保存应用名称、完整可执行路径、收发字节及覆盖，不保存网络内容、IP、逐
-            PID 事件或图标。
-          </p>
-          <p>
-            保留最近24小时的分钟明细、7天的15分钟汇总、30天的小时汇总；旧版已丢弃的时段无法恢复。基础文件上限{" "}
-            {vm.data ? bytes(vm.data.basic_limit_bytes) : "读取中"}
-            ，应用文件上限{" "}
-            {bytes(vm.data?.applications_limit_bytes ?? "33554432")}。
-          </p>
-          <p>
-            当前文件与损坏备份占用：基础{" "}
-            {vm.data?.basic_bytes === null || !vm.data
-              ? "未知"
-              : bytes(vm.data.basic_bytes)}{" "}
-            · 应用{" "}
-            {vm.data?.applications_bytes === null || !vm.data
-              ? "未知"
-              : bytes(vm.data.applications_bytes)}
-            。占用按已落盘文件计，不包含尚未保存的内存样本和用户导出文件。
-          </p>
-          {vm.data?.detail && <p className="settings-note">{vm.data.detail}</p>}
+          {mode !== "export" && (
+            <>
+              <p>
+                基础历史保存 CPU /
+                内存有效均值和峰值、所选网卡收发字节及覆盖时长；应用历史保存应用名称、完整可执行路径、收发字节及覆盖，不保存网络内容、IP、逐
+                PID 事件或图标。
+              </p>
+              <p>
+                保留最近24小时的分钟明细、7天的15分钟汇总、30天的小时汇总；旧版已丢弃的时段无法恢复。基础文件上限{" "}
+                {vm.data ? bytes(vm.data.basic_limit_bytes) : "读取中"}
+                ，应用文件上限{" "}
+                {bytes(vm.data?.applications_limit_bytes ?? "33554432")}。
+              </p>
+              <p>
+                当前文件与损坏备份占用：基础{" "}
+                {vm.data?.basic_bytes === null || !vm.data
+                  ? "未知"
+                  : bytes(vm.data.basic_bytes)}{" "}
+                · 应用{" "}
+                {vm.data?.applications_bytes === null || !vm.data
+                  ? "未知"
+                  : bytes(vm.data.applications_bytes)}
+                。占用按已落盘文件计，不包含尚未保存的内存样本和用户导出文件。
+              </p>
+              {vm.data?.detail && (
+                <p className="settings-note">{vm.data.detail}</p>
+              )}
+            </>
+          )}
           <div className="history-data-actions">
             <Select
-              label="管理的数据"
+              label={mode === "export" ? "导出的数据" : "管理的数据"}
               value={vm.scope}
               options={[
                 { value: "basic", label: "基础指标历史" },
@@ -67,21 +79,25 @@ export function HistoryDataCard({
               ]}
               onChange={(value) => vm.setScope(value as HistoryScope)}
             />
-            <Button
-              variant="outline"
-              disabled={!vm.canExport || vm.pending}
-              onClick={() => vm.prepare("export")}
-            >
-              导出所选时段 CSV
-            </Button>
-            <Button
-              variant="outline"
-              disabled={!vm.canClear || vm.pending}
-              onClick={() => vm.prepare("clear")}
-            >
-              清除所选历史
-            </Button>
-            {vm.running && (
+            {mode !== "manage" && (
+              <Button
+                variant="outline"
+                disabled={!vm.canExport || vm.pending}
+                onClick={() => vm.prepare("export")}
+              >
+                导出所选时段 CSV
+              </Button>
+            )}
+            {mode !== "export" && (
+              <Button
+                variant="outline"
+                disabled={!vm.canClear || vm.pending}
+                onClick={() => vm.prepare("clear")}
+              >
+                清除所选历史
+              </Button>
+            )}
+            {mode !== "export" && vm.running && (
               <Button
                 variant="outline"
                 disabled={vm.pending}
@@ -91,18 +107,20 @@ export function HistoryDataCard({
               </Button>
             )}
           </div>
-          {vm.scope === "applications" && (
+          {mode !== "manage" && vm.scope === "applications" && (
             <Checkbox
               label="导出中包含应用完整路径"
               checked={vm.includePaths}
               onChange={(event) => vm.setIncludePaths(event.target.checked)}
             />
           )}
-          <p className="settings-note">
-            导出范围使用页面顶部趋势选择：{new Date(from).toLocaleString()} —{" "}
-            {new Date(through).toLocaleString()}
-            。CSV保存到系统下载文件夹，时间为Unix毫秒，字节为完整整数；缺失保持空白。完整路径可能包含用户名等私人信息。
-          </p>
+          {mode !== "manage" && (
+            <p className="settings-note">
+              导出范围使用页面顶部趋势选择：{new Date(from).toLocaleString()} —{" "}
+              {new Date(through).toLocaleString()}
+              。CSV保存到系统下载文件夹，时间为Unix毫秒，字节为完整整数；缺失保持空白。完整路径可能包含用户名等私人信息。
+            </p>
+          )}
           {vm.error && !vm.confirmation && (
             <Alert
               color="danger"

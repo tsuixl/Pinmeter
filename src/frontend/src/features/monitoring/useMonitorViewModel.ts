@@ -44,7 +44,12 @@ export const emptyReading: ReadingDto = {
   semantic: "",
   detail: "",
 };
-export function useMonitorViewModel(client: MonitorClient) {
+export function useMonitorViewModel(
+  client: MonitorClient,
+  onNavigate?: (page: Page) => void,
+) {
+  const desktopNavigate = useRef(onNavigate);
+  desktopNavigate.current = onNavigate;
   const snapshot = useSyncExternalStore(client.subscribe, client.getSnapshot);
   const [page, setPage] = useState<Page>("overview");
   const [range, setRange] = useState(300_000);
@@ -122,8 +127,11 @@ export function useMonitorViewModel(client: MonitorClient) {
     let active = true;
     const unlisten = client.onDesktopNavigate?.((page) => {
       if (active && Object.hasOwn(pageLabels, page)) {
-        setPage(page as Page);
-        setAnchor(null);
+        if (desktopNavigate.current) desktopNavigate.current(page as Page);
+        else {
+          setPage(page as Page);
+          setAnchor(null);
+        }
       }
     });
     void unlisten?.catch(() => {});

@@ -5,6 +5,7 @@ import { statusLabels } from "../monitoring/useMonitorViewModel";
 import { TrendChart } from "../monitoring/TrendChart";
 import { useGpuViewModel, type GpuKey } from "./useGpuViewModel";
 import "./gpu.css";
+import { usePageUiState } from "../../shared/state/page-ui-state";
 
 export function GpuView({
   vm,
@@ -13,9 +14,13 @@ export function GpuView({
   vm: ReturnType<typeof useGpuViewModel>;
   range: number;
 }) {
+  const [previousRange, setPreviousRange] = usePageUiState("gpu.range", range);
   useEffect(() => {
-    vm.setAnchor(null);
-  }, [range, vm.setAnchor]);
+    if (previousRange !== range) {
+      vm.setAnchor(null);
+      setPreviousRange(range);
+    }
+  }, [range, previousRange, setPreviousRange, vm.setAnchor]);
   const text = (key: GpuKey) => {
     const r = vm.reading(key);
     return r.status === "normal" ? `${r.text} ${r.unit}` : "—";

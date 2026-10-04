@@ -1,10 +1,14 @@
-import { useCallback, useState } from "react";
+import { useCallback } from "react";
+import { usePageUiState } from "../../shared/state/page-ui-state";
 import type { MonitorClient } from "../../shared/client/monitor-client";
 import { usePageQuery } from "../monitoring/usePageQuery";
 import { plotFrame } from "../monitoring/plot-frame";
 
 export function useDiskViewModel(client: MonitorClient) {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = usePageUiState<string | null>(
+    "disk.selected",
+    null,
+  );
   const load = useCallback(
     () =>
       client.getDiskSnapshot

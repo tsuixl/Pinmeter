@@ -1,4 +1,5 @@
-import { useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { PageUiStateProvider } from "../shared/state/page-ui-state";
 import { IpView } from "../features/ip/IpView";
 import { HardwareView } from "../features/hardware/HardwareView";
 import { DiskView } from "../features/disk/DiskView";
@@ -74,7 +75,8 @@ export function App({
   windowClient?: WindowClient;
   updateClient: UpdateClient;
 }) {
-  const vm = useMonitorViewModel(client);
+  const navigateRef = useRef<(page: Page) => void>(() => {});
+  const vm = useMonitorViewModel(client, (page) => navigateRef.current(page));
   const networkVm = useAppNetworkViewModel(client, vm.page === "network");
   const [appHistoryTarget, setAppHistoryTarget] = useState<{
     id: string;
@@ -88,8 +90,21 @@ export function App({
   const gpuVm = useGpuViewModel(vm.state?.gpu, vm.connected, vm.history);
   const windowVm = useWindowViewModel(windowClient);
   const [helpOpen, setHelpOpen] = useState(false);
-  const [settingsSection, setSettingsSection] =
-    useState<SettingsSection>("appearance");
+  const [settingsSection, setSettingsSection] = useState<SettingsSection>();
+  const [pageVisit, setPageVisit] = useState(0);
+  const settingsNavigationGuard = useRef<((action: () => void) => void) | null>(
+    null,
+  );
+  const [settingsOrigin, setSettingsOrigin] = useState<{
+    page: Page;
+    scroll: number;
+    range: number;
+    anchor: number | null;
+    gpuAnchor: number | null;
+    gpuId?: string;
+    session?: string;
+  } | null>(null);
+  const [restoreScroll, setRestoreScroll] = useState<number | null>(null);
   const [processSort, setProcessSort] = useState("cpu");
   const [processOrigin, setProcessOrigin] = useState<{
     page: "cpu" | "memory";
@@ -169,6 +184,14 @@ export function App({
     return () => query.removeEventListener("change", update);
   }, []);
   const go = (page: Page) => {
+    if (page === "settings") {
+      openSettings();
+      return;
+    }
+    setRestoreScroll(null);
+    gpuVm.setAnchor(null);
+    setPageVisit((visit) => visit + 1);
+    setSettingsOrigin(null);
     setProcessOrigin(null);
     setAppHistoryTarget(null);
     vm.setPage(page);
@@ -177,15 +200,88 @@ export function App({
       document.querySelector<HTMLElement>("h1")?.focus(),
     );
   };
-  const openSettings = (section: SettingsSection) => {
+  const openSettings = (section?: SettingsSection) => {
+    setRestoreScroll(null);
+    if (vm.page !== "settings")
+      setSettingsOrigin({
+        page: vm.page,
+        scroll: document.querySelector("main.content")?.scrollTop ?? 0,
+        range: vm.range,
+        anchor: vm.anchor,
+        gpuAnchor: gpuVm.anchor,
+        gpuId: gpuVm.selected?.id,
+        session: vm.state?.session_id,
+      });
     setSettingsSection(section);
-    go("settings");
+    vm.setPage("settings");
   };
+  const returnFromSettings = () => {
+    if (!settingsOrigin) {
+      go("overview");
+      return;
+    }
+    vm.setPage(settingsOrigin.page);
+    vm.setRange(settingsOrigin.range);
+    const sameSession = settingsOrigin.session === vm.state?.session_id;
+    vm.setAnchor(sameSession ? settingsOrigin.anchor : null);
+    gpuVm.setAnchor(
+      sameSession && settingsOrigin.gpuId === gpuVm.selected?.id
+        ? settingsOrigin.gpuAnchor
+        : null,
+    );
+    setRestoreScroll(settingsOrigin.scroll);
+    setSettingsOrigin(null);
+  };
+  const requestNavigation = (page: Page) => {
+    if (
+      vm.page === "settings" &&
+      page !== "settings" &&
+      settingsNavigationGuard.current
+    )
+      settingsNavigationGuard.current(() => go(page));
+    else go(page);
+  };
+  navigateRef.current = requestNavigation;
+  useLayoutEffect(() => {
+    if (restoreScroll === null || vm.page === "settings") return;
+    const main = document.querySelector<HTMLElement>("main.content");
+    if (!main) return;
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      observer.disconnect();
+      setRestoreScroll(null);
+    };
+    const restore = () => {
+      main.scrollTop = restoreScroll;
+      if (Math.abs(main.scrollTop - restoreScroll) < 2) finish();
+    };
+    const observer = new ResizeObserver(restore);
+    for (const child of main.children) observer.observe(child);
+    const frame = requestAnimationFrame(restore);
+    const timeout = setTimeout(finish, 5000);
+    main.addEventListener("wheel", finish, { once: true });
+    main.addEventListener("pointerdown", finish, { once: true });
+    main.addEventListener("keydown", finish, { once: true });
+    document.querySelector<HTMLElement>("h1")?.focus({ preventScroll: true });
+    return () => {
+      done = true;
+      cancelAnimationFrame(frame);
+      clearTimeout(timeout);
+      observer.disconnect();
+      main.removeEventListener("wheel", finish);
+      main.removeEventListener("pointerdown", finish);
+      main.removeEventListener("keydown", finish);
+    };
+  }, [restoreScroll, vm.page]);
   const openAppHistory = (app?: { id: string; name: string }) => {
+    setRestoreScroll(null);
     if (!app) {
       go("history");
       return;
     }
+    setPageVisit((visit) => visit + 1);
     setAppHistoryTarget({
       ...app,
       range: vm.range,
@@ -196,7 +292,9 @@ export function App({
     vm.setAnchor(null);
   };
   const returnToNetwork = () => {
+    setRestoreScroll(null);
     if (!appHistoryTarget) return;
+    setPageVisit((visit) => visit + 1);
     vm.setPage("network");
     vm.setRange(appHistoryTarget.range);
     vm.setAnchor(appHistoryTarget.anchor);
@@ -208,6 +306,8 @@ export function App({
     setAppHistoryTarget(null);
   };
   const openProcesses = (page: "cpu" | "memory") => {
+    setRestoreScroll(null);
+    setPageVisit((visit) => visit + 1);
     setProcessOrigin({
       page,
       range: vm.range,
@@ -219,7 +319,9 @@ export function App({
     vm.setAnchor(null);
   };
   const returnToMetric = () => {
+    setRestoreScroll(null);
     if (!processOrigin) return;
+    setPageVisit((visit) => visit + 1);
     vm.setPage(processOrigin.page);
     vm.setRange(processOrigin.range);
     vm.setAnchor(processOrigin.anchor);
@@ -273,7 +375,7 @@ export function App({
   );
   return (
     <div
-      className={`app ${collapsed ? "compact-nav" : ""} ${windowVm.mac && !windowVm.fullscreen ? "mac-window" : ""}`}
+      className={`app ${vm.page === "settings" ? "settings-mode" : collapsed ? "compact-nav" : ""} ${windowVm.mac && !windowVm.fullscreen ? "mac-window" : ""}`}
     >
       <UpdateDialogs vm={updateVm} visible={updateVisible} />
       <Modal
@@ -371,53 +473,59 @@ export function App({
           />
         )}
       </Modal>
-      <aside className="sidebar">
-        <div
-          className="brand"
-          data-tauri-drag-region={windowVm.native ? "" : undefined}
-        >
-          <img src={pinmeterIcon} width={24} height={24} alt="" />
-          <span>
-            Pinmeter<span className="brand-dot">.</span>
-          </span>
-        </div>
-        <nav aria-label="监控页面">
-          {(
-            [
-              "overview",
-              "cpu",
-              "memory",
-              "gpu",
-              "network",
-              "disk",
-              "processes",
-              "history",
-              "hardware",
-              "ip",
-            ] as Page[]
-          ).map(nav)}
-        </nav>
-        <div className="sidebar-bottom">
-          <UpdateBanner vm={updateVm} collapsed={collapsed} />
-          {nav("settings")}
-          <div className="device">
-            <icons.monitor size={18} />
+      {vm.page !== "settings" && (
+        <aside className="sidebar">
+          <div
+            className="brand"
+            data-tauri-drag-region={windowVm.native ? "" : undefined}
+          >
+            <img src={pinmeterIcon} width={24} height={24} alt="" />
             <span>
-              此电脑<small>{vm.state?.platform ?? "本地监控"}</small>
+              Pinmeter<span className="brand-dot">.</span>
             </span>
           </div>
-          <span className="version">v{buildInfo.version}</span>
-        </div>
-      </aside>
+          <nav aria-label="监控页面">
+            {(
+              [
+                "overview",
+                "cpu",
+                "memory",
+                "gpu",
+                "network",
+                "disk",
+                "processes",
+                "history",
+                "hardware",
+                "ip",
+              ] as Page[]
+            ).map(nav)}
+          </nav>
+          <div className="sidebar-bottom">
+            <UpdateBanner vm={updateVm} collapsed={collapsed} />
+            {nav("settings")}
+            <div className="device">
+              <icons.monitor size={18} />
+              <span>
+                此电脑<small>{vm.state?.platform ?? "本地监控"}</small>
+              </span>
+            </div>
+            <span className="version">v{buildInfo.version}</span>
+          </div>
+        </aside>
+      )}
       <div className="workspace">
         <header
           className="topbar"
           data-tauri-drag-region={windowVm.native ? "" : undefined}
         >
           <div className="breadcrumb">
-            <icons.monitor size={16} />
-            <span>此电脑</span>
-            <span>/</span>
+            {vm.page !== "settings" && (
+              <>
+                <icons.monitor size={16} />
+                <span>此电脑</span>
+                <span>/</span>
+              </>
+            )}
             <strong>{pageLabels[vm.page]}</strong>
           </div>
           <div className="topbar-actions">
@@ -444,397 +552,411 @@ export function App({
             <WindowControls vm={windowVm} />
           </div>
         </header>
-        <main className="content" key={vm.page}>
-          <AlertsBanner client={client} onNavigate={go} />
-          <MonitorStatus
-            client={client}
-            suspended={windowVm.exit.stage !== "idle"}
-            onNavigate={go}
-          />
-          {windowVm.error && (
-            <Alert
-              color="warning"
-              title="窗口操作"
-              description={windowVm.error}
-            />
-          )}
-          {fontError && (
-            <Alert
-              color="warning"
-              title="字体暂不可用"
-              description={fontError}
-            />
-          )}
-          <div className="page-heading">
-            <h1 tabIndex={-1}>
-              {vm.page === "overview" ? "系统总览" : pageLabels[vm.page]}
-            </h1>
-            {vm.page !== "settings" &&
-              vm.page !== "disk" &&
-              vm.page !== "processes" &&
-              vm.page !== "history" &&
-              vm.page !== "ip" &&
-              vm.page !== "hardware" && (
-                <div aria-label="趋势时间范围">
-                  <SegmentedControl
-                    options={rangeOptions}
-                    value={String(vm.range)}
-                    onChange={(range) => {
-                      vm.setRange(Number(range));
-                      vm.setAnchor(null);
-                    }}
-                  />
-                </div>
-              )}
-          </div>
-          {(vm.error || vm.state?.diagnostic) && (
-            <Alert
-              color="warning"
-              title="采集状态"
-              description={vm.error ?? vm.state?.diagnostic ?? ""}
-            />
-          )}
-          {vm.demo && (
-            <div className="demo-controls">
-              <Badge variant="warning">演示数据 · 不代表系统实际读数</Badge>
-              {vm.page !== "ip" &&
-                vm.page !== "hardware" &&
-                vm.page !== "history" && (
-                  <Select
-                    label="演示状态"
-                    size="sm"
-                    value={vm.frame?.cpu.status ?? "normal"}
-                    options={Object.entries(statusLabels).map(
-                      ([value, label]) => ({
-                        value,
-                        label,
-                      }),
-                    )}
-                    onChange={(status) =>
-                      client.setScenario?.(status as ReadingStatus)
-                    }
-                  />
-                )}
-            </div>
-          )}
-          {vm.page === "overview" && (
-            <>
-              <SetupCard
+        <PageUiStateProvider key={pageVisit}>
+          <main
+            className={`content ${vm.page === "settings" ? "settings-host" : ""}`}
+            key={vm.page}
+          >
+            <AlertsBanner client={client} onNavigate={requestNavigation} />
+            {(vm.page !== "settings" ||
+              health.issues.length > 0 ||
+              !vm.connected) && (
+              <MonitorStatus
+                client={client}
+                suspended={windowVm.exit.stage !== "idle"}
+                onNavigate={requestNavigation}
+              />
+            )}
+            {windowVm.error && (
+              <Alert
+                color="warning"
+                title="窗口操作"
+                description={windowVm.error}
+              />
+            )}
+            {fontError && (
+              <Alert
+                color="warning"
+                title="字体暂不可用"
+                description={fontError}
+              />
+            )}
+            {vm.page !== "settings" && (
+              <div className="page-heading">
+                <h1 tabIndex={-1}>
+                  {vm.page === "overview" ? "系统总览" : pageLabels[vm.page]}
+                </h1>
+                {vm.page !== "disk" &&
+                  vm.page !== "processes" &&
+                  vm.page !== "history" &&
+                  vm.page !== "ip" &&
+                  vm.page !== "hardware" && (
+                    <div aria-label="趋势时间范围">
+                      <SegmentedControl
+                        options={rangeOptions}
+                        value={String(vm.range)}
+                        onChange={(range) => {
+                          vm.setRange(Number(range));
+                          vm.setAnchor(null);
+                        }}
+                      />
+                    </div>
+                  )}
+              </div>
+            )}
+            {(vm.error || vm.state?.diagnostic) && (
+              <Alert
+                color="warning"
+                title="采集状态"
+                description={vm.error ?? vm.state?.diagnostic ?? ""}
+              />
+            )}
+            {vm.demo && vm.page !== "settings" && (
+              <div className="demo-controls">
+                <Badge variant="warning">演示数据 · 不代表系统实际读数</Badge>
+                {vm.page !== "ip" &&
+                  vm.page !== "hardware" &&
+                  vm.page !== "history" && (
+                    <Select
+                      label="演示状态"
+                      size="sm"
+                      value={vm.frame?.cpu.status ?? "normal"}
+                      options={Object.entries(statusLabels).map(
+                        ([value, label]) => ({
+                          value,
+                          label,
+                        }),
+                      )}
+                      onChange={(status) =>
+                        client.setScenario?.(status as ReadingStatus)
+                      }
+                    />
+                  )}
+              </div>
+            )}
+            {vm.page === "overview" && (
+              <>
+                <SetupCard
+                  client={client}
+                  state={vm.state}
+                  onSettings={openSettings}
+                  onHistory={() => go("history")}
+                />
+                <OverviewView monitor={vm} gpu={gpuVm} onNavigate={go} />
+              </>
+            )}
+            {vm.page === "hardware" && (
+              <HardwareView
                 client={client}
                 state={vm.state}
-                onSettings={openSettings}
-                onHistory={() => go("history")}
+                connected={vm.connected}
               />
-              <OverviewView monitor={vm} gpu={gpuVm} onNavigate={go} />
-            </>
-          )}
-          {vm.page === "hardware" && (
-            <HardwareView
-              client={client}
-              state={vm.state}
-              connected={vm.connected}
-            />
-          )}
-          {(vm.page === "cpu" || vm.page === "memory") && (
-            <>
-              <div className="section-heading">
-                <span className="processor-caption">
-                  查找当前资源占用较高的应用
-                </span>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => openProcesses(vm.page as "cpu" | "memory")}
-                >
-                  查看占用进程
-                </Button>
-              </div>
-              {vm.page === "cpu" &&
-                (vm.driverMissing || vm.driverMessage || vm.driverError) && (
-                  <div className="temperature-driver">
-                    <Alert
-                      color={vm.driverError ? "danger" : "info"}
-                      title={
-                        vm.driverError
-                          ? "温度驱动操作未完成"
-                          : vm.driverInstalling
-                            ? "正在下载并安装驱动"
-                            : vm.driverPending
-                              ? "正在检测驱动"
-                              : vm.driverMissing
-                                ? "CPU 温度需要 PawnIO 驱动"
-                                : "温度驱动状态"
-                      }
-                      description={
-                        vm.driverError ||
-                        vm.driverMessage ||
-                        (vm.driverInstalling
-                          ? "正在从官方来源下载、校验并安装 PawnIO，请等待操作完成。"
-                          : "点击后将联网下载官方 PawnIO 驱动并安装，完成后自动检测。安装时可能需要管理员授权。")
-                      }
-                    />
-                    {vm.driverMissing && (
-                      <Button
-                        loading={vm.driverInstalling}
-                        disabled={vm.driverPending || !vm.connected}
-                        onClick={() => void vm.installTemperatureDriver()}
-                      >
-                        {vm.driverInstalling ? "正在处理…" : "下载安装驱动"}
-                      </Button>
-                    )}
-                    {(vm.driverMissing ||
-                      vm.driverMessage ||
-                      vm.driverError) && (
-                      <Button
-                        loading={vm.driverPending && !vm.driverInstalling}
-                        disabled={vm.driverPending || !vm.connected}
-                        onClick={() => void vm.checkTemperatureDriver()}
-                      >
-                        重新检测
-                      </Button>
-                    )}
-                  </div>
-                )}
-              <div
-                className={`detail-summary ${vm.page === "cpu" ? "cpu-summary" : ""}`}
-              >
-                <StatCard
-                  title={labels[vm.page]}
-                  value={value(vm.page)}
-                  description={
-                    vm.page === "cpu" && vm.reading("cpu").status === "normal"
-                      ? vm.cpuModel
-                      : statusLabels[vm.reading(vm.page).status]
-                  }
-                  variant="icon"
-                  icon={icons[vm.page]}
-                />
-                {vm.page === "cpu" && (
-                  <div className="cpu-temperature">
-                    <StatCard
-                      title="CPU 温度"
-                      value={
-                        vm.temperature.status === "normal"
-                          ? vm.temperature.text + " °C"
-                          : "—"
-                      }
-                      description={
-                        vm.temperature.status === "normal"
-                          ? vm.cpuModel
-                          : vm.temperature.detail ||
-                            statusLabels[vm.temperature.status]
-                      }
-                      variant="icon"
-                      icon={icons.temperature}
-                    />
-                  </div>
-                )}
-                {vm.page === "memory" && (
-                  <Card className="detail-meta">
-                    <dl className="data-rows">
-                      <>
-                        <div>
-                          <dt>已使用</dt>
-                          <dd>
-                            {vm.reading("memory").status === "normal"
-                              ? vm.frame?.memory_used
-                              : "—"}
-                          </dd>
-                        </div>
-                        <div>
-                          <dt>物理内存总量</dt>
-                          <dd>
-                            {vm.reading("memory").status === "normal"
-                              ? vm.frame?.memory_total
-                              : "—"}
-                          </dd>
-                        </div>
-                      </>
-                      <div>
-                        <dt>采样间隔</dt>
-                        <dd>
-                          {(vm.state?.settings.interval_ms ?? 1000) / 1000} 秒
-                        </dd>
-                      </div>
-                    </dl>
-                  </Card>
-                )}
-              </div>
-              {panel(
-                vm.page === "cpu" ? ["cpu", "cpu_temperature"] : [vm.page],
-                `${pageLabels[vm.page]} 趋势`,
-              )}
-              {vm.page === "cpu" && (
-                <CpuProcessorList
-                  processors={vm.processors}
-                  status={vm.processorsStatus}
-                  detail={vm.processorsDetail}
-                />
-              )}
-              <Popover
-                key={vm.page}
-                className="metric-info"
-                placement="top"
-                title={`${pageLabels[vm.page]} 指标说明`}
-                trigger={
-                  <div className="metric-info-trigger">
-                    <h2>关于这项指标</h2>
-                    <IconButton
-                      type="button"
-                      icon={icons.info}
-                      variant="ghost"
-                      size="sm"
-                      aria-label="查看指标说明"
-                      aria-haspopup="dialog"
-                    />
-                  </div>
-                }
-              >
-                <div className="explanation">
-                  {vm.page === "cpu" && (
-                    <p>
-                      统计范围：全部逻辑处理器 · 采样间隔：
-                      {vm.state
-                        ? `${vm.state.settings.interval_ms / 1000} 秒`
-                        : "等待采集服务"}
-                      。列表显示当前占用，趋势图显示整机历史。
-                    </p>
-                  )}
-                  <p>
-                    {vm.page === "cpu"
-                      ? "两次有效采样间的整机忙碌时间占比；与任务管理器的处理器效用口径可能不同。首次采样需要预热。"
-                      : "系统物理内存已用量与总量。Windows 已用量为总物理内存减可用内存，不代表提交量。"}
-                  </p>
-                  <p>来源：{vm.reading(vm.page).source}</p>
-                  {vm.reading(vm.page).detail && (
-                    <p>{vm.reading(vm.page).detail}</p>
-                  )}
-                </div>
-              </Popover>
-            </>
-          )}
-          {vm.page === "gpu" && <GpuView vm={gpuVm} range={vm.range} />}
-          {vm.page === "disk" && <DiskView client={client} />}
-          {vm.page === "processes" && (
-            <>
-              {processOrigin && (
-                <div className="section-heading">
-                  <Button variant="ghost" size="sm" onClick={returnToMetric}>
-                    返回{pageLabels[processOrigin.page]}详情
-                  </Button>
-                  <span className="processor-caption">
-                    这里显示当前进程；不能据此判断过去时刻的占用原因。
-                  </span>
-                </div>
-              )}
-              <ProcessView client={client} initialSort={processSort} />
-            </>
-          )}
-          {vm.page === "history" &&
-            (appHistoryTarget ? (
+            )}
+            {(vm.page === "cpu" || vm.page === "memory") && (
               <>
                 <div className="section-heading">
-                  <Button variant="ghost" size="sm" onClick={returnToNetwork}>
-                    返回应用网络排行
-                  </Button>
                   <span className="processor-caption">
-                    {appHistoryTarget.name} · 已归档流量
+                    查找当前资源占用较高的应用
                   </span>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => openProcesses(vm.page as "cpu" | "memory")}
+                  >
+                    查看占用进程
+                  </Button>
                 </div>
-                <AppHistoryView
+                {vm.page === "cpu" &&
+                  (vm.driverMissing || vm.driverMessage || vm.driverError) && (
+                    <div className="temperature-driver">
+                      <Alert
+                        color={vm.driverError ? "danger" : "info"}
+                        title={
+                          vm.driverError
+                            ? "温度驱动操作未完成"
+                            : vm.driverInstalling
+                              ? "正在下载并安装驱动"
+                              : vm.driverPending
+                                ? "正在检测驱动"
+                                : vm.driverMissing
+                                  ? "CPU 温度需要 PawnIO 驱动"
+                                  : "温度驱动状态"
+                        }
+                        description={
+                          vm.driverError ||
+                          vm.driverMessage ||
+                          (vm.driverInstalling
+                            ? "正在从官方来源下载、校验并安装 PawnIO，请等待操作完成。"
+                            : "点击后将联网下载官方 PawnIO 驱动并安装，完成后自动检测。安装时可能需要管理员授权。")
+                        }
+                      />
+                      {vm.driverMissing && (
+                        <Button
+                          loading={vm.driverInstalling}
+                          disabled={vm.driverPending || !vm.connected}
+                          onClick={() => void vm.installTemperatureDriver()}
+                        >
+                          {vm.driverInstalling ? "正在处理…" : "下载安装驱动"}
+                        </Button>
+                      )}
+                      {(vm.driverMissing ||
+                        vm.driverMessage ||
+                        vm.driverError) && (
+                        <Button
+                          loading={vm.driverPending && !vm.driverInstalling}
+                          disabled={vm.driverPending || !vm.connected}
+                          onClick={() => void vm.checkTemperatureDriver()}
+                        >
+                          重新检测
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                <div
+                  className={`detail-summary ${vm.page === "cpu" ? "cpu-summary" : ""}`}
+                >
+                  <StatCard
+                    title={labels[vm.page]}
+                    value={value(vm.page)}
+                    description={
+                      vm.page === "cpu" && vm.reading("cpu").status === "normal"
+                        ? vm.cpuModel
+                        : statusLabels[vm.reading(vm.page).status]
+                    }
+                    variant="icon"
+                    icon={icons[vm.page]}
+                  />
+                  {vm.page === "cpu" && (
+                    <div className="cpu-temperature">
+                      <StatCard
+                        title="CPU 温度"
+                        value={
+                          vm.temperature.status === "normal"
+                            ? vm.temperature.text + " °C"
+                            : "—"
+                        }
+                        description={
+                          vm.temperature.status === "normal"
+                            ? vm.cpuModel
+                            : vm.temperature.detail ||
+                              statusLabels[vm.temperature.status]
+                        }
+                        variant="icon"
+                        icon={icons.temperature}
+                      />
+                    </div>
+                  )}
+                  {vm.page === "memory" && (
+                    <Card className="detail-meta">
+                      <dl className="data-rows">
+                        <>
+                          <div>
+                            <dt>已使用</dt>
+                            <dd>
+                              {vm.reading("memory").status === "normal"
+                                ? vm.frame?.memory_used
+                                : "—"}
+                            </dd>
+                          </div>
+                          <div>
+                            <dt>物理内存总量</dt>
+                            <dd>
+                              {vm.reading("memory").status === "normal"
+                                ? vm.frame?.memory_total
+                                : "—"}
+                            </dd>
+                          </div>
+                        </>
+                        <div>
+                          <dt>采样间隔</dt>
+                          <dd>
+                            {(vm.state?.settings.interval_ms ?? 1000) / 1000} 秒
+                          </dd>
+                        </div>
+                      </dl>
+                    </Card>
+                  )}
+                </div>
+                {panel(
+                  vm.page === "cpu" ? ["cpu", "cpu_temperature"] : [vm.page],
+                  `${pageLabels[vm.page]} 趋势`,
+                )}
+                {vm.page === "cpu" && (
+                  <CpuProcessorList
+                    processors={vm.processors}
+                    status={vm.processorsStatus}
+                    detail={vm.processorsDetail}
+                  />
+                )}
+                <Popover
+                  key={vm.page}
+                  className="metric-info"
+                  placement="top"
+                  title={`${pageLabels[vm.page]} 指标说明`}
+                  trigger={
+                    <div className="metric-info-trigger">
+                      <h2>关于这项指标</h2>
+                      <IconButton
+                        type="button"
+                        icon={icons.info}
+                        variant="ghost"
+                        size="sm"
+                        aria-label="查看指标说明"
+                        aria-haspopup="dialog"
+                      />
+                    </div>
+                  }
+                >
+                  <div className="explanation">
+                    {vm.page === "cpu" && (
+                      <p>
+                        统计范围：全部逻辑处理器 · 采样间隔：
+                        {vm.state
+                          ? `${vm.state.settings.interval_ms / 1000} 秒`
+                          : "等待采集服务"}
+                        。列表显示当前占用，趋势图显示整机历史。
+                      </p>
+                    )}
+                    <p>
+                      {vm.page === "cpu"
+                        ? "两次有效采样间的整机忙碌时间占比；与任务管理器的处理器效用口径可能不同。首次采样需要预热。"
+                        : "系统物理内存已用量与总量。Windows 已用量为总物理内存减可用内存，不代表提交量。"}
+                    </p>
+                    <p>来源：{vm.reading(vm.page).source}</p>
+                    {vm.reading(vm.page).detail && (
+                      <p>{vm.reading(vm.page).detail}</p>
+                    )}
+                  </div>
+                </Popover>
+              </>
+            )}
+            {vm.page === "gpu" && <GpuView vm={gpuVm} range={vm.range} />}
+            {vm.page === "disk" && <DiskView client={client} />}
+            {vm.page === "processes" && (
+              <>
+                {processOrigin && (
+                  <div className="section-heading">
+                    <Button variant="ghost" size="sm" onClick={returnToMetric}>
+                      返回{pageLabels[processOrigin.page]}详情
+                    </Button>
+                    <span className="processor-caption">
+                      这里显示当前进程；不能据此判断过去时刻的占用原因。
+                    </span>
+                  </div>
+                )}
+                <ProcessView client={client} initialSort={processSort} />
+              </>
+            )}
+            {vm.page === "history" &&
+              (appHistoryTarget ? (
+                <>
+                  <div className="section-heading">
+                    <Button variant="ghost" size="sm" onClick={returnToNetwork}>
+                      返回应用网络排行
+                    </Button>
+                    <span className="processor-caption">
+                      {appHistoryTarget.name} · 已归档流量
+                    </span>
+                  </div>
+                  <AppHistoryView
+                    client={client}
+                    initialAppId={appHistoryTarget.id}
+                  />
+                </>
+              ) : (
+                <HistoryView client={client} />
+              ))}
+            {vm.page === "ip" && <IpView client={ip} />}
+            {vm.page === "network" && (
+              <>
+                <div className="network-heading">
+                  <div className="connection-name">
+                    <icons.network size={20} />
+                    <strong>{vm.networkName}</strong>
+                    <Badge>
+                      {vm.state?.settings.network_id ? "手动选择" : "自动选择"}
+                    </Badge>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openSettings("monitoring")}
+                  >
+                    切换网卡
+                  </Button>
+                </div>
+                <div className="two-charts">
+                  {(["download", "upload"] as MetricKey[]).map((key) => (
+                    <Card key={key}>
+                      <div className="section-heading">
+                        <h2>{labels[key]}</h2>
+                        <Badge>{statusLabels[vm.reading(key).status]}</Badge>
+                      </div>
+                      <div className="network-value number">{value(key)}</div>
+                      {chart([key], labels[key])}
+                    </Card>
+                  ))}
+                </div>
+                <div className="explanation">
+                  <h2>单个接口，清楚计量</h2>
+                  <p>
+                    速率来自累计字节差与实际经过时间。使用十进制
+                    KB/s、MB/s，不叠加其他网卡。接口切换、重连或休眠后重新预热，曲线保留断档。
+                  </p>
+                  <p>来源：{vm.reading("download").source}</p>
+                </div>
+                <AppNetworkRanking
                   client={client}
-                  initialAppId={appHistoryTarget.id}
+                  vm={networkVm}
+                  onHistory={openAppHistory}
+                  suspended={windowVm.exit.stage !== "idle"}
                 />
               </>
-            ) : (
-              <HistoryView client={client} />
-            ))}
-          {vm.page === "ip" && <IpView client={ip} />}
-          {vm.page === "network" && (
-            <>
-              <div className="network-heading">
-                <div className="connection-name">
-                  <icons.network size={20} />
-                  <strong>{vm.networkName}</strong>
-                  <Badge>
-                    {vm.state?.settings.network_id ? "手动选择" : "自动选择"}
-                  </Badge>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => openSettings("monitoring")}
-                >
-                  切换网卡
-                </Button>
-              </div>
-              <div className="two-charts">
-                {(["download", "upload"] as MetricKey[]).map((key) => (
-                  <Card key={key}>
-                    <div className="section-heading">
-                      <h2>{labels[key]}</h2>
-                      <Badge>{statusLabels[vm.reading(key).status]}</Badge>
-                    </div>
-                    <div className="network-value number">{value(key)}</div>
-                    {chart([key], labels[key])}
-                  </Card>
-                ))}
-              </div>
-              <div className="explanation">
-                <h2>单个接口，清楚计量</h2>
-                <p>
-                  速率来自累计字节差与实际经过时间。使用十进制
-                  KB/s、MB/s，不叠加其他网卡。接口切换、重连或休眠后重新预热，曲线保留断档。
-                </p>
-                <p>来源：{vm.reading("download").source}</p>
-              </div>
-              <AppNetworkRanking
+            )}
+            {vm.page === "settings" && (
+              <SettingsView
                 client={client}
-                vm={networkVm}
-                onHistory={openAppHistory}
-                suspended={windowVm.exit.stage !== "idle"}
+                state={vm.state}
+                updates={updateVm}
+                section={settingsSection}
+                onNavigate={go}
+                onHistory={() => go("history")}
+                onBack={returnFromSettings}
+                navigationGuardRef={settingsNavigationGuard}
               />
-            </>
-          )}
-          {vm.page === "settings" && (
-            <SettingsView
-              client={client}
-              state={vm.state}
-              updates={updateVm}
-              section={settingsSection}
-              onNavigate={go}
-              onHistory={() => go("history")}
-            />
-          )}
-        </main>
-        <footer className="footer">
-          <span>
-            <i className={vm.connected ? "live-dot" : "offline-dot"} />
-            {vm.demo
-              ? "演示数据"
-              : vm.connected
-                ? vm.page === "ip"
-                  ? "查询服务已连接"
-                  : "本机采集"
-                : "采集服务未连接"}
-            {vm.page === "history"
-              ? " · 本地记录"
-              : vm.page !== "ip" && vm.frame && vm.connected
-                ? ` · ${["cpu", "memory", "download", "upload"].every((key) => vm.frame![key as MetricKey].status === "normal") ? "实时" : "部分指标未就绪"}`
-                : ""}
-          </span>
-          <span>
-            {vm.page === "ip"
-              ? "按需查询 · 第三方来源"
-              : vm.page === "history"
-                ? "分层汇总 · 最长 30 天"
-                : vm.page === "disk"
-                  ? "按需采样 · 2 秒 / 次 · 最近 5 分钟"
-                  : vm.page === "processes"
-                    ? "按需采样 · 2 秒 / 次 · 只读排行"
-                    : `${(vm.state?.settings.interval_ms ?? 1000) / 1000} 秒 / 次 · 最近 5 分钟`}
-          </span>
-        </footer>
+            )}
+          </main>
+        </PageUiStateProvider>
+        {vm.page !== "settings" && (
+          <footer className="footer">
+            <span>
+              <i className={vm.connected ? "live-dot" : "offline-dot"} />
+              {vm.demo
+                ? "演示数据"
+                : vm.connected
+                  ? vm.page === "ip"
+                    ? "查询服务已连接"
+                    : "本机采集"
+                  : "采集服务未连接"}
+              {vm.page === "history"
+                ? " · 本地记录"
+                : vm.page !== "ip" && vm.frame && vm.connected
+                  ? ` · ${["cpu", "memory", "download", "upload"].every((key) => vm.frame![key as MetricKey].status === "normal") ? "实时" : "部分指标未就绪"}`
+                  : ""}
+            </span>
+            <span>
+              {vm.page === "ip"
+                ? "按需查询 · 第三方来源"
+                : vm.page === "history"
+                  ? "分层汇总 · 最长 30 天"
+                  : vm.page === "disk"
+                    ? "按需采样 · 2 秒 / 次 · 最近 5 分钟"
+                    : vm.page === "processes"
+                      ? "按需采样 · 2 秒 / 次 · 只读排行"
+                      : `${(vm.state?.settings.interval_ms ?? 1000) / 1000} 秒 / 次 · 最近 5 分钟`}
+            </span>
+          </footer>
+        )}
       </div>
     </div>
   );

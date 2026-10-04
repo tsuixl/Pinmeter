@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { usePageUiState } from "../../shared/state/page-ui-state";
 import {
   Activity,
   Bot,
@@ -90,7 +91,10 @@ export function CheckPanel({
       ? "AI 访问概览"
       : "网络连通性";
   const Icon = service ? Server : group.id === "ai" ? Bot : Activity;
-  const [selected, setSelected] = useState<string>();
+  const [selected, setSelected] = usePageUiState<string | undefined>(
+    `ip.check.${group.id}`,
+    undefined,
+  );
   const detail = group.rows.find((r) => r.id === selected);
   return (
     <Card className={`ip-check-panel ip-check-${group.id}`}>
