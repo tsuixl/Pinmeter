@@ -1,6 +1,6 @@
 ## 任务计划
 
-- [ ] 移除侧栏“监控 / 排查 / 工具”分组标题，核对平铺导航深浅主题与折叠状态，构建并交付完整 Windows 运行包。
+- [x] 移除侧栏“监控 / 排查 / 工具”分组标题，核对平铺导航深浅主题与折叠状态，构建并交付完整 Windows 运行包。
 
 - [x] 第 5 项：实现 CPU/内存直达进程与上下文返回；浏览器检查指标排序及回看锚点保留。
 
@@ -14,7 +14,9 @@
 
 ## 进度
 
-- 2026-10-04 侧栏简化：移除“监控 / 排查 / 工具”标题及专用容器/样式，十项导航顺序与底部设置保留。已核对官方 [SidebarItem / All States](https://main--6a5a658b3681fcc010430db5.chromatic.com/?path=/story/composite-sidebar-item--all-states) 和 [Dark Mode](https://main--6a5a658b3681fcc010430db5.chromatic.com/?path=/story/composite-sidebar-item--dark-mode)，继续直接复用组件；HTML 仅供结构参考。开发演示环境中 [1280×720 浅色](assets/sidebar-flat-light.jpg)、[深色](assets/sidebar-flat-dark.jpg)与 [880×600 折叠侧栏](assets/sidebar-flat-compact.jpg)检查通过，标题消失、入口齐全，CPU/进程/硬件信息切换、键盘 Enter、选中态与折叠可访问名称正常。TypeScript、修改文件 Prettier、项目文档/目录及 `git diff --check` 通过；Windows 构建和资源核对待完成，原生交互及混合 DPI 未实测。
+- 2026-10-04 侧栏简化交付：稳定源码 `70db5527187a23b54488e395a42bb4f16e46813e` 经 `node tools/desktop.mjs build -- --locked` 完整生成前端、Windows release、辅助组件与 NSIS；实际入口为 `E:\dev\github\Pinmeter\src\backend\target\test10\Pinmeter.exe`（v0.1.3）。379 个源码指纹、42 个运行文件的配置路径/哈希及安装器版本/签名复核通过，EXE SHA-256 为 `bb9bd4cf76605690fbaf86ef409bb140a30b0b31bc65cd72e1d733bf8b609d1a`；安装器与签名已复制至该目录 `update-artifacts/` 并核对一致。构建锁与目录独占保留至交付核对结束；已有 `test9` 实例及无法确定路径的提升权限进程未停止，因此没有启动新版主程序，原生/管理员/混合 DPI 交互仍未实测。构建保留已有前端大于 500 kB 提示及 MSVC 创建库的非阻塞消息；无构建错误。切换时完全退出旧版并保留完整 `test10` 目录。
+
+- 2026-10-04 侧栏简化：移除“监控 / 排查 / 工具”标题及专用容器/样式，十项导航顺序与底部设置保留。已核对官方 [SidebarItem / All States](https://main--6a5a658b3681fcc010430db5.chromatic.com/?path=/story/composite-sidebar-item--all-states) 和 [Dark Mode](https://main--6a5a658b3681fcc010430db5.chromatic.com/?path=/story/composite-sidebar-item--dark-mode)，继续直接复用组件；HTML 仅供结构参考。开发演示环境中 [1280×720 浅色](assets/sidebar-flat-light.jpg)、[深色](assets/sidebar-flat-dark.jpg)与 [880×600 折叠侧栏](assets/sidebar-flat-compact.jpg)检查通过，标题消失、入口齐全，CPU/进程/硬件信息切换、键盘 Enter、选中态与折叠可访问名称正常。TypeScript、修改文件 Prettier、项目文档/目录及 `git diff --check` 通过；Windows 构建和资源核对见上条，原生交互及混合 DPI 未实测。
 
 - 2026-10-04 本批交付：源码 `96b8c4677384bf32f09f7aec0920698832492bfd`，实际入口 `E:\dev\github\Pinmeter\src\backend\target\test6\Pinmeter.exe`。统一检查通过（Rust 167 项、前端 49 项、格式/Clippy/契约/打包工具）；完整 release/NSIS 构建、42 个运行文件及 376 个源码指纹核对通过。原生、管理员、真实升级及长期未验证项保留；[交付详情](../v0.1.0-desktop-runtime/execution.md)。
 
